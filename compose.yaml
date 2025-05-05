@@ -1,0 +1,9 @@
+services:
+  web:
+    image: ${REPOSITORY}/colibri-web:${BUILDNUMBER}
+    build:
+      context: .
+      dockerfile: Integration.Drips.ScheduleCallProcessor.Job/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=production
+        - NAME=colibri
