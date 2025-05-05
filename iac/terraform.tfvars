@@ -16,9 +16,9 @@ aws_session = "#{AWS.SessionName}"
 aws_region = "us-east-2"
 
 aws_hosted_zone_id = {
-  dev  = "Z04024463TZ31XAH1LFIR"
-  qa   = "Z04908861I75TPU44A3E"
-  prod = "Z0474853S6BS7P4OD5IV"
+  dev  = "Z09214661J7DTP6EB1W50"
+  qa   = "Z04676103EB5YR4JQFUN5"
+  prod = "Z0390904ZHF670159TYD"
 }
 
 aws_load_balancer_name = {
