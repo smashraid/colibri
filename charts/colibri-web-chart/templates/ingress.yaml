@@ -2,9 +2,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "colibri-web.fullname" . }}
+  name: {{ include "colibri-web-chart.fullname" . }}
   labels:
-    {{- include "colibri-web.labels" . | nindent 4 }}
+    {{- include "colibri-web-chart.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -35,7 +35,7 @@ spec:
             {{- end }}
             backend:
               service:
-                name: {{ include "colibri-web.fullname" $ }}
+                name: {{ include "colibri-web-chart.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}

@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "colibri-web.name" -}}
+{{- define "colibri-web-chart.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "colibri-web.fullname" -}}
+{{- define "colibri-web-chart.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "colibri-web.chart" -}}
+{{- define "colibri-web-chart.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "colibri-web.labels" -}}
-helm.sh/chart: {{ include "colibri-web.chart" . }}
-{{ include "colibri-web.selectorLabels" . }}
+{{- define "colibri-web-chart.labels" -}}
+helm.sh/chart: {{ include "colibri-web-chart.chart" . }}
+{{ include "colibri-web-chart.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "colibri-web.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "colibri-web.name" . }}
+{{- define "colibri-web-chart.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "colibri-web-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "colibri-web.serviceAccountName" -}}
+{{- define "colibri-web-chart.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "colibri-web.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "colibri-web-chart.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
