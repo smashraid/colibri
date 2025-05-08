@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>Tz-Digital-Colibri-Terraform-Nuget</id>
+        <version>1.0.0</version>
+        <authors>TzDigital Communications</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Nuget package for Tz-Digital-Colibri project</description>
+    </metadata>
+    <files>
+        <file src="*.tf" exclude="backend_override.tf" target="" />
+        <file src="*.tfvars" target="" />
+    </files>
+</package>
