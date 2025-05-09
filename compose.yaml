@@ -1,9 +1,9 @@
 services:
   web:
-    image: ${REPOSITORY}/colibri-web:${BUILDNUMBER}
+    image: colibri:latest
     build:
-      context: .
-      dockerfile: web/Dockerfile
+      context: ./web
+      dockerfile: Dockerfile
       args:
         - BUILD_CONFIGURATION=production
         - NAME=colibri
