@@ -22,7 +22,7 @@ aws_hosted_zone_id = {
 }
 
 aws_load_balancer_name = {
-  dev  = "tz-dev-internal-lb"
-  qa   = "tz-qa-internal-lb"
-  prod = "tz-prod-internal-lb"
+  dev  = "dig-dev-internal-lb"
+  qa   = "dig-qa-internal-lb"
+  prod = "dig-prod-internal-lb"
 }
