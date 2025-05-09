@@ -24,7 +24,6 @@ resource "aws_route53_record" "record" {
   zone_id = data.aws_route53_zone.zone.zone_id
   name    = "colibri.${data.aws_route53_zone.zone.name}"
   type    = "A"
-  set_identifier = local.env_name
 
   alias {
     name                   = data.aws_lb.lb.dns_name
