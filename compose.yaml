@@ -1,6 +1,6 @@
 services:
   web:
-    image: colibri:latest
+    image: ${REPOSITORY}/colibri-web:${BUILDNUMBER}
     build:
       context: ./web
       dockerfile: Dockerfile
