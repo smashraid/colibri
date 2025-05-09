@@ -14,15 +14,15 @@ aws_role = "#{AWS.Role}"
 aws_session = "#{AWS.SessionName}"
 
 aws_region = {
-  dev       = "us-east-2"
-  nonprod   = "us-east-2"
-  prod      = "us-east-2"
+  dev  = "us-east-2"
+  qa   = "us-east-2"
+  prod = "us-east-2"
 }
 
 aws_account_id = {
-  dev       = "025381531841"
-  nonprod   = "174436502675"
-  prod      = "144196841275"
+  dev  = "025381531841"
+  qa   = "174436502675"
+  prod = "144196841275"
 }
 
 aws_hosted_zone_id = {
