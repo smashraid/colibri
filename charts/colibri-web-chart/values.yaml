@@ -26,7 +26,11 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations: {}
+  annotations: {
+    eks.amazonaws.com/role-arn: "service.drips.role"
+  }
+
+  role: "arn:aws:iam::025381531841:role/service.drips.role"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: "colibri-web-role"
