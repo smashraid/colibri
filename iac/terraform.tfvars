@@ -13,7 +13,11 @@ aws_role = "#{AWS.Role}"
 
 aws_session = "#{AWS.SessionName}"
 
-aws_region = "us-east-2"
+aws_region = {
+  dev       = "us-east-2"
+  nonprod   = "us-east-2"
+  prod      = "us-east-2"
+}
 
 aws_account_id = {
   dev       = "025381531841"
