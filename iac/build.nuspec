@@ -10,5 +10,6 @@
     <files>
         <file src="*.tf" exclude="backend_override.tf" target="" />
         <file src="*.tfvars" target="" />
+        <file src="*.config" target="" />
     </files>
 </package>
