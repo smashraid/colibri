@@ -15,6 +15,12 @@ aws_session = "#{AWS.SessionName}"
 
 aws_region = "us-east-2"
 
+aws_account_id = {
+  dev       = "025381531841"
+  nonprod   = "174436502675"
+  prod      = "144196841275"
+}
+
 aws_hosted_zone_id = {
   dev  = "Z09214661J7DTP6EB1W50"
   qa   = "Z04676103EB5YR4JQFUN5"
