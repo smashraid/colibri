@@ -4,7 +4,6 @@ variable "aws_region" {}
 variable "aws_account_id" {}
 variable "aws_hosted_zone_id" {}
 variable "aws_load_balancer_name" {}
-variable "aws_route53_record_name" {}
 variable "tags" {}
 
 locals {
