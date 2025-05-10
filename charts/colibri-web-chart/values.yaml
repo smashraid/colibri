@@ -64,16 +64,16 @@ service:
 ingress:
   enabled: true
   className: "alb"
-  annotations: {
-    alb.ingress.kubernetes.io/load-balancer-name: colibri-staging-internal-lb,
-    alb.ingress.kubernetes.io/group.name: <empty>,
-    alb.ingress.kubernetes.io/scheme: internal,
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]',
-    alb.ingress.kubernetes.io/target-type: instance,
-    alb.ingress.kubernetes.io/healthcheck-path: /health
-  }
+  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
+  loadBalancerName: colibri-web
+  groupName: colibri-alb-grp
+  scheme: internal
+  listenPorts: '[{"HTTP": 80}, {"HTTPS": 443}]'
+  targetType: instance
+  healthcheckPath: /healthz
+
   hosts:
     - host: chart-example.local
       paths:

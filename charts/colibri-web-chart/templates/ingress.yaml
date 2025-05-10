@@ -5,10 +5,13 @@ metadata:
   name: {{ include "colibri-web-chart.fullname" . }}
   labels:
     {{- include "colibri-web-chart.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.ingress.loadBalancerName }}
+    alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.groupName }}
+    alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.scheme }}
+    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.ingress.listenPorts }}'
+    alb.ingress.kubernetes.io/target-type: {{ .Values.ingress.targetType }}
+    alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.ingress.healthcheckPath }}
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}
