@@ -1,0 +1,5 @@
+@if (loading()) {
+    <mat-progress-spinner mode="indeterminate" [diameter]="size()" />
+} @else {
+    <ng-content/>
+}

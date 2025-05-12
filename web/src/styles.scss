@@ -1,1 +1,90 @@
-/* You can add global styles to this file, and also import other style files */
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use "@angular/material" as mat;
+
+html {
+  color-scheme: light dark;
+  @include mat.theme(
+    (
+      // color: (
+      //   //theme-type: light,
+      //   primary: mat.$spring-green-palette,
+      //   tertiary: mat.$azure-palette,
+      // ),
+      color: mat.$spring-green-palette,
+      typography: Roboto,
+      density: 0,
+    )
+  );
+
+  // .darkMode {
+  //   background: var(--mat-sys-background);
+    
+  //   @include mat.theme(
+  //     (
+  //       color: (
+  //         primary: mat.$spring-green-palette,
+  //         theme-type: dark,
+  //       ),
+  //     ),
+  //     $overrides: ("background": #24292e)
+  //   );
+
+  // }
+} /* You can add global styles to this file, and also import other style files */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+:root {
+  // @include mat.slide-toggle-overrides((
+  //   track-outline-color: var(--mat-sys-outline),
+  //   selected-hover-track-color: var(--mat-sys-primary),
+  //   selected-track-color: var(--mat-sys-primary),
+  //   selected-focus-track-color: var(--mat-sys-primary)
+  // ));
+  // @include mat.progress-spinner-overrides((
+  //   active-indicator-color: orange,
+  // ));
+}
+
+// :host {
+//   background: var(--mat-sys-primary-container);
+//   color: var(--mat-sys-on-primary-container);
+//   border: 1px solid var(--mat-sys-outline-variant);
+//   font: var(--mat-sys-body-large);
+// }
+
+// .projects.mat-mdc-select-panel {
+//   background: rgba(255, 0, 0, 0.5) !important;
+//   width: 100% !important;
+//   word-wrap: break-word;
+// }
+
+.mr-8 {
+  margin-right: 0.5rem;
+}
+
+.mr-16 {
+  margin-right: 1rem;
+}
+
+.mt-8 {
+  margin-top: 0.5rem;
+}
+
+.mt-16 {
+  margin-top: 1rem;
+}

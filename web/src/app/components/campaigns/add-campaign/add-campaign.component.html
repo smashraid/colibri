@@ -1,0 +1,197 @@
+<div class="content">
+  <form
+    id="validateContentForm"
+    name="validateContentForm"
+    [formGroup]="validateInformationForm"
+    (ngSubmit)="getTemplateListInfo()"
+  >
+    <h2 class="title">1. Validate Information</h2>
+    <div class="form">
+      <div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Template Id</mat-label>
+            <input
+              id="templateId"
+              name="templateId"
+              matInput
+              formControlName="templateId"
+              required
+            />
+            <!-- <mat-hint align="start">Created in Iterable</mat-hint> -->
+            @if (validateInformationForm.get('templateId')?.invalid) {
+            <mat-error>TemplateId is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Email List</mat-label>
+            <mat-select formControlName="listId" id="listId" name="listId">
+              @for (item of campaignLists$ | async; track item.id) {
+              <mat-option [value]="item.id">{{ item.name }}</mat-option>
+              }
+            </mat-select>
+            <!-- <mat-hint align="start">Created in Iterable</mat-hint> -->
+            @if (validateInformationForm.get('listId')?.invalid) {
+            <mat-error>Email List is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <button
+            mat-fab
+            extended
+            type="submit"
+            class="form-button"
+            [disabled]="!validateInformationForm.valid"
+          >
+            <mat-icon>search</mat-icon>
+            Validate
+          </button>
+        </div>
+      </div>
+
+      @let emailCount = emailCount$ | async; @let template = template$ | async;
+
+      <div class="valid-content">
+        @if (emailCount && template) {
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title></mat-card-title>
+            <mat-card-subtitle></mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <h4>Emails Count</h4>
+            <p>{{ emailCount }}</p>
+
+            <h4>Template Information</h4>
+            <div>
+              <p>Name: {{ template.name }}</p>
+              <p>From Name: {{ template.fromName }}</p>
+              <p>From Email: {{ template.fromEmail }}</p>
+              <p>Subject: {{ template.subject }}</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+        }
+      </div>
+    </div>
+  </form>
+
+  <h2 class="title">2. Schedule Campaign</h2>
+  <div class="form">
+    <div>
+      <form
+        id="scheduleForm"
+        name="scheduleForm"
+        [formGroup]="scheduleForm"
+        (ngSubmit)="createCampaignBatch()"
+      >
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Campaign Name</mat-label>
+            <input
+              id="campaignName"
+              name="campaignName"
+              matInput
+              placeholder="Name"
+              formControlName="campaignName"
+              required
+            />
+            @if (scheduleForm.get('campaignName')?.invalid) {
+            <mat-error>Campaign Name is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Email Batch Size</mat-label>
+            <input
+              id="batchSize"
+              name="batchSize"
+              matInput
+              placeholder="Size"
+              formControlName="batchSize"
+              required
+            />
+            @if (scheduleForm.get('batchSize')?.invalid) {
+            <mat-error>Batch Size is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Supression List</mat-label>
+            <input
+              id="supressionList"
+              name="supressionList"
+              matInput
+              placeholder="Supression Id"
+              formControlName="supressionList"
+            />
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label>Start Date</mat-label>
+            <input
+              matInput
+              [matDatepicker]="datepicker"
+              formControlName="sendDate"
+            />
+            <mat-datepicker #datepicker />
+            <mat-datepicker-toggle [for]="datepicker" matSuffix />
+          </mat-form-field>
+
+          <mat-form-field>
+            <mat-label>Start Time (UTC)</mat-label>
+            <input
+              matInput
+              [matTimepicker]="timepicker"
+              formControlName="sendTime"
+            />
+            <mat-timepicker #timepicker />
+            <mat-timepicker-toggle [for]="timepicker" matSuffix />
+          </mat-form-field>
+
+          @if (scheduleForm.get('sendDate')?.invalid) {
+          <mat-error>Send Date is required</mat-error>
+          } @if (scheduleForm.get('sendTime')?.invalid) {
+          <mat-error>Send Time is required</mat-error>
+          }
+        </div>
+        <div class="form-group">
+          <mat-form-field>
+            <mat-label class="form-label">Interval</mat-label>
+            <mat-select
+              formControlName="interval"
+              id="interval"
+              name="interval"
+            >
+              <mat-option>None</mat-option>
+              <mat-option value="15">Every 15 min</mat-option>
+              <mat-option value="30">Every 30 min</mat-option>
+              <mat-option value="60">Every 1 hr</mat-option>
+            </mat-select>
+            @if (scheduleForm.get('interval')?.invalid) {
+            <mat-error>Interval is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div class="form-group">
+          <button
+            mat-fab
+            extended
+            type="submit"
+            class="form-button"
+            [disabled]="!scheduleForm.valid"
+          >
+            <mat-icon>schedule_send</mat-icon>
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

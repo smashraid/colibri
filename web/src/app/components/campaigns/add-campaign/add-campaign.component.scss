@@ -1,0 +1,66 @@
+@use "@angular/material" as mat;
+
+// Customize the entire app. Change :root to your selector if you want to scope the styles.
+
+.content {
+  background: var(--mat-sys-background);
+  color: var(--mat-sys-on-background);
+
+  h2 {
+    margin-top: 0;
+    padding-top: 1rem;
+  }
+}
+
+.form {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem 4rem;
+}
+
+.form-label {
+}
+
+.form-button {
+}
+
+.form-group {
+
+  margin-bottom: 2rem;
+
+  // @include mat.radio-overrides(
+  //   (
+  //     label-text-color: #000000,
+  //   )
+  // );
+
+  // @include mat.card-overrides((
+  //   outlined-container-color: orange,
+  // ));
+
+  .example-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+    align-items: flex-start;
+  }
+
+  .example-radio-button {
+    margin: 5px;
+  }
+
+  mat-form-field {
+    display: block;
+    margin-right: 1rem;
+  }
+}
+
+.title {
+  padding-left: 4rem;
+}
+
+mat-toolbar {
+  mat-icon {
+    margin-right: .5rem;
+  }
+}
