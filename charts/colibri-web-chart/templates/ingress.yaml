@@ -9,9 +9,10 @@ metadata:
     alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.ingress.loadBalancerName }}
     alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.groupName }}
     alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.scheme }}
-    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.ingress.listenPorts }}'
+    alb.ingress.kubernetes.io/listen-ports: {{ .Values.ingress.listenPorts | quote }}
     alb.ingress.kubernetes.io/target-type: {{ .Values.ingress.targetType }}
     alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.ingress.healthcheckPath }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}

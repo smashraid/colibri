@@ -1,0 +1,10 @@
+@if (!loginDisplay()) {
+<button mat-fab extended (click)="loginRedirect()">
+  <mat-icon>account_circle</mat-icon>
+  Login
+</button>
+} @if (loginDisplay()) {
+<button mat-fab extended (click)="logout()">
+  {{ username() }}
+</button>
+}
