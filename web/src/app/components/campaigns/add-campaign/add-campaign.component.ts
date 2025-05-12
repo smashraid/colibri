@@ -259,7 +259,7 @@ export class AddCampaignComponent implements OnInit {
             .subscribe((result) => {
               console.log('Database', result);
               this.spinnerService.hide();
-              this.router.navigate(['/blast-emails']);
+              this.router.navigate(['/campaigns']);
             });
         });
     }
