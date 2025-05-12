@@ -17,6 +17,7 @@ import { CampaignRead } from '../view-models/campaign/campaignRead.model';
 })
 export class DatabaseService {
   private readonly baseUrl = `${environment.digitalCommunication.url}${'database/'}`;
+  private readonly authorizationToken = environment.digitalCommunication.token;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -26,7 +27,7 @@ export class DatabaseService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -38,7 +39,7 @@ export class DatabaseService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -50,7 +51,7 @@ export class DatabaseService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -61,7 +62,7 @@ export class DatabaseService {
       .get<CampaignRead[]>(`${this.baseUrl}getCampaignsDb`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -80,7 +81,7 @@ export class DatabaseService {
         {
           responseType: 'json',
           headers: {
-            AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+            AuthorizationToken: this.authorizationToken,
           },
         }
       )
@@ -96,7 +97,7 @@ export class DatabaseService {
   deleteCampaign(id: number) {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaignDb/${id}`, {
       headers: {
-        AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+        AuthorizationToken: this.authorizationToken,
       },
     });
   }
@@ -106,7 +107,7 @@ export class DatabaseService {
       .get<ProjectRead[]>(`${this.baseUrl}getProjectsDb`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627'
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -124,7 +125,7 @@ export class DatabaseService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -135,7 +136,7 @@ export class DatabaseService {
       .get<CampaignRead[]>(`${this.baseUrl}getCampaigns`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -150,7 +151,7 @@ export class DatabaseService {
   deleteCampaignNoSql(id: number) {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaign/${id}`, {
       headers: {
-        AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+        AuthorizationToken: this.authorizationToken,
       },
     });
   }

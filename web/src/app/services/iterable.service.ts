@@ -22,6 +22,7 @@ import { ArchiveCampaignRequest } from '../view-models/archive/request/archiveCa
 })
 export class IterableService {
   private readonly baseUrl = `${environment.digitalCommunication.url}${'iterable/'}`;
+  private readonly authorizationToken = environment.digitalCommunication.token;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -30,7 +31,7 @@ export class IterableService {
       .get<CampaignIterable[]>(`${this.baseUrl}getCampaignByType`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -47,7 +48,7 @@ export class IterableService {
       .get<CampaignListIterable[]>(`${this.baseUrl}getListByType`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -64,7 +65,7 @@ export class IterableService {
       .get<TemplateIterable>(`${this.baseUrl}getTemplateById?id=${id}`, {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       })
       .pipe(
@@ -80,7 +81,7 @@ export class IterableService {
     return this.httpClient.get<number>(`${this.baseUrl}getListSize?id=${id}`, {
       responseType: 'json',
       headers: {
-        AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+        AuthorizationToken: this.authorizationToken,
       },
     })
     .pipe(
@@ -98,7 +99,7 @@ export class IterableService {
       {
         responseType: 'json',
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     )
@@ -117,7 +118,7 @@ export class IterableService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -129,7 +130,7 @@ export class IterableService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -141,7 +142,7 @@ export class IterableService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -153,7 +154,7 @@ export class IterableService {
       request,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );
@@ -164,7 +165,7 @@ export class IterableService {
       `${this.baseUrl}deleteList?id=${id}`,
       {
         headers: {
-          AuthorizationToken: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
+          AuthorizationToken: this.authorizationToken,
         },
       }
     );

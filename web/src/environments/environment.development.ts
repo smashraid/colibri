@@ -13,5 +13,6 @@ export const environment = {
   },
   digitalCommunication: {
     url: 'https://api.qa.tztech.io/digital-communication/api/',
+    token: '0194f1f6-c99a-7c68-a713-4ca978bc5627'
   },
 };
