@@ -5,6 +5,7 @@ import {
   concatMap,
   delay,
   finalize,
+  map,
   mergeMap,
   switchMap,
   tap,
@@ -79,7 +80,7 @@ export class AddCampaignComponent implements OnInit {
 
   scheduleForm = new FormGroup({
     campaignName: new FormControl('', [Validators.required]),
-    supressionList: new FormControl('', []),
+    supressionList: new FormControl<number | null>(null, []),
     batchSize: new FormControl<number | null>(null, [Validators.required]),
     sendDate: new FormControl(moment(), [Validators.required]),
     sendTime: new FormControl(moment(), [Validators.required]),
@@ -113,8 +114,7 @@ export class AddCampaignComponent implements OnInit {
   async createCampaignBatch() {
     const templateId = this.validateInformationForm.get('templateId')?.value;
     const listId = this.validateInformationForm.get('listId')?.value;
-    const supressionList =
-      this.validateInformationForm.get('supressionList')?.value;
+    const supressionList = this.scheduleForm.get('supressionList')?.value;
     const batchSize = this.scheduleForm.get('batchSize')?.value;
     const campaignName = this.scheduleForm.get('campaignName')?.value;
     const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
@@ -145,107 +145,36 @@ export class AddCampaignComponent implements OnInit {
 
       chunks$
         .pipe(
-          mergeMap((subscribers) =>
-            forkJoin(
-              subscribers.map((subscriber, i) =>
-                this.iterableService
-                  .createStaticList({
-                    name: `${campaignName} List ${i + 1}`,
-                    description: `List Sample ${i + 1}`,
-                  })
-                  .pipe(
-                    delay(9000),
-                    concatMap((staticListResponse) => {
-                      const createSubscriberList$ = this.iterableService
-                        .createSubscriberList({
-                          listId: staticListResponse.listId,
-                          updateExistingUsersOnly: true,
-                          subscribers: subscriber,
-                        })
-                        .pipe(delay(9000));
-
-                      const createCampaignRequest = {
-                        name: campaignName,
-                        dataFields: null,
-                        defaultTimeZone: 'America/New_York',
-                        listIds: [staticListResponse.listId],
-                        sendAt: this.getSendDate(i),
-                        sendMode: 'RecipientTimeZone',
-                        startTimeZone: 'America/New_York',
-                        suppressionListIds: supressionList,
-                        templateId: templateId,
-                      };
-
-                      const createCampagin$ = this.iterableService
-                        .createCampaign(createCampaignRequest)
-                        .pipe(
-                          delay(9000),
-                          concatMap((createCampaignResponse) =>
-                            of({
-                              id: 0,
-                              defaultTimeZone:
-                                createCampaignRequest.defaultTimeZone,
-                              sendAt: createCampaignRequest.sendAt,
-                              startTimeZone:
-                                createCampaignRequest.startTimeZone,
-                              emails: subscriber.map((s) => s.email),
-                              iterableCampaignId:
-                                createCampaignResponse.campaignId,
-                              iterableListId: staticListResponse.listId,
-                              iterableTemplateId: templateId,
-                              name: `${campaignName} List ${i + 1}`,
-                              order: i + 1,
-                            })
-                          )
-                        );
-
-                      return forkJoin({
-                        createCampagin$,
-                        createSubscriberList$,
-                      }).pipe(delay(9000));
-                    }),
-                    tap({
-                      next: (val) =>
-                        console.log('Result campaing/subscriber ', val),
-                      complete: () =>
-                        console.log('Completed campaing/subscriber'),
-                      error: (err) =>
-                        console.log('Error campaing/subscriber ', err),
-                    })
-                  )
-              )
-            ).pipe(delay(6000))
-          ),
-          tap({
-            next: (val) => console.log('Result staticListRequests ', val),
-            complete: () => console.log('Completed staticListRequests'),
-            error: (err) => console.log('Error staticListRequests ', err),
+          map((subscribers) => {
+            subscribers.map((subscriber, index) => {
+              const sendAt = this.getSendDate(index);
+              campaignDb.campaignCount++;
+              return this.iterableService
+                .createBlast(subscriber, index + 1, {
+                  campaignName,
+                  batchSize,
+                  interval,
+                  listId,
+                  sendAt,
+                  supressionList,
+                  templateId,
+                })
+                .subscribe((list) => campaingListDbs.push(list));
+            });
           }),
-          delay(9000),
           finalize(() => console.log('Insert Completed'))
         )
         .subscribe((data) => {
-          console.log('ProcessAll', data);
-
-          campaignDb.campaignCount = data.length;
-
-          data.forEach((val, _) => {
-            campaingListDbs.push(val.createCampagin$);
-          });
-
-          const lists = campaingListDbs.sort((a, b) => a.order - b.order);
-
-          console.log('Sort', lists);
+          console.log(campaignDb, campaingListDbs);
 
           this.databaseService
             .createCampaign(campaignDb)
             .pipe(
               switchMap((campaign) =>
                 forkJoin(
-                  lists.map((list) =>
+                  campaingListDbs.map((list) =>
                     this.databaseService
                       .createCampaignList(list, campaign.id)
-                      .pipe(delay(6000))
                   )
                 )
               ),

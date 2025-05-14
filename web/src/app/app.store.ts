@@ -15,7 +15,7 @@ import {
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { pipe } from 'rxjs';
+import { Observable, pipe } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
 import { DatabaseService } from './services/database.service';
@@ -67,12 +67,13 @@ export const AppStore = signalStore(
         })
       )
     ),
-    loadProjects: rxMethod<string>(
+    loadProjects: rxMethod<void>(
       pipe(
         switchMap(() => {
           return databaseService.getProjects().pipe(
             tapResponse({
-              next: (projects: ProjectRead[]) => patchState(store, { projects }),
+              next: (projects: ProjectRead[]) =>
+                patchState(store, { projects }),
               error: (err: any) => {
                 console.log(err);
               },
@@ -80,11 +81,13 @@ export const AppStore = signalStore(
           );
         })
       )
-    ),
+    )
   })),
   withHooks((store, router = inject(Router)) => ({
     onInit() {
       store.loaderOnNavigation(router.events);
+      store.loadProjects();
+      console.log('Init Store');
     },
   }))
 );

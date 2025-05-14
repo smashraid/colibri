@@ -3,69 +3,19 @@
 // Customize the entire app. Change :root to your selector if you want to scope the styles.
 
 .content {
-  background: var(--mat-sys-background);
-  color: var(--mat-sys-on-background);
-
-  h2 {
-    margin-top: 0;
-    padding-top: 1rem;
+  .table {
+    &__wrapper {
+      padding: 1.5rem;
+    }
   }
 }
 
-.form {
-  display: flex;
-  gap: 2rem;
-  padding: 2rem 4rem;
-}
-
-.form-label {
-}
-
-.form-button {
-}
-
-.form-group {
-  margin-bottom: 2rem;
-
-  // @include mat.radio-overrides(
-  //   (
-  //     label-text-color: #000000,
-  //   )
-  // );
-
-  // @include mat.card-overrides((
-  //   outlined-container-color: orange,
-  // ));
-
-  .example-radio-group {
-    display: flex;
-    flex-direction: column;
-    margin: 15px 0;
-    align-items: flex-start;
-  }
-
-  .example-radio-button {
-    margin: 5px;
-  }
-
-  mat-form-field {
-    display: block;
-    margin-right: 1rem;
-  }
-}
-
-.title {
-  padding-left: 4rem;
-}
-
-mat-toolbar {
-  mat-icon {
-    margin-right: 0.5rem;
-  }
-}
-
-table {
+.table {
+  background-color: var(--mat-sys-surface-variant);
+  //color: var(--mat-sys-on-surface-variant);
   width: 100%;
+  //@include mat.elevation(8, light-dark(rgba(0 0 0 / 0.6), rgba(243 70 70 / 0.6)));
+  box-shadow: var(--mat-sys-level5)
 }
 
 tr.example-detail-row {
@@ -105,6 +55,7 @@ tr.example-element-row {
 
 .example-element-detail-wrapper-expanded {
   grid-template-rows: 1fr;
+  padding: 1rem 0;
 }
 
 .example-element-container {
@@ -166,10 +117,10 @@ tr.example-element-row {
 }
 
 .flex-item {
-  border: 2px solid rgb(96 139 168);
-  border-radius: 5px;
-  background-color: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+  //border: 2px solid rgb(96 139 168);
+  border-radius: 0.5rem;
+  background-color: var(--mat-sys-secondary);
+  color: var(--mat-sys-on-secondary);
 }
 
 .no-data-cell {

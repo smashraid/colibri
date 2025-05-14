@@ -1,7 +1,7 @@
 <mat-form-field>
   <mat-label>Project</mat-label>
-  <mat-select (selectionChange)="onSelect($event)" >
-    @for (project of projects$ | async; track project.id) {
+  <mat-select (selectionChange)="onSelect($event)" [value]="store.projectId()">
+    @for (project of store.projects(); track project.id) {
     <mat-option [value]="project.projectId">{{
       project.website.replace(".com", "") | uppercase
     }}</mat-option>

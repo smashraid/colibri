@@ -18,7 +18,7 @@ import {
 } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TitleCasePipe } from '@angular/common';
+import { TitleCasePipe, UpperCasePipe } from '@angular/common';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -68,6 +68,7 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
     RouterLink,
     MsalModule,
     TitleCasePipe,
+    UpperCasePipe,
   ],
   templateUrl: './campaigns.component.html',
   styleUrl: './campaigns.component.scss',

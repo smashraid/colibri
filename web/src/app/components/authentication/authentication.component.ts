@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  inject,
   Inject,
   OnDestroy,
   OnInit,
@@ -28,6 +29,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { environment } from '../../../environments/environment';
+import { AppStore } from '../../app.store';
 
 type ProfileType = {
   givenName?: string;
@@ -41,14 +43,15 @@ type ProfileType = {
   selector: 'app-authentication',
   imports: [MsalModule, MatButtonModule, MatIconModule],
   templateUrl: './authentication.component.html',
-  styleUrl: './authentication.component.scss'
+  styleUrl: './authentication.component.scss',
 })
 export class AuthenticationComponent implements OnInit, OnDestroy {
   isIframe = false;
   loginDisplay = signal(false);
   profile: ProfileType | undefined;
-  username = signal<string>('');
   private readonly _destroying$ = new Subject<void>();
+
+  readonly store = inject(AppStore);
 
   constructor(
     @Inject(MSAL_GUARD_CONFIG) private msalGuardConfig: MsalGuardConfiguration,
@@ -58,7 +61,6 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.setDisplayName();
     this.setLoginDisplay();
 
     this.authService.handleRedirectObservable().subscribe();
@@ -161,7 +163,7 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
   }
 
   logout(popup?: boolean) {
-    localStorage.removeItem('username');
+    this.store.updateUsername('');
     if (popup) {
       this.authService.logoutPopup({
         mainWindowRedirectUri: '/',
@@ -178,15 +180,8 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
       const letters = `${_profile?.givenName
         ?.charAt(0)
         .toUpperCase()}${_profile?.surname?.charAt(0).toUpperCase()}`;
-      localStorage.setItem('username', letters);
+      this.store.updateUsername(letters);
     });
-  }
-
-  setDisplayName() {
-    const _username = localStorage.getItem('username');
-    if (_username) {
-      this.username.set(_username);
-    }
   }
 
   formatUsername(text?: string) {
@@ -196,8 +191,7 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
       const letters = `${splitFullName[0]
         .charAt(0)
         .toUpperCase()}${splitFullName[num - 1].charAt(0).toUpperCase()}`;
-      localStorage.setItem('username', letters);
-      this.username.set(letters);
+      this.store.updateUsername(letters);
     }
   }
 
