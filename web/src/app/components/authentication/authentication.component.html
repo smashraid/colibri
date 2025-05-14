@@ -5,6 +5,6 @@
 </button>
 } @if (loginDisplay()) {
 <button mat-fab extended (click)="logout()">
-  {{ username() }}
+  {{ store.username() }}
 </button>
 }
