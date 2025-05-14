@@ -162,114 +162,34 @@ export class AddCampaignComponent implements OnInit {
                 .subscribe((list) => campaingListDbs.push(list));
             });
           }),
-
-          // forkJoin(
-          //   subscribers.map((subscriber, i) =>
-          //     this.iterableService
-          //       .createStaticList({
-          //         name: `${campaignName} List ${i + 1}`,
-          //         description: `List Sample ${i + 1}`,
-          //       })
-          //       .pipe(
-          //         concatMap((staticListResponse) => {
-          //           const createSubscriberList$ = this.iterableService
-          //             .createSubscriberList({
-          //               listId: staticListResponse.listId,
-          //               updateExistingUsersOnly: true,
-          //               subscribers: subscriber,
-          //             });
-
-          //           const createCampaignRequest = {
-          //             name: campaignName,
-          //             dataFields: null,
-          //             defaultTimeZone: 'America/New_York',
-          //             listIds: [staticListResponse.listId],
-          //             sendAt: this.getSendDate(i),
-          //             sendMode: 'RecipientTimeZone',
-          //             startTimeZone: 'America/New_York',
-          //             suppressionListIds: supressionList,
-          //             templateId: templateId,
-          //           };
-
-          //           const createCampagin$ = this.iterableService
-          //             .createCampaign(createCampaignRequest)
-          //             .pipe(
-          //               concatMap((createCampaignResponse) =>
-          // of({
-          //   id: 0,
-          //   defaultTimeZone:
-          //     createCampaignRequest.defaultTimeZone,
-          //   sendAt: createCampaignRequest.sendAt,
-          //   startTimeZone:
-          //     createCampaignRequest.startTimeZone,
-          //   emails: subscriber.map((s) => s.email),
-          //   iterableCampaignId:
-          //     createCampaignResponse.campaignId,
-          //   iterableListId: staticListResponse.listId,
-          //   iterableTemplateId: templateId,
-          //   name: `${campaignName} List ${i + 1}`,
-          //   order: i + 1,
-          // })
-          //               )
-          //             );
-
-          //           return forkJoin({
-          //             createCampagin$,
-          //             createSubscriberList$,
-          //           });
-          //         }),
-          //         tap({
-          //           next: (val) =>
-          //             console.log('Result campaing/subscriber ', val),
-          //           complete: () =>
-          //             console.log('Completed campaing/subscriber'),
-          //           error: (err) =>
-          //             console.log('Error campaing/subscriber ', err),
-          //         })
-          //       )
-          //   )
-          // )
-          //),
-          // tap({
-          //   next: (val) => console.log('Result staticListRequests ', val),
-          //   complete: () => console.log('Completed staticListRequests'),
-          //   error: (err) => console.log('Error staticListRequests ', err),
-          // }),
           finalize(() => console.log('Insert Completed'))
         )
         .subscribe((data) => {
           console.log(campaignDb, campaingListDbs);
 
-          // campaignDb.campaignCount = data.length;
-          // data.forEach((val, _) => {
-          //   campaingListDbs.push(val.createCampagin$);
-          // });
-          // const lists = campaingListDbs.sort((a, b) => a.order - b.order);
-          // console.log('Sort', lists);
-          // this.databaseService
-          //   .createCampaign(campaignDb)
-          //   .pipe(
-          //     switchMap((campaign) =>
-          //       forkJoin(
-          //         lists.map((list) =>
-          //           this.databaseService
-          //             .createCampaignList(list, campaign.id)
-          //             .pipe(delay(6000))
-          //         )
-          //       )
-          //     ),
-          //     tap({
-          //       next: (val) => console.log('Result createCampaign ', val),
-          //       complete: () => console.log('Completed createCampaign'),
-          //       error: (err) => console.log('Error createCampaign ', err),
-          //     }),
-          //     finalize(() => console.log('Database Completed'))
-          //   )
-          //   .subscribe((result) => {
-          //     console.log('Database', result);
-          //     this.spinnerService.hide();
-          //     this.router.navigate(['/campaigns']);
-          //   });
+          this.databaseService
+            .createCampaign(campaignDb)
+            .pipe(
+              switchMap((campaign) =>
+                forkJoin(
+                  campaingListDbs.map((list) =>
+                    this.databaseService
+                      .createCampaignList(list, campaign.id)
+                  )
+                )
+              ),
+              tap({
+                next: (val) => console.log('Result createCampaign ', val),
+                complete: () => console.log('Completed createCampaign'),
+                error: (err) => console.log('Error createCampaign ', err),
+              }),
+              finalize(() => console.log('Database Completed'))
+            )
+            .subscribe((result) => {
+              console.log('Database', result);
+              this.spinnerService.hide();
+              this.router.navigate(['/campaigns']);
+            });
         });
     }
   }
