@@ -2,15 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
 import {
+  bufferCount,
+  concatAll,
   concatMap,
   delay,
   finalize,
   map,
   mergeMap,
+  skip,
   switchMap,
+  take,
   tap,
 } from 'rxjs/operators';
-import { Observable, forkJoin, of } from 'rxjs';
+import { Observable, forkJoin, interval, lastValueFrom, of } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -119,7 +123,8 @@ export class AddCampaignComponent implements OnInit {
     const campaignName = this.scheduleForm.get('campaignName')?.value;
     const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
-    const interval = this.scheduleForm.get('interval')?.value;
+    const intervalTime = this.scheduleForm.get('interval')?.value;
+    const FORMAT_DATE = 'YYYY-MM-DD HH:mm:ss';
 
     if (
       templateId &&
@@ -128,11 +133,16 @@ export class AddCampaignComponent implements OnInit {
       campaignName &&
       sendDate &&
       sendTime &&
-      interval
+      intervalTime
     ) {
       this.spinnerService.show();
 
       const chunks$ = this.iterableService.getListUsers(listId, batchSize);
+
+      const h = sendTime.get('hour');
+      const m = sendTime.get('minute');
+      sendDate.set('hour', h);
+      sendDate.set('minute', m);
 
       const campaignDb: CampaignDb = {
         id: 0,
@@ -141,72 +151,45 @@ export class AddCampaignComponent implements OnInit {
         tags: [],
       };
 
-      const campaingListDbs: CampaignListDb[] = [];
-
-      chunks$
+      const blasts$ = chunks$
         .pipe(
-          map((subscribers) => {
+          map((subscribers) =>
             subscribers.map((subscriber, index) => {
-              const sendAt = this.getSendDate(index);
-              campaignDb.campaignCount++;
-              return this.iterableService
-                .createBlast(subscriber, index + 1, {
-                  campaignName,
-                  batchSize,
-                  interval,
-                  listId,
-                  sendAt,
-                  supressionList,
-                  templateId,
-                })
-                .subscribe((list) => campaingListDbs.push(list));
-            });
-          }),
+              const order = index + 1;
+              sendDate.add(intervalTime * index, 'm');
+              return this.iterableService.createBlast2({
+                campaignName,
+                listName: `${campaignName} Blast List ${order}`,
+                listDescription: `Blast List ${order}`,
+                listId,
+                sendAt: sendDate.format(FORMAT_DATE),
+                supressionList,
+                templateId,
+                order,
+                subscribers: subscriber,
+              });
+            })
+          ),
           finalize(() => console.log('Insert Completed'))
         )
-        .subscribe((data) => {
-          console.log(campaignDb, campaingListDbs);
+        .pipe(
+          concatMap((data) => data),
+          bufferCount(1),
+          concatMap((batch) => forkJoin(batch)),
+          delay(9000)
+        );
 
-          this.databaseService
-            .createCampaign(campaignDb)
-            .pipe(
-              switchMap((campaign) =>
-                forkJoin(
-                  campaingListDbs.map((list) =>
-                    this.databaseService
-                      .createCampaignList(list, campaign.id)
-                  )
-                )
-              ),
-              tap({
-                next: (val) => console.log('Result createCampaign ', val),
-                complete: () => console.log('Completed createCampaign'),
-                error: (err) => console.log('Error createCampaign ', err),
-              }),
-              finalize(() => console.log('Database Completed'))
-            )
-            .subscribe((result) => {
-              console.log('Database', result);
-              this.spinnerService.hide();
-              this.router.navigate(['/campaigns']);
-            });
+      this.databaseService.createCampaign(campaignDb).subscribe((campaign) => {
+        blasts$.subscribe({
+          next: (lists) =>
+            this.databaseService.createCampaignLists(lists, campaign.id),
+          complete: () => {
+            this.spinnerService.hide();
+            this.router.navigate(['/campaigns']);
+          },
+          error: (err) => console.log(err),
         });
+      });
     }
-  }
-
-  getSendDate(i: number) {
-    const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
-    const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
-    const interval = this.scheduleForm.get('interval')?.value;
-    let result = '';
-    if (sendDate && sendTime && interval) {
-      const h = sendTime?.get('hour');
-      const m = sendTime?.get('minute');
-      sendDate.set('hour', h);
-      sendDate.set('minute', m);
-      result = sendDate.add(interval * i, 'm').format('YYYY-MM-DD HH:mm:ss');
-    }
-    console.log('getSendDate', i, sendDate, result);
-    return result;
   }
 }
