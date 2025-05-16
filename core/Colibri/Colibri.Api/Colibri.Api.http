@@ -1,0 +1,6 @@
+@Colibri.Api_HostAddress = http://localhost:5217
+
+GET {{Colibri.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
