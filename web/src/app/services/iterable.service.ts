@@ -5,14 +5,11 @@ import {
   concatMap,
   delay,
   map,
-  mergeMap,
   Observable,
   of,
   retry,
   shareReplay,
-  switchMap,
   throwError,
-  withLatestFrom,
 } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -29,6 +26,14 @@ import { CreateCampaignRequest } from '../view-models/campaign/request/createCam
 import { CreateCampaginResponse } from '../view-models/campaign/response/createCampaginResponse.model';
 import { ArchiveCampaignRequest } from '../view-models/archive/request/archiveCampaignRequest.model';
 import { CampaignListDb } from '../models/campaign/campaignList.model';
+import { BlastRequest } from '../view-models/campaign/request/blastRequest.model';
+import { BlastListRequest } from '../view-models/campaign/request/blastListRequest.model';
+import {
+  BlastListSubscriberRequest,
+} from '../view-models/campaign/request/blastListSubscriberRequest.model';
+import { BlastCampaignRequest } from '../view-models/campaign/request/blastCampaignRequest.model';
+import { BlastListSubscriberResponse } from '../view-models/campaign/response/blastListSubscriberResponse.model';
+import { BlastCampaignResponse } from '../view-models/campaign/response/blastCampaignResponse.model';
 
 @Injectable({
   providedIn: 'root',
@@ -132,111 +137,150 @@ export class IterableService {
   }
 
   createStaticList(request: StaticListRequest) {
-    return of(null).pipe(
-      delay(this.delay),
-      switchMap(() =>
-        this.httpClient
-          .post<StaticListResponse>(
-            `${this.baseUrl}createStaticList`,
-            request,
-            {
-              headers: {
-                AuthorizationToken: this.authorizationToken,
-              },
-            }
-          )
-          .pipe(retry(this.retries), catchError(this.handleError))
-      )
-    );
+    return this.httpClient
+      .post<StaticListResponse>(`${this.baseUrl}createStaticList`, request, {
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
   }
 
   createSubscriberList(request: SubscriberListRequest) {
-    return of(null).pipe(
-      delay(this.delay),
-      switchMap(() =>
-        this.httpClient
-          .post<SubscriberListResponse>(
-            `${this.baseUrl}createSubscriberList`,
-            request,
-            {
-              headers: {
-                AuthorizationToken: this.authorizationToken,
-              },
-            }
-          )
-          .pipe(retry(this.retries), catchError(this.handleError))
+    return this.httpClient
+      .post<SubscriberListResponse>(
+        `${this.baseUrl}createSubscriberList`,
+        request,
+        {
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+          },
+        }
       )
-    );
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
   }
 
   createCampaign(request: CreateCampaignRequest) {
-    return of(null).pipe(
-      delay(this.delay),
-      switchMap(() =>
-        this.httpClient
-          .post<CreateCampaginResponse>(
-            `${this.baseUrl}createCampagin`,
-            request,
-            {
-              headers: {
-                AuthorizationToken: this.authorizationToken,
-              },
-            }
-          )
-          .pipe(retry(this.retries), catchError(this.handleError))
-      )
-    );
+    return this.httpClient
+      .post<CreateCampaginResponse>(`${this.baseUrl}createCampagin`, request, {
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
   }
 
-  createBlast(
-    subscribers: SubscriberIterable[],
-    order: number,
-    data: {
-      campaignName: string;
-      templateId: number;
-      listId: number;
-      supressionList: number | null | undefined;
-      batchSize: number;
-      sendAt: string;
-      interval: number;
-    }
-  ): Observable<CampaignListDb> {
+  createBlast(request: BlastRequest) {
+    return this.httpClient
+      .post<CampaignListDb>(`${this.baseUrl}createBlast`, request, {
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
+  }
+
+  createBlastList(request: BlastListRequest) {
+    return this.httpClient
+      .post<number[]>(`${this.baseUrl}createBlastList`, request, {
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
+  }
+
+  createBlastListSubscribers(request: BlastListSubscriberRequest) {
+    return this.httpClient
+      .post<BlastListSubscriberResponse[]>(
+        `${this.baseUrl}createBlastListSubscribers`,
+        request,
+        {
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+          },
+        }
+      )
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
+  }
+
+  createBlastCampaign(request: BlastCampaignRequest) {
+    return this.httpClient
+      .post<BlastCampaignResponse[]>(
+        `${this.baseUrl}createBlastCampaign`,
+        request,
+        {
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+          },
+        }
+      )
+      .pipe(
+        //retry(this.retries),
+        catchError(this.handleError)
+      );
+  }
+
+  createBlastAll(data: BlastRequest): Observable<CampaignListDb> {
     return this.createStaticList({
-      name: `Blast List ${order}`,
+      name: `${data.campaignName} Blast List ${data.order}`,
       description: 'Blast List',
     }).pipe(
+      delay(5000),
       concatMap((staticListResponse) =>
         this.createSubscriberList({
           listId: staticListResponse.listId,
-          subscribers,
+          subscribers: data.subscribers,
           updateExistingUsersOnly: true,
-        }).pipe(map((subscriberListResponse) => staticListResponse.listId))
-      ),
-      concatMap((listId) =>
-        this.createCampaign({
-          name: data.campaignName,
-          dataFields: null,
-          defaultTimeZone: 'America/New_York',
-          listIds: [listId],
-          sendAt: data.sendAt,
-          sendMode: 'RecipientTimeZone',
-          startTimeZone: 'America/New_York',
-          suppressionListIds: null,
-          templateId: data.templateId,
         }).pipe(
-          mergeMap((createCampaignResponse) =>
-            of({
-              id: 0,
-              name: `Blast List`,
-              iterableCampaignId: createCampaignResponse.campaignId,
-              iterableListId: data.listId,
-              iterableTemplateId: data.templateId,
-              sendAt: data.sendAt,
-              startTimeZone: 'America/New_York',
+          delay(5000),
+          map((subscriberListResponse) => staticListResponse.listId),
+          concatMap((listId) =>
+            this.createCampaign({
+              name: data.campaignName,
+              dataFields: null,
               defaultTimeZone: 'America/New_York',
-              emails: subscribers.map((s) => s.email),
-              order: order,
-            } as  CampaignListDb)
+              listIds: [listId],
+              sendAt: data.sendAt,
+              sendMode: 'RecipientTimeZone',
+              startTimeZone: 'America/New_York',
+              suppressionListIds: null,
+              templateId: data.templateId,
+            }).pipe(
+              delay(5000),
+              concatMap((createCampaignResponse) =>
+                of({
+                  id: 0,
+                  name: `${data.campaignName} Blast List ${data.order}`,
+                  iterableCampaignId: createCampaignResponse.campaignId,
+                  iterableListId: data.listId,
+                  iterableTemplateId: data.templateId,
+                  sendAt: data.sendAt,
+                  startTimeZone: 'America/New_York',
+                  defaultTimeZone: 'America/New_York',
+                  emails: data.subscribers.map((s) => s.email),
+                  order: data.order,
+                } as CampaignListDb)
+              )
+            )
           )
         )
       )
@@ -281,6 +325,6 @@ export class IterableService {
       );
     }
     // Return an observable with a user-facing error message.
-    return throwError('Something bad happened; please try again later.');
+    return throwError(() => 'Something bad happened; please try again later.');
   }
 }
