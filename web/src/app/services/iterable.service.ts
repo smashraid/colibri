@@ -5,14 +5,11 @@ import {
   concatMap,
   delay,
   map,
-  mergeMap,
   Observable,
   of,
   retry,
   shareReplay,
-  switchMap,
   throwError,
-  withLatestFrom,
 } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -31,8 +28,12 @@ import { ArchiveCampaignRequest } from '../view-models/archive/request/archiveCa
 import { CampaignListDb } from '../models/campaign/campaignList.model';
 import { BlastRequest } from '../view-models/campaign/request/blastRequest.model';
 import { BlastListRequest } from '../view-models/campaign/request/blastListRequest.model';
-import { BlastListSubscriberRequest } from '../view-models/campaign/request/blastListSubscriberRequest.model';
+import {
+  BlastListSubscriberRequest,
+} from '../view-models/campaign/request/blastListSubscriberRequest.model';
 import { BlastCampaignRequest } from '../view-models/campaign/request/blastCampaignRequest.model';
+import { BlastListSubscriberResponse } from '../view-models/campaign/response/blastListSubscriberResponse.model';
+import { BlastCampaignResponse } from '../view-models/campaign/response/blastCampaignResponse.model';
 
 @Injectable({
   providedIn: 'root',
@@ -178,7 +179,7 @@ export class IterableService {
       );
   }
 
-  createBlast2(request: BlastRequest) {
+  createBlast(request: BlastRequest) {
     return this.httpClient
       .post<CampaignListDb>(`${this.baseUrl}createBlast`, request, {
         headers: {
@@ -206,11 +207,15 @@ export class IterableService {
 
   createBlastListSubscribers(request: BlastListSubscriberRequest) {
     return this.httpClient
-      .post(`${this.baseUrl}createBlastListSubscribers`, request, {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-        },
-      })
+      .post<BlastListSubscriberResponse[]>(
+        `${this.baseUrl}createBlastListSubscribers`,
+        request,
+        {
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+          },
+        }
+      )
       .pipe(
         //retry(this.retries),
         catchError(this.handleError)
@@ -219,18 +224,22 @@ export class IterableService {
 
   createBlastCampaign(request: BlastCampaignRequest) {
     return this.httpClient
-      .post(`${this.baseUrl}createBlastCampaign`, request, {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-        },
-      })
+      .post<BlastCampaignResponse[]>(
+        `${this.baseUrl}createBlastCampaign`,
+        request,
+        {
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+          },
+        }
+      )
       .pipe(
         //retry(this.retries),
         catchError(this.handleError)
       );
   }
 
-  createBlast(data: BlastRequest): Observable<CampaignListDb> {
+  createBlastAll(data: BlastRequest): Observable<CampaignListDb> {
     return this.createStaticList({
       name: `${data.campaignName} Blast List ${data.order}`,
       description: 'Blast List',

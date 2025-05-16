@@ -1,20 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
-import {
-  bufferCount,
-  concatAll,
-  concatMap,
-  delay,
-  finalize,
-  map,
-  mergeMap,
-  skip,
-  switchMap,
-  take,
-  tap,
-} from 'rxjs/operators';
-import { Observable, forkJoin, interval, lastValueFrom, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { Observable, forkJoin, lastValueFrom, of } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -35,7 +23,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatCardModule } from '@angular/material/card';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
@@ -124,7 +112,6 @@ export class AddCampaignComponent implements OnInit {
     const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
     const intervalTime = this.scheduleForm.get('interval')?.value;
-    const FORMAT_DATE = 'YYYY-MM-DD HH:mm:ss';
 
     if (
       templateId &&
@@ -137,7 +124,9 @@ export class AddCampaignComponent implements OnInit {
     ) {
       this.spinnerService.show();
 
-      const chunks$ = this.iterableService.getListUsers(listId, batchSize);
+      const totalEmails: number = await lastValueFrom(
+        this.iterableService.getListSize(listId)
+      );
 
       const h = sendTime.get('hour');
       const m = sendTime.get('minute');
@@ -146,49 +135,70 @@ export class AddCampaignComponent implements OnInit {
 
       const campaignDb: CampaignDb = {
         id: 0,
-        campaignCount: 0,
+        campaignCount: Math.ceil(totalEmails / batchSize),
         name: campaignName,
         tags: [],
       };
 
-      const blasts$ = chunks$
+      const blasts$ = this.iterableService
+        .createBlastList({
+          count: campaignDb.campaignCount,
+          listNameFormat: `${campaignName} Blast List {0}`,
+          listDescriptionFormat: `Blast List {0}`,
+        })
         .pipe(
-          map((subscribers) =>
-            subscribers.map((subscriber, index) => {
-              const order = index + 1;
-              sendDate.add(intervalTime * index, 'm');
-              return this.iterableService.createBlast2({
-                campaignName,
-                listName: `${campaignName} Blast List ${order}`,
-                listDescription: `Blast List ${order}`,
-                listId,
-                sendAt: sendDate.format(FORMAT_DATE),
-                supressionList,
-                templateId,
-                order,
-                subscribers: subscriber,
+          switchMap((listIds) => {
+            const campaign$ = this.iterableService.createBlastCampaign({
+              listIds,
+              campaignName,
+              sendAt: sendDate.format(),
+              intervalTime,
+              templateId,
+              supressionList: null,
+            });
+
+            const listSubscriber$ =
+              this.iterableService.createBlastListSubscribers({
+                batch: batchSize,
+                sourceListId: listId,
+                listIds,
               });
-            })
-          ),
-          finalize(() => console.log('Insert Completed'))
-        )
-        .pipe(
-          concatMap((data) => data),
-          bufferCount(1),
-          concatMap((batch) => forkJoin(batch)),
-          delay(9000)
+
+            return forkJoin([campaign$, listSubscriber$]);
+          }),
+          switchMap(([campaigns, subscribers]) =>
+            forkJoin(
+              campaigns.map((campaign, _i) =>
+                of({
+                  id: 0,
+                  name: `${campaignName} Blast List ${_i + 1}`,
+                  iterableCampaignId: campaign.campaignId,
+                  iterableListId: subscribers[_i].listId,
+                  iterableTemplateId: templateId,
+                  sendAt: campaign.sendAt,
+                  startTimeZone: 'America/New_York',
+                  defaultTimeZone: 'America/New_York',
+                  emails: subscribers[_i].emails,
+                  order: _i + 1,
+                } as CampaignListDb)
+              )
+            )
+          )
         );
 
       this.databaseService.createCampaign(campaignDb).subscribe((campaign) => {
-        blasts$.subscribe({
-          next: (lists) =>
-            this.databaseService.createCampaignLists(lists, campaign.id),
+        blasts$.pipe(
+          switchMap((lists) => this.databaseService.createCampaignLists(lists, campaign.id))
+        ).subscribe({
+          next: () => {
+            console.log('Database Completed');
+          },
           complete: () => {
             this.spinnerService.hide();
             this.router.navigate(['/campaigns']);
           },
           error: (err) => console.log(err),
-        });
+        })
       });
     }
   }

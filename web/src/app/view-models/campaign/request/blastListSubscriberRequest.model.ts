@@ -1,5 +1,5 @@
 export interface BlastListSubscriberRequest {
     batch: number;
-    templateId: number;
+    sourceListId: number;
     listIds: number[]
 }
