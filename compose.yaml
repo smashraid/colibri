@@ -7,3 +7,11 @@ services:
       args:
         - BUILD_CONFIGURATION=production
         - NAME=colibri
+
+  api:
+    image: ${REPOSITORY}/colibri-api:${BUILDNUMBER}
+    build:
+      context: ./core/Colibri
+      dockerfile: Colibri.Api/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Release
