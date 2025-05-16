@@ -11,7 +11,7 @@ services:
   api:
     image: ${REPOSITORY}/colibri-api:${BUILDNUMBER}
     build:
-      context: ./core
-      dockerfile: Colibri/Colibri.Api/Dockerfile
+      context: ./core/Colibri
+      dockerfile: Colibri.Api/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
