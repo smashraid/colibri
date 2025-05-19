@@ -1,13 +1,13 @@
-import { SubscriberIterable } from '../../subscriber/subscriberIterable.model';
-
 export interface BlastRequest {
+  id: number;
+  campaignCount: number;
+  batchSize: number;
+  intervalTime: number;
   campaignName: string;
-  listName: string;
-  listDescription: string;
-  templateId: number;
-  listId: number;
-  supressionList: number | null | undefined;
+  listNameFormat: string;
+  listDescriptionFormat: string;
+  sourceListId: number;
   sendAt: string;
-  order: number;
-  subscribers: SubscriberIterable[];
+  sourceTemplateId: number;
+  sourceSupressionList: number | null | undefined;
 }

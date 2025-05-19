@@ -94,7 +94,9 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
       )
       .subscribe((result) => {
         const payload = result.payload as AuthenticationResult;
+        console.log(payload);
         this.formatUsername(payload.account.name);
+        this.store.updateUseremail(payload.account.username);
         this.getProfile();
       });
 

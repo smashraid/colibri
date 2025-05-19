@@ -26,6 +26,7 @@ type AppState = {
   loading: boolean;
   projectId: number | null;
   username: string;
+  useremail: string;
   projects: ProjectRead[];
 };
 
@@ -33,19 +34,23 @@ const initialState: AppState = {
   loading: false,
   projectId: null,
   username: '',
+  useremail: '',
   projects: [],
 };
 
 export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withComputed(({ loading, projectId, username }) => ({})),
+  withComputed(({ loading, projectId, username, useremail }) => ({})),
   withMethods((store, databaseService = inject(DatabaseService)) => ({
     updateProject(id: number): void {
       patchState(store, (state) => ({ projectId: id }));
     },
     updateUsername(username: string): void {
       patchState(store, { username });
+    },
+    updateUseremail(useremail: string): void {
+      patchState(store, { useremail });
     },
     startLoading(): void {
       patchState(store, { loading: true });
@@ -81,7 +86,7 @@ export const AppStore = signalStore(
           );
         })
       )
-    )
+    ),
   })),
   withHooks((store, router = inject(Router)) => ({
     onInit() {

@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
 import { switchMap } from 'rxjs/operators';
-import { Observable, forkJoin, lastValueFrom, of } from 'rxjs';
+import { Observable, lastValueFrom } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -28,12 +28,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
 import { TemplateIterable } from '../../../view-models/template/templateIterable.model';
-import { CampaignDb } from '../../../models/campaign/campaing.model';
-import { CampaignListDb } from '../../../models/campaign/campaignList.model';
 
 import { IterableService } from '../../../services/iterable.service';
 import { DatabaseService } from '../../../services/database.service';
 import { SpinnerService } from '../../../services/spinner.service';
+import { AppStore } from '../../../app.store';
+import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.model';
 
 @Component({
   selector: 'app-add-campaign',
@@ -58,12 +58,11 @@ import { SpinnerService } from '../../../services/spinner.service';
   styleUrl: './add-campaign.component.scss',
 })
 export class AddCampaignComponent implements OnInit {
+  private readonly store = inject(AppStore);
+
   campaignLists$!: Observable<CampaignListIterable[]>;
   template$!: Observable<TemplateIterable>;
   emailCount$!: Observable<number>;
-  emails$!: Observable<string[]>;
-
-  readonly configurationType = new FormControl<number>(1);
 
   validateInformationForm = new FormGroup({
     templateId: new FormControl<number | null>(null, [Validators.required]),
@@ -104,28 +103,33 @@ export class AddCampaignComponent implements OnInit {
   }
 
   async createCampaignBatch() {
-    const templateId = this.validateInformationForm.get('templateId')?.value;
-    const listId = this.validateInformationForm.get('listId')?.value;
-    const supressionList = this.scheduleForm.get('supressionList')?.value;
+    const sourceTemplateId =
+      this.validateInformationForm.get('templateId')?.value;
+    const sourceListId = this.validateInformationForm.get('listId')?.value;
+    const sourceSupressionList = this.scheduleForm.get('supressionList')?.value;
     const batchSize = this.scheduleForm.get('batchSize')?.value;
     const campaignName = this.scheduleForm.get('campaignName')?.value;
     const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
     const intervalTime = this.scheduleForm.get('interval')?.value;
+    const projectId = this.store.projectId();
+    const useremail = this.store.useremail();
 
     if (
-      templateId &&
-      listId &&
+      sourceTemplateId &&
+      sourceListId &&
       batchSize &&
       campaignName &&
       sendDate &&
       sendTime &&
-      intervalTime
+      intervalTime &&
+      projectId &&
+      useremail
     ) {
       this.spinnerService.show();
 
       const totalEmails: number = await lastValueFrom(
-        this.iterableService.getListSize(listId)
+        this.iterableService.getListSize(sourceListId)
       );
 
       const h = sendTime.get('hour');
@@ -133,73 +137,38 @@ export class AddCampaignComponent implements OnInit {
       sendDate.set('hour', h);
       sendDate.set('minute', m);
 
-      const campaignDb: CampaignDb = {
+      const campaignCreate: CampaignCreate = {
         id: 0,
         campaignCount: Math.ceil(totalEmails / batchSize),
         name: campaignName,
         tags: [],
+        projectId,
+        createdBy: useremail,
       };
 
-      const blasts$ = this.iterableService
-        .createBlastList({
-          count: campaignDb.campaignCount,
-          listNameFormat: `${campaignName} Blast List {0}`,
-          listDescriptionFormat: `Blast List {0}`,
-        })
+      this.databaseService
+        .createCampaign(campaignCreate)
         .pipe(
-          switchMap((listIds) => {
-            const campaign$ = this.iterableService.createBlastCampaign({
-              listIds,
-              campaignName,
-              sendAt: sendDate.format(),
+          switchMap((campaign) =>
+            this.iterableService.createBlast({
+              id: campaign.id,
+              campaignCount: campaignCreate.campaignCount,
+              batchSize,
               intervalTime,
-              templateId,
-              supressionList: null,
-            });
-
-            const listSubscriber$ =
-              this.iterableService.createBlastListSubscribers({
-                batch: batchSize,
-                sourceListId: listId,
-                listIds,
-              });
-
-            return forkJoin([campaign$, listSubscriber$]);
-          }),
-          switchMap(([campaigns, subscribers]) =>
-            forkJoin(
-              campaigns.map((campaign, _i) =>
-                of({
-                  id: 0,
-                  name: `${campaignName} Blast List ${_i + 1}`,
-                  iterableCampaignId: campaign.campaignId,
-                  iterableListId: subscribers[_i].listId,
-                  iterableTemplateId: templateId,
-                  sendAt: campaign.sendAt,
-                  startTimeZone: 'America/New_York',
-                  defaultTimeZone: 'America/New_York',
-                  emails: subscribers[_i].emails,
-                  order: _i + 1,
-                } as CampaignListDb)
-              )
-            )
+              campaignName,
+              listNameFormat: `${campaignName} Blast List {0}`,
+              listDescriptionFormat: `Blast List {0}`,
+              sourceListId,
+              sendAt: sendDate.format('YYYY-MM-DD HH:mm:ss'),
+              sourceTemplateId,
+              sourceSupressionList,
+            })
           )
-        );
-
-      this.databaseService.createCampaign(campaignDb).subscribe((campaign) => {
-        blasts$.pipe(
-          switchMap((lists) => this.databaseService.createCampaignLists(lists, campaign.id))
-        ).subscribe({
-          next: () => {
-            console.log('Database Completed');
-          },
-          complete: () => {
-            this.spinnerService.hide();
-            this.router.navigate(['/campaigns']);
-          },
-          error: (err) => console.log(err),
-        })
-      });
+        )
+        .subscribe(() => {
+          this.spinnerService.hide();
+          this.router.navigate(['/campaigns']);
+        });
     }
   }
 }

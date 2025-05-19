@@ -239,54 +239,6 @@ export class IterableService {
       );
   }
 
-  createBlastAll(data: BlastRequest): Observable<CampaignListDb> {
-    return this.createStaticList({
-      name: `${data.campaignName} Blast List ${data.order}`,
-      description: 'Blast List',
-    }).pipe(
-      delay(5000),
-      concatMap((staticListResponse) =>
-        this.createSubscriberList({
-          listId: staticListResponse.listId,
-          subscribers: data.subscribers,
-          updateExistingUsersOnly: true,
-        }).pipe(
-          delay(5000),
-          map((subscriberListResponse) => staticListResponse.listId),
-          concatMap((listId) =>
-            this.createCampaign({
-              name: data.campaignName,
-              dataFields: null,
-              defaultTimeZone: 'America/New_York',
-              listIds: [listId],
-              sendAt: data.sendAt,
-              sendMode: 'RecipientTimeZone',
-              startTimeZone: 'America/New_York',
-              suppressionListIds: null,
-              templateId: data.templateId,
-            }).pipe(
-              delay(5000),
-              concatMap((createCampaignResponse) =>
-                of({
-                  id: 0,
-                  name: `${data.campaignName} Blast List ${data.order}`,
-                  iterableCampaignId: createCampaignResponse.campaignId,
-                  iterableListId: data.listId,
-                  iterableTemplateId: data.templateId,
-                  sendAt: data.sendAt,
-                  startTimeZone: 'America/New_York',
-                  defaultTimeZone: 'America/New_York',
-                  emails: data.subscribers.map((s) => s.email),
-                  order: data.order,
-                } as CampaignListDb)
-              )
-            )
-          )
-        )
-      )
-    );
-  }
-
   archiveCampaign(request: ArchiveCampaignRequest) {
     return this.httpClient
       .post<boolean>(`${this.baseUrl}archiveCampaign`, request, {

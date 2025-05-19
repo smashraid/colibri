@@ -2,7 +2,7 @@
   <mat-label>Project</mat-label>
   <mat-select (selectionChange)="onSelect($event)" [value]="store.projectId()">
     @for (project of store.projects(); track project.id) {
-    <mat-option [value]="project.projectId">{{
+    <mat-option [value]="project.id">{{
       project.website.replace(".com", "") | uppercase
     }}</mat-option>
     }

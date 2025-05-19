@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Colibri.Job": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
