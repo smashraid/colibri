@@ -1,5 +1,6 @@
 ﻿using Amazon.SQS;
 using Colibri.ExternalServices;
+using Colibri.ExternalServices.Options;
 using Colibri.Job.Models;
 using Colibri.Job.Options;
 using Colibri.Job.Processor;
@@ -27,12 +28,18 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     var configuration = context.Configuration;
     var awsSection = configuration.GetRequiredSection(SQSOptions.Path);
     var awsOptions = awsSection.Get<SQSOptions>() ?? new SQSOptions();
+    var iterableSection = configuration.GetRequiredSection(IterableOptions.Path);
+    var iterableOptions = awsSection.Get<IterableOptions>() ?? new IterableOptions();
+    var digitalCommunicationSection = configuration.GetRequiredSection(DigitalCommunicationOptions.Path);
+    var digitalCommunicationOptions = awsSection.Get<DigitalCommunicationOptions>() ?? new DigitalCommunicationOptions();
 
     services.Configure<HostOptions>(hostOptions =>
     {
         hostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
     });
     services.Configure<SQSOptions>(awsSection);
+    services.Configure<IterableOptions>(iterableSection);
+    services.Configure<DigitalCommunicationOptions>(digitalCommunicationSection);
     services.AddDefaultAWSOptions(configuration.GetAWSOptions());
     services.AddHttpClient();
     services.AddAWSService<IAmazonSQS>();

@@ -10,6 +10,7 @@ export interface CampaignRead {
     createdDate:string;
     updatedBy:string;
     updatedDate:string;
+    status:number;
     projectId:number;
     projectWebsite:string;
     lists: CampaignListDb[]

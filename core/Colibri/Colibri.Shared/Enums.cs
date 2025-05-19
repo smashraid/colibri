@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Colibri.ExternalServices
+﻿namespace Colibri.Shared
 {
+    public enum CampaignStatus
+    {
+        Pending,
+        Done
+    }
+
     public enum CampaignType
     {
         Blast,
