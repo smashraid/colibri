@@ -15,10 +15,15 @@
       @for (column of columnsToDisplay; track column) {
       <ng-container matColumnDef="{{ column }}">
         <th mat-header-cell *matHeaderCellDef>{{ column | uppercase }}</th>
+        @if (column === 'createdDate') {
+        <td mat-cell *matCellDef="let element">
+          {{ element[column] | date : "short" }}
+        </td>
+        }@else {
         <td mat-cell *matCellDef="let element">{{ element[column] }}</td>
+        }
       </ng-container>
       }
-
       <ng-container matColumnDef="options">
         <th mat-header-cell *matHeaderCellDef>OPTIONS</th>
         <td mat-cell *matCellDef="let element">

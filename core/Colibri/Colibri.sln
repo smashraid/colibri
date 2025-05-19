@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35913.81 d17.13
+VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Colibri.Data", "Colibri.Data\Colibri.Data.csproj", "{C69ED168-5321-4CA8-A0A0-8FB57C74A668}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Colibri.Api", "Colibri.Api\Colibri.Api.csproj", "{8879ED32-10FF-4A12-8B7C-98B921F2D717}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Colibri.Job", "Colibri.Job\Colibri.Job.csproj", "{37AECA27-C957-45EA-B74E-B758668B67A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Colibri.ExternalServices", "Colibri.ExternalServices\Colibri.ExternalServices.csproj", "{62140E48-A875-4822-9214-D8E1B4B4296E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Colibri.Shared", "Colibri.Shared\Colibri.Shared.csproj", "{1A6D7060-EB25-4742-82FB-22076CBCBE81}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +27,18 @@ Global
 		{8879ED32-10FF-4A12-8B7C-98B921F2D717}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8879ED32-10FF-4A12-8B7C-98B921F2D717}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8879ED32-10FF-4A12-8B7C-98B921F2D717}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37AECA27-C957-45EA-B74E-B758668B67A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37AECA27-C957-45EA-B74E-B758668B67A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37AECA27-C957-45EA-B74E-B758668B67A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37AECA27-C957-45EA-B74E-B758668B67A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62140E48-A875-4822-9214-D8E1B4B4296E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62140E48-A875-4822-9214-D8E1B4B4296E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62140E48-A875-4822-9214-D8E1B4B4296E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62140E48-A875-4822-9214-D8E1B4B4296E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A6D7060-EB25-4742-82FB-22076CBCBE81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A6D7060-EB25-4742-82FB-22076CBCBE81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A6D7060-EB25-4742-82FB-22076CBCBE81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A6D7060-EB25-4742-82FB-22076CBCBE81}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

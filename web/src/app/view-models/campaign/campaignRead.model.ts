@@ -6,5 +6,11 @@ export interface CampaignRead {
     name: string;
     campaignCount: number;
     tags: string[];
+    createdBy: string;
+    createdDate:string;
+    updatedBy:string;
+    updatedDate:string;
+    projectId:number;
+    projectWebsite:string;
     lists: CampaignListDb[]
 }

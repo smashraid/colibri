@@ -18,7 +18,7 @@ import {
 } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TitleCasePipe, UpperCasePipe } from '@angular/common';
+import { DatePipe, UpperCasePipe } from '@angular/common';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -67,15 +67,15 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
     ReactiveFormsModule,
     RouterLink,
     MsalModule,
-    TitleCasePipe,
     UpperCasePipe,
+    DatePipe
   ],
   templateUrl: './campaigns.component.html',
   styleUrl: './campaigns.component.scss',
 })
 export class CampaignsComponent implements OnInit {
   campaigns$!: Observable<CampaignRead[]>;
-  columnsToDisplay = ['name', 'campaignCount'];
+  columnsToDisplay = ['name', 'campaignCount', 'createdBy', 'createdDate', 'projectWebsite'];
   columnsOptions = ['options'];
   columnsToDisplayWithExpand = [
     ...this.columnsToDisplay,

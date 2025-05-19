@@ -15,3 +15,12 @@ services:
       dockerfile: Colibri.Api/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
+
+  job:
+    image: ${REPOSITORY}/colibri-job:${BUILDNUMBER}
+    build:
+      context: ./core/Colibri
+      dockerfile: Colibri.Job/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Release
+      
