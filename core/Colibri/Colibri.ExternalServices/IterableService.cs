@@ -5,6 +5,8 @@ using Colibri.Shared;
 using System.Text.Json;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using Colibri.ExternalServices.Options;
+using Microsoft.Extensions.Options;
 
 namespace Colibri.ExternalServices
 {
@@ -13,24 +15,31 @@ namespace Colibri.ExternalServices
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly JsonSerializerOptions _options;
         private readonly ILogger<IterableService> _logger;
+        private readonly IterableOptions _iterableOptions;
 
         internal const string HttpClientName = "IterableHttpClient";
-        public HttpClient GetHttpClient() => _httpClientFactory.CreateClient(HttpClientName);
+        private HttpClient GetHttpClient(string token)
+        {
+            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            httpClient.BaseAddress = new Uri(_iterableOptions.Url);
+            httpClient.DefaultRequestHeaders.Add(_iterableOptions.TokenHeaderKey, token);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            return httpClient;
+        }
 
         public IterableService(IHttpClientFactory httpClientFactory
+                         , IOptions<IterableOptions> iterableOptions
                          , ILogger<IterableService> logger)
         {
             _httpClientFactory = httpClientFactory;
             _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _iterableOptions = iterableOptions.Value;
             _logger = logger;
         }
 
-        private async Task<TResponse?> SendPost<TResponse, TRequest>(string url, TRequest request, string project)
+        private async Task<TResponse?> SendPost<TResponse, TRequest>(string url, TRequest request, string token)
         {
-            var httpClient = GetHttpClient();
-            httpClient.BaseAddress = new Uri("https://api.iterable.com/api/");
-            httpClient.DefaultRequestHeaders.Add("Api-Key", "aa91f8f4bd87475a95761d7db3bf0b0c");
-            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var httpClient = GetHttpClient(token);
             var httpResponseMessage = await httpClient.PostAsJsonAsync($"{url}", request);
             var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options);
             _logger.LogWithContext(
@@ -42,9 +51,9 @@ namespace Colibri.ExternalServices
             return response;
         }
 
-        private async Task<TResponse?> SendGet<TResponse>(string url)
+        private async Task<TResponse?> SendGet<TResponse>(string url, string token)
         {
-            var httpClient = GetHttpClient();
+            var httpClient = GetHttpClient(token);
             string response = await httpClient.GetStringAsync($"{url}");
             var result = JsonConvert.DeserializeObject<TResponse>(response);
 
@@ -55,9 +64,9 @@ namespace Colibri.ExternalServices
             return result;
         }
 
-        private async Task<TResponse?> SendDelete<TResponse>(string url)
+        private async Task<TResponse?> SendDelete<TResponse>(string url, string token)
         {
-            var httpClient = GetHttpClient();
+            var httpClient = GetHttpClient(token);
             var httpResponseMessage = await httpClient.DeleteAsync($"{url}");
             var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options);
             _logger.LogWithContext(
@@ -68,25 +77,25 @@ namespace Colibri.ExternalServices
             return response;
         }
 
-        public async Task<CreateCampaginResponse?> CreateCampagin(CreateCampaignRequest request)
+        public async Task<CreateCampaginResponse?> CreateCampagin(CreateCampaignRequest request, string token)
         {
-            return await SendPost<CreateCampaginResponse, CreateCampaignRequest>("campaigns/create", request, "");
+            return await SendPost<CreateCampaginResponse, CreateCampaignRequest>("campaigns/create", request, token);
         }
 
-        public async Task<StaticListResponse?> CreateStaticList(StaticListRequest request)
+        public async Task<StaticListResponse?> CreateStaticList(StaticListRequest request, string token)
         {
-            return await SendPost<StaticListResponse, StaticListRequest>("lists", request, "");
+            return await SendPost<StaticListResponse, StaticListRequest>("lists", request, token);
         }
 
-        public async Task<SubscriberListResponse?> CreateSubscriberList(SubscriberListRequest request)
+        public async Task<SubscriberListResponse?> CreateSubscriberList(SubscriberListRequest request, string token)
         {
-            return await SendPost<SubscriberListResponse, SubscriberListRequest>("lists/subscribe", request, "");
+            return await SendPost<SubscriberListResponse, SubscriberListRequest>("lists/subscribe", request, token);
         }
 
-        public async Task<string[]?> GetListUsers(long id, bool preferUserId)
+        public async Task<string[]?> GetListUsers(long id, bool preferUserId, string token)
         {
             string url = $"lists/getUsers?listId={id}&preferUserId={preferUserId.ToString().ToLower()}";
-            var httpClient = GetHttpClient();
+            var httpClient = GetHttpClient(token);
             httpClient.BaseAddress = new Uri("https://api.iterable.com/api/");
             httpClient.DefaultRequestHeaders.Add("Api-Key", "aa91f8f4bd87475a95761d7db3bf0b0c");
             string response = await httpClient.GetStringAsync(url);

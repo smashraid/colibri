@@ -33,51 +33,63 @@ namespace Colibri.Job.Processor
 
             if (blastRequest != null)
             {
-                var blastListRequest = new BlastListRequest(blastRequest.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
+                var project = await _digitalCommunicationService.GetProjectDb(blastRequest.Campaign.ProjectId);
 
-                var listIds = await CreateBlastList(blastListRequest, cancellationToken);
-
-                await Task.Delay(8000, cancellationToken);
-
-                var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.CampaignName, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
-
-                var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, cancellationToken);
-
-                await Task.Delay(8000, cancellationToken);
-
-                var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
-
-                var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, cancellationToken);
-
-                for (int i = 0; i < blastListSubscriberResponse.Count; i++)
+                if (project != null)
                 {
-                    var subscriberList = blastListSubscriberResponse[i];
-                    var campaign = blastCampaignResponse[i];
-                    var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                    var blastListRequest = new BlastListRequest(blastRequest.Campaign.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
+
+                    var listIds = await CreateBlastList(blastListRequest, project.ApiKey, cancellationToken);
+
+                    await Task.Delay(8000, cancellationToken);
+
+                    var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
+
+                    var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, cancellationToken);
+
+                    await Task.Delay(8000, cancellationToken);
+
+                    var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
+
+                    var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, project.ApiKey, cancellationToken);
+
+                    for (int i = 0; i < blastListSubscriberResponse.Count; i++)
                     {
-                        Emails = subscriberList.Emails,
-                        IterableCampaignId = campaign.CampaignId,
-                        SendAt = campaign.SendAt,
-                        IterableListId = subscriberList.ListId,
-                        IterableTemplateId = blastRequest.SourceTemplateId,
-                        Name = string.Format(blastRequest.ListNameFormat, i + 1),
-                        Order = (short)(i + 1)
-                    }, blastRequest.Id);
-                    await Task.Delay(2000, cancellationToken);
+                        var subscriberList = blastListSubscriberResponse[i];
+                        var campaign = blastCampaignResponse[i];
+                        var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                        {
+                            Emails = subscriberList.Emails,
+                            IterableCampaignId = campaign.CampaignId,
+                            SendAt = campaign.SendAt,
+                            IterableListId = subscriberList.ListId,
+                            IterableTemplateId = blastRequest.SourceTemplateId,
+                            Name = string.Format(blastRequest.ListNameFormat, i + 1),
+                            Order = (short)(i + 1)
+                        }, blastRequest.Campaign.Id);
+                        await Task.Delay(2000, cancellationToken);
+                    }
+
+                    await _digitalCommunicationService.PutCampaignDb(blastRequest.Campaign.Id, new Shared.ViewModels.CampaignUpdateViewModel
+                    {
+                        Id = blastRequest.Campaign.Id,
+                        Tags = blastRequest.Campaign.Tags,
+                        Status = Shared.CampaignStatus.Done,
+                        UpdatedBy = "Colibri.Job",
+                        UpdatedDate = DateTimeOffset.UtcNow
+                    });
                 }
-
             }
-
         }
 
-        private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, CancellationToken cancellationToken)
+        private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, string token, CancellationToken cancellationToken)
         {
             List<long> dataResponse = [];
             for (int i = 1; i <= request.CampaignCount; i++)
             {
                 string listDescription = string.Format(request.ListDescriptionFormat, i);
                 string listName = string.Format(request.ListNameFormat, i);
-                var staticListResponse = await _iterableService.CreateStaticList(new StaticListRequest(listDescription, listName));
+                var staticListResponse = await _iterableService.CreateStaticList(new StaticListRequest(listDescription, listName), token);
 
                 if (staticListResponse != null)
                 {
@@ -89,10 +101,10 @@ namespace Colibri.Job.Processor
             return dataResponse;
         }
 
-        private async Task<List<BlastListSubscriberResponse>> CreateBlastListSubscribers(BlastListSubscriberRequest request, CancellationToken cancellationToken)
+        private async Task<List<BlastListSubscriberResponse>> CreateBlastListSubscribers(BlastListSubscriberRequest request, string token, CancellationToken cancellationToken)
         {
             List<BlastListSubscriberResponse> dataResponse = [];
-            var emails = await _iterableService.GetListUsers(request.SourceListId, false);
+            var emails = await _iterableService.GetListUsers(request.SourceListId, false, token);
 
             if (emails != null)
             {
@@ -104,7 +116,7 @@ namespace Colibri.Job.Processor
 
                     var listId = request.ListIds.ElementAt(i);
 
-                    var subscriberListResponse = await _iterableService.CreateSubscriberList(new SubscriberListRequest(listId, chunk, true));
+                    var subscriberListResponse = await _iterableService.CreateSubscriberList(new SubscriberListRequest(listId, chunk, true), token);
 
                     if (subscriberListResponse != null)
                     {
@@ -117,7 +129,7 @@ namespace Colibri.Job.Processor
             return dataResponse;
         }
 
-        private async Task<List<BlastCampaignResponse>> CreateBlastCampaign(BlastCampaignRequest request, CancellationToken cancellationToken)
+        private async Task<List<BlastCampaignResponse>> CreateBlastCampaign(BlastCampaignRequest request, string token, CancellationToken cancellationToken)
         {
             List<BlastCampaignResponse> dataResponse = [];
             List<long>? suppresionLists = request.SupressionList != null ? [request.SupressionList.Value] : null;
@@ -129,7 +141,7 @@ namespace Colibri.Job.Processor
                 var sendScheduleDate = request.SendAt.AddMinutes(request.IntervalTime * i);
                 string sendDate = sendScheduleDate.ToString("yyyy-MM-dd HH:mm:ss");
 
-                var createCampaignResponse = await _iterableService.CreateCampagin(new CreateCampaignRequest([listId], request.CampaignName, sendDate, request.TemplateId, suppresionLists));
+                var createCampaignResponse = await _iterableService.CreateCampagin(new CreateCampaignRequest([listId], request.CampaignName, sendDate, request.TemplateId, suppresionLists), token);
 
                 if (createCampaignResponse != null)
                 {

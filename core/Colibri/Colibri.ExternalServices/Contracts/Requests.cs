@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Colibri.Shared.ViewModels;
 
 namespace Colibri.ExternalServices.Contracts
 {
@@ -74,11 +75,9 @@ namespace Colibri.ExternalServices.Contracts
     );
 
     public record BlastRequest(
-        [property: JsonProperty("id")] int Id,
-        [property: JsonProperty("campaignCount")] short CampaignCount,
+        [property: JsonProperty("campaign")] CampaignCreateViewModel Campaign,
         [property: JsonProperty("batchSize")] short BatchSize,
         [property: JsonProperty("intervalTime")] int IntervalTime,
-        [property: JsonProperty("campaignName")] string CampaignName,
         [property: JsonProperty("listNameFormat")] string ListNameFormat,
         [property: JsonProperty("listDescriptionFormat")] string ListDescriptionFormat,
         [property: JsonProperty("sourceListId")] long SourceListId,
@@ -88,7 +87,7 @@ namespace Colibri.ExternalServices.Contracts
     );
 
     public record BlastListRequest(
-        [property: JsonProperty("campaignCount")] short CampaignCount,
+        [property: JsonProperty("campaignCount")] int CampaignCount,
         [property: JsonProperty("listNameFormat")] string ListNameFormat,
         [property: JsonProperty("listDescriptionFormat")] string ListDescriptionFormat
     );

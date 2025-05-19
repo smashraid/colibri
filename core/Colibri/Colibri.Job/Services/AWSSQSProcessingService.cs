@@ -47,7 +47,7 @@ namespace Colibri.Job.Services
                 try
                 {
                     var receiveMessageResponse = await GetMessage(stoppingToken);
-                    if (receiveMessageResponse.Messages.Count > 0)
+                    if (receiveMessageResponse.Messages != null && receiveMessageResponse.Messages.Count > 0)
                     {
                         foreach (var rawMessage in receiveMessageResponse.Messages)
                         {

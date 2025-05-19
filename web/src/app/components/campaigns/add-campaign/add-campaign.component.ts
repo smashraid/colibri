@@ -151,17 +151,18 @@ export class AddCampaignComponent implements OnInit {
         .pipe(
           switchMap((campaign) =>
             this.iterableService.createBlast({
-              id: campaign.id,
-              campaignCount: campaignCreate.campaignCount,
               batchSize,
               intervalTime,
-              campaignName,
               listNameFormat: `${campaignName} Blast List {0}`,
               listDescriptionFormat: `Blast List {0}`,
               sourceListId,
               sendAt: sendDate.format('YYYY-MM-DD HH:mm:ss'),
               sourceTemplateId,
               sourceSupressionList,
+              campaign: {
+                ...campaignCreate,
+                id: campaign.id,
+              },
             })
           )
         )

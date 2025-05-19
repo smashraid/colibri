@@ -1,14 +1,12 @@
-﻿using Colibri.Shared.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Colibri.Shared.Models;
+using Colibri.Shared.ViewModels;
 
 namespace Colibri.ExternalServices
 {
     public interface IDigitalCommunicationService
     {
         Task<CampaignListCreateViewModel?> PostCampaignListDb(CampaignListCreateViewModel request, int campaignId);
+        Task PutCampaignDb(int id, CampaignUpdateViewModel campaign);
+        Task<Project?> GetProjectDb(int id);
     }
 }
