@@ -19,7 +19,11 @@
         <td mat-cell *matCellDef="let element">
           {{ element[column] | date : "short" }}
         </td>
-        }@else {
+        }@else if (column === 'status') {
+        <td mat-cell *matCellDef="let element">
+          {{ element[column] === 0 ? 'PENDING' : 'DONE' }}
+        </td>
+        } @else {
         <td mat-cell *matCellDef="let element">{{ element[column] }}</td>
         }
       </ng-container>

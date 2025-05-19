@@ -75,7 +75,7 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
 })
 export class CampaignsComponent implements OnInit {
   campaigns$!: Observable<CampaignRead[]>;
-  columnsToDisplay = ['name', 'campaignCount', 'createdBy', 'createdDate', 'projectWebsite'];
+  columnsToDisplay = ['name', 'campaignCount', 'createdBy', 'createdDate', 'projectWebsite', 'status'];
   columnsOptions = ['options'];
   columnsToDisplayWithExpand = [
     ...this.columnsToDisplay,
