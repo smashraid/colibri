@@ -96,8 +96,6 @@ namespace Colibri.ExternalServices
         {
             string url = $"lists/getUsers?listId={id}&preferUserId={preferUserId.ToString().ToLower()}";
             var httpClient = GetHttpClient(token);
-            httpClient.BaseAddress = new Uri("https://api.iterable.com/api/");
-            httpClient.DefaultRequestHeaders.Add("Api-Key", "aa91f8f4bd87475a95761d7db3bf0b0c");
             string response = await httpClient.GetStringAsync(url);
             var result = response.Split(
                     ["\r\n", "\r", "\n"],

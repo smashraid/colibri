@@ -91,7 +91,7 @@ namespace Colibri.ExternalServices
 
         public async Task<Project?> GetProjectDb(int id)
         {
-            return await SendGet<Project>($"getProjectDb/{id}");
+            return await SendGet<Project>($"database/getProjectDb/{id}");
         }
     }
 }
