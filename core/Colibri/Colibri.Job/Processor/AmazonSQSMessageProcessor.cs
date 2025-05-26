@@ -97,13 +97,13 @@ namespace Colibri.Job.Processor
 
                     var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(10000, cancellationToken);
+                    await Task.Delay(30000, cancellationToken);
 
                     var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
 
                     var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(10000, cancellationToken);
+                    await Task.Delay(30000, cancellationToken);
 
                     var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
 
@@ -146,15 +146,12 @@ namespace Colibri.Job.Processor
 
         private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
         {
-            var listKey = new ResiliencePropertyKey<StaticListRequest>("list-key");
-
             List<long> dataResponse = [];
             for (int i = 1; i <= request.CampaignCount; i++)
             {
                 string listDescription = string.Format(request.ListDescriptionFormat, i);
                 string listName = string.Format(request.ListNameFormat, i);
                 var staticListRequest = new StaticListRequest(listDescription, listName);
-                context.Properties.Set(listKey, staticListRequest);
 
                 var staticListResponse = await _resiliencePipelineList.ExecuteAsync(async context =>
                   {
@@ -175,8 +172,6 @@ namespace Colibri.Job.Processor
 
         private async Task<List<BlastListSubscriberResponse>> CreateBlastListSubscribers(BlastListSubscriberRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
         {
-            var subscriberListKey = new ResiliencePropertyKey<SubscriberListRequest>("subscriberlist-key");
-
             List<BlastListSubscriberResponse> dataResponse = [];
             var emails = await _iterableService.GetListUsers(request.SourceListId, false, token);
 
@@ -191,7 +186,6 @@ namespace Colibri.Job.Processor
                     var listId = request.ListIds.ElementAt(i);
 
                     var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
-                    context.Properties.Set(subscriberListKey, subscriberListRequest);
 
                     var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
                     {
@@ -213,8 +207,6 @@ namespace Colibri.Job.Processor
 
         private async Task<List<BlastCampaignResponse>> CreateBlastCampaign(BlastCampaignRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
         {
-            var campaignKey = new ResiliencePropertyKey<CreateCampaignRequest>("campaign-key");
-
             List<BlastCampaignResponse> dataResponse = [];
             List<long>? suppresionLists = request.SupressionList != null ? [request.SupressionList.Value] : null;
 
@@ -225,7 +217,6 @@ namespace Colibri.Job.Processor
                 var sendScheduleDate = request.SendAt.AddMinutes(request.IntervalTime * i);
                 string sendDate = sendScheduleDate.ToString("yyyy-MM-dd HH:mm:ss");
                 var createCampaignRequest = new CreateCampaignRequest([listId], request.CampaignName, sendDate, request.TemplateId, suppresionLists);
-                context.Properties.Set(campaignKey, createCampaignRequest);
 
                 var createCampaignResponse = await _resiliencePipelineCampaign.ExecuteAsync(async context =>
                 {
