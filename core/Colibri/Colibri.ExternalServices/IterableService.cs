@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using Colibri.ExternalServices.Options;
 using Microsoft.Extensions.Options;
+using System.Threading;
 
 namespace Colibri.ExternalServices
 {
@@ -37,10 +38,10 @@ namespace Colibri.ExternalServices
             _logger = logger;
         }
 
-        private async Task<TResponse?> SendPost<TResponse, TRequest>(string url, TRequest request, string token)
+        private async Task<TResponse?> SendPost<TResponse, TRequest>(string url, TRequest request, string token, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClient(token);
-            var httpResponseMessage = await httpClient.PostAsJsonAsync($"{url}", request);
+            var httpResponseMessage = await httpClient.PostAsJsonAsync($"{url}", request, cancellationToken);
             var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options);
             _logger.LogWithContext(
                 () => _logger.LogInformation("Iterable Api {@Endpoint}", url),
@@ -51,10 +52,10 @@ namespace Colibri.ExternalServices
             return response;
         }
 
-        private async Task<TResponse?> SendGet<TResponse>(string url, string token)
+        private async Task<TResponse?> SendGet<TResponse>(string url, string token, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClient(token);
-            string response = await httpClient.GetStringAsync($"{url}");
+            string response = await httpClient.GetStringAsync($"{url}", cancellationToken);
             var result = JsonConvert.DeserializeObject<TResponse>(response);
 
             _logger.LogWithContext(
@@ -64,10 +65,10 @@ namespace Colibri.ExternalServices
             return result;
         }
 
-        private async Task<TResponse?> SendDelete<TResponse>(string url, string token)
+        private async Task<TResponse?> SendDelete<TResponse>(string url, string token, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClient(token);
-            var httpResponseMessage = await httpClient.DeleteAsync($"{url}");
+            var httpResponseMessage = await httpClient.DeleteAsync($"{url}", cancellationToken);
             var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options);
             _logger.LogWithContext(
                () => _logger.LogInformation("Iterable Api {@Endpoint}", url),
@@ -77,26 +78,26 @@ namespace Colibri.ExternalServices
             return response;
         }
 
-        public async Task<CreateCampaginResponse?> CreateCampagin(CreateCampaignRequest request, string token)
+        public async Task<CreateCampaginResponse?> CreateCampagin(CreateCampaignRequest request, string token, CancellationToken cancellationToken)
         {
-            return await SendPost<CreateCampaginResponse, CreateCampaignRequest>("campaigns/create", request, token);
+            return await SendPost<CreateCampaginResponse, CreateCampaignRequest>("campaigns/create", request, token, cancellationToken);
         }
 
-        public async Task<StaticListResponse?> CreateStaticList(StaticListRequest request, string token)
+        public async Task<StaticListResponse?> CreateStaticList(StaticListRequest request, string token, CancellationToken cancellationToken)
         {
-            return await SendPost<StaticListResponse, StaticListRequest>("lists", request, token);
+            return await SendPost<StaticListResponse, StaticListRequest>("lists", request, token, cancellationToken);
         }
 
-        public async Task<SubscriberListResponse?> CreateSubscriberList(SubscriberListRequest request, string token)
+        public async Task<SubscriberListResponse?> CreateSubscriberList(SubscriberListRequest request, string token, CancellationToken cancellationToken)
         {
-            return await SendPost<SubscriberListResponse, SubscriberListRequest>("lists/subscribe", request, token);
+            return await SendPost<SubscriberListResponse, SubscriberListRequest>("lists/subscribe", request, token, cancellationToken);
         }
 
-        public async Task<string[]?> GetListUsers(long id, bool preferUserId, string token)
+        public async Task<string[]?> GetListUsers(long id, bool preferUserId, string token, CancellationToken cancellationToken)
         {
             string url = $"lists/getUsers?listId={id}&preferUserId={preferUserId.ToString().ToLower()}";
             var httpClient = GetHttpClient(token);
-            string response = await httpClient.GetStringAsync(url);
+            string response = await httpClient.GetStringAsync(url, cancellationToken);
             var result = response.Split(
                     ["\r\n", "\r", "\n"],
                     StringSplitOptions.RemoveEmptyEntries
