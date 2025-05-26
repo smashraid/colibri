@@ -36,11 +36,11 @@ namespace Colibri.Job.Processor
                 .AddRetry(new RetryStrategyOptions<StaticListResponse?>
                 {
                     Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 3,
-                    BackoffType = DelayBackoffType.Linear,
+                    MaxRetryAttempts = 5,
+                    BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
-                        _logger.LogInformation("CreateBlastList {@retry}", args.AttemptNumber);
+                        _logger.LogInformation("CreateBlastList {@retry} {@duration}", args.AttemptNumber, args.Duration);
                         _logger.LogError(args.Outcome.Exception, "CreateBlastList an error ocurred");
                         return default;
                     },
@@ -52,11 +52,11 @@ namespace Colibri.Job.Processor
                 .AddRetry(new RetryStrategyOptions<SubscriberListResponse?>
                 {
                     Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 3,
-                    BackoffType = DelayBackoffType.Linear,
+                    MaxRetryAttempts = 5,
+                    BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
-                        _logger.LogInformation("CreateBlastListSubscribers {@retry}", args.AttemptNumber);
+                        _logger.LogInformation("CreateBlastListSubscribers {@retry} {@duration}", args.AttemptNumber, args.Duration);
                         _logger.LogError(args.Outcome.Exception, "CreateBlastListSubscribers an error ocurred");
                         return default;
                     },
@@ -68,12 +68,12 @@ namespace Colibri.Job.Processor
                 .AddRetry(new RetryStrategyOptions<CreateCampaginResponse?>
                 {
                     Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 3,
-                    BackoffType = DelayBackoffType.Linear,
+                    MaxRetryAttempts = 5,
+                    BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
-                        _logger.LogInformation("CreateBlastCampaign {@retry}", args.AttemptNumber);
-                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred");
+                        _logger.LogInformation("CreateBlastCampaign {@retry} {@duration}", args.AttemptNumber, args.Duration);
+                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred" );
                         return default;
                     },
                     UseJitter = true
@@ -97,13 +97,13 @@ namespace Colibri.Job.Processor
 
                     var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(10000, cancellationToken);
+                    await Task.Delay(30000, cancellationToken);
 
                     var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
 
                     var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(10000, cancellationToken);
+                    await Task.Delay(30000, cancellationToken);
 
                     var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
 
@@ -145,16 +145,13 @@ namespace Colibri.Job.Processor
         }
 
         private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
-        {            
-            var listKey = new ResiliencePropertyKey<StaticListRequest>("list-key");
-
+        {
             List<long> dataResponse = [];
             for (int i = 1; i <= request.CampaignCount; i++)
             {
                 string listDescription = string.Format(request.ListDescriptionFormat, i);
                 string listName = string.Format(request.ListNameFormat, i);
                 var staticListRequest = new StaticListRequest(listDescription, listName);
-                context.Properties.Set(listKey, staticListRequest);
 
                 var staticListResponse = await _resiliencePipelineList.ExecuteAsync(async context =>
                   {
@@ -163,9 +160,9 @@ namespace Colibri.Job.Processor
                   },
                   context);
 
+                await Task.Delay(5000, cancellationToken);
                 if (staticListResponse != null)
                 {
-                    await Task.Delay(5000, cancellationToken);
                     _logger.LogInformation("CreateBlast - CreateStaticList {0}", staticListResponse.ListId);
                     dataResponse.Add(staticListResponse.ListId);
                 }
@@ -175,8 +172,6 @@ namespace Colibri.Job.Processor
 
         private async Task<List<BlastListSubscriberResponse>> CreateBlastListSubscribers(BlastListSubscriberRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
         {
-            var subscriberListKey = new ResiliencePropertyKey<SubscriberListRequest>("subscriberlist-key");
-
             List<BlastListSubscriberResponse> dataResponse = [];
             var emails = await _iterableService.GetListUsers(request.SourceListId, false, token);
 
@@ -191,7 +186,6 @@ namespace Colibri.Job.Processor
                     var listId = request.ListIds.ElementAt(i);
 
                     var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
-                    context.Properties.Set(subscriberListKey, subscriberListRequest);
 
                     var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
                     {
@@ -200,9 +194,9 @@ namespace Colibri.Job.Processor
                     },
                     context);
 
+                    await Task.Delay(5000, cancellationToken);
                     if (subscriberListResponse != null)
                     {
-                        await Task.Delay(5000, cancellationToken);
                         _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
                         dataResponse.Add(new BlastListSubscriberResponse(listId, emailChunk.ElementAt(i)));
                     }
@@ -213,8 +207,6 @@ namespace Colibri.Job.Processor
 
         private async Task<List<BlastCampaignResponse>> CreateBlastCampaign(BlastCampaignRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
         {
-            var campaignKey = new ResiliencePropertyKey<CreateCampaignRequest>("campaign-key");
-
             List<BlastCampaignResponse> dataResponse = [];
             List<long>? suppresionLists = request.SupressionList != null ? [request.SupressionList.Value] : null;
 
@@ -225,18 +217,17 @@ namespace Colibri.Job.Processor
                 var sendScheduleDate = request.SendAt.AddMinutes(request.IntervalTime * i);
                 string sendDate = sendScheduleDate.ToString("yyyy-MM-dd HH:mm:ss");
                 var createCampaignRequest = new CreateCampaignRequest([listId], request.CampaignName, sendDate, request.TemplateId, suppresionLists);
-                context.Properties.Set(campaignKey, createCampaignRequest);
 
                 var createCampaignResponse = await _resiliencePipelineCampaign.ExecuteAsync(async context =>
                 {
-                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest.ListIds);
+                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest);
                     return await _iterableService.CreateCampagin(createCampaignRequest, token, context.CancellationToken);
                 },
                 context);
 
+                await Task.Delay(5000, cancellationToken);
                 if (createCampaignResponse != null)
                 {
-                    await Task.Delay(5000, cancellationToken);
                     _logger.LogInformation("CreateBlast - CreateCampagin {0}", createCampaignResponse.CampaignId);
                     dataResponse.Add(new BlastCampaignResponse(createCampaignResponse.CampaignId, sendDate));
                 }
