@@ -229,7 +229,7 @@ namespace Colibri.Job.Processor
 
                 var createCampaignResponse = await _resiliencePipelineCampaign.ExecuteAsync(async context =>
                 {
-                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest.ListIds);
+                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest);
                     return await _iterableService.CreateCampagin(createCampaignRequest, token, context.CancellationToken);
                 },
                 context);
