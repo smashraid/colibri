@@ -102,13 +102,13 @@ namespace Colibri.Job.Processor
 
                     var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(_jobOptions.DelayBetweenCalls * blastRequest.Campaign.CampaignCount, cancellationToken);
+                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
 
                     var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
 
                     var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(_jobOptions.DelayBetweenCalls * blastRequest.Campaign.CampaignCount, cancellationToken);
+                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
 
                     var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
 
@@ -130,7 +130,7 @@ namespace Colibri.Job.Processor
                             Name = string.Format(blastRequest.ListNameFormat, i + 1),
                             Order = (short)(i + 1)
                         }, blastRequest.Campaign.Id);
-                        await Task.Delay(_jobOptions.DelayDatabase * blastRequest.Campaign.CampaignCount, cancellationToken);
+                        await Task.Delay(_jobOptions.DelayDatabase, cancellationToken);
                     }
 
                     _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
