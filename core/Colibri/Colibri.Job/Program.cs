@@ -32,6 +32,8 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     var iterableOptions = awsSection.Get<IterableOptions>() ?? new IterableOptions();
     var digitalCommunicationSection = configuration.GetRequiredSection(DigitalCommunicationOptions.Path);
     var digitalCommunicationOptions = awsSection.Get<DigitalCommunicationOptions>() ?? new DigitalCommunicationOptions();
+    var jobSection = configuration.GetRequiredSection(JobOptions.Path);
+    var jobOptions = awsSection.Get<JobOptions>() ?? new JobOptions();
 
     services.Configure<HostOptions>(hostOptions =>
     {
@@ -40,6 +42,7 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     services.Configure<SQSOptions>(awsSection);
     services.Configure<IterableOptions>(iterableSection);
     services.Configure<DigitalCommunicationOptions>(digitalCommunicationSection);
+    services.Configure<JobOptions>(jobSection);
     services.AddDefaultAWSOptions(configuration.GetAWSOptions());
     services.AddHttpClient();
     services.AddAWSService<IAmazonSQS>();

@@ -10,6 +10,8 @@ using Polly;
 using System.Text.Json;
 using System.Threading;
 using Amazon.Runtime.Internal;
+using Colibri.Job.Options;
+using Microsoft.Extensions.Options;
 
 namespace Colibri.Job.Processor
 {
@@ -19,6 +21,7 @@ namespace Colibri.Job.Processor
         private readonly IIterableService _iterableService;
         private readonly IDigitalCommunicationService _digitalCommunicationService;
         private readonly IAmazonSQS _sqsClient;
+        private readonly JobOptions _jobOptions;
         private readonly ResiliencePipeline<StaticListResponse?> _resiliencePipelineList;
         private readonly ResiliencePipeline<SubscriberListResponse?> _resiliencePipelineSubscriber;
         private readonly ResiliencePipeline<CreateCampaginResponse?> _resiliencePipelineCampaign;
@@ -26,17 +29,19 @@ namespace Colibri.Job.Processor
         public AmazonSQSMessageProcessor(IAmazonSQS sqsClient
             , IIterableService iterableService
             , IDigitalCommunicationService digitalCommunicationService
+            , IOptions<JobOptions> jobOptions
             , ILogger<AmazonSQSMessageProcessor> logger)
         {
             _sqsClient = sqsClient;
             _iterableService = iterableService;
             _digitalCommunicationService = digitalCommunicationService;
+            _jobOptions = jobOptions.Value;
             _logger = logger;
             _resiliencePipelineList = new ResiliencePipelineBuilder<StaticListResponse?>()
                 .AddRetry(new RetryStrategyOptions<StaticListResponse?>
                 {
-                    Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 5,
+                    Delay = TimeSpan.FromSeconds(_jobOptions.DelayRetry),
+                    MaxRetryAttempts = _jobOptions.MaxRetryAttempts,
                     BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
@@ -51,8 +56,8 @@ namespace Colibri.Job.Processor
             _resiliencePipelineSubscriber = new ResiliencePipelineBuilder<SubscriberListResponse?>()
                 .AddRetry(new RetryStrategyOptions<SubscriberListResponse?>
                 {
-                    Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 5,
+                    Delay = TimeSpan.FromSeconds(_jobOptions.DelayRetry),
+                    MaxRetryAttempts = _jobOptions.MaxRetryAttempts,
                     BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
@@ -67,8 +72,8 @@ namespace Colibri.Job.Processor
             _resiliencePipelineCampaign = new ResiliencePipelineBuilder<CreateCampaginResponse?>()
                 .AddRetry(new RetryStrategyOptions<CreateCampaginResponse?>
                 {
-                    Delay = TimeSpan.FromSeconds(20),
-                    MaxRetryAttempts = 5,
+                    Delay = TimeSpan.FromSeconds(_jobOptions.DelayRetry),
+                    MaxRetryAttempts = _jobOptions.MaxRetryAttempts,
                     BackoffType = DelayBackoffType.Exponential,
                     OnRetry = args =>
                     {
@@ -97,13 +102,13 @@ namespace Colibri.Job.Processor
 
                     var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(30000, cancellationToken);
+                    await Task.Delay(_jobOptions.DelayBetweenCalls * blastRequest.Campaign.CampaignCount, cancellationToken);
 
                     var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
 
                     var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
 
-                    await Task.Delay(30000, cancellationToken);
+                    await Task.Delay(_jobOptions.DelayBetweenCalls * blastRequest.Campaign.CampaignCount, cancellationToken);
 
                     var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
 
@@ -125,7 +130,7 @@ namespace Colibri.Job.Processor
                             Name = string.Format(blastRequest.ListNameFormat, i + 1),
                             Order = (short)(i + 1)
                         }, blastRequest.Campaign.Id);
-                        await Task.Delay(8000, cancellationToken);
+                        await Task.Delay(_jobOptions.DelayDatabase * blastRequest.Campaign.CampaignCount, cancellationToken);
                     }
 
                     _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
@@ -160,7 +165,7 @@ namespace Colibri.Job.Processor
                   },
                   context);
 
-                await Task.Delay(5000, cancellationToken);
+                await Task.Delay(_jobOptions.DelayList, cancellationToken);
                 if (staticListResponse != null)
                 {
                     _logger.LogInformation("CreateBlast - CreateStaticList {0}", staticListResponse.ListId);
@@ -194,7 +199,7 @@ namespace Colibri.Job.Processor
                     },
                     context);
 
-                    await Task.Delay(5000, cancellationToken);
+                    await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
                     if (subscriberListResponse != null)
                     {
                         _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
@@ -225,7 +230,7 @@ namespace Colibri.Job.Processor
                 },
                 context);
 
-                await Task.Delay(5000, cancellationToken);
+                await Task.Delay(_jobOptions.DelayCampaign, cancellationToken);
                 if (createCampaignResponse != null)
                 {
                     _logger.LogInformation("CreateBlast - CreateCampagin {0}", createCampaignResponse.CampaignId);
