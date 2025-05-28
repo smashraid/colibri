@@ -31,3 +31,15 @@ resource "aws_route53_record" "record" {
     evaluate_target_health = true
   }
 }
+
+resource "aws_route53_record" "record_api" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "colibri-api.${data.aws_route53_zone.zone.name}"
+  type    = "A"
+
+  alias {
+    name                   = data.aws_lb.lb.dns_name
+    zone_id                = data.aws_lb.lb.zone_id
+    evaluate_target_health = true
+  }
+}
