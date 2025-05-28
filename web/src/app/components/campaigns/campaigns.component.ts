@@ -1,21 +1,8 @@
-import {
-  Component,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import {
-  MsalModule,
-} from '@azure/msal-angular';
+import { MsalModule } from '@azure/msal-angular';
 import { forkJoin, Observable } from 'rxjs';
-import {
-  delay,
-  filter,
-  mergeMap,
-  switchMap,
-  toArray,
-} from 'rxjs/operators';
+import { delay, filter, mergeMap, switchMap, toArray } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, UpperCasePipe } from '@angular/common';
@@ -68,19 +55,25 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
     RouterLink,
     MsalModule,
     UpperCasePipe,
-    DatePipe
+    DatePipe,
   ],
   templateUrl: './campaigns.component.html',
   styleUrl: './campaigns.component.scss',
 })
 export class CampaignsComponent implements OnInit {
   campaigns$!: Observable<CampaignRead[]>;
-  columnsToDisplay = ['name', 'campaignCount', 'createdBy', 'createdDate', 'projectWebsite', 'status'];
+  columnsToDisplay = [
+    'name',
+    'campaignCount',
+    'createdBy',
+    'createdDate',
+    'projectWebsite',
+    'status',
+  ];
   columnsOptions = ['options'];
   columnsToDisplayWithExpand = [
     ...this.columnsToDisplay,
     ...this.columnsOptions,
-    'expand',
   ];
   expandedElement: CampaignRead | null = null;
 
@@ -90,11 +83,13 @@ export class CampaignsComponent implements OnInit {
   constructor(
     private iterableService: IterableService,
     private databaseService: DatabaseService,
-    private snackBar: MatSnackBar,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
-    this.campaigns$ = this.databaseService.getCampaigns();
+    this.campaigns$ = this.databaseService.getCampaignsByProject(
+      this.store.projectId()
+    );
   }
 
   isExpanded(element: CampaignRead) {
@@ -103,6 +98,12 @@ export class CampaignsComponent implements OnInit {
 
   toggle(element: CampaignRead) {
     this.expandedElement = this.isExpanded(element) ? null : element;
+  }
+
+  sync() {
+    this.campaigns$ = this.databaseService.getCampaignsByProject(
+      this.store.projectId()
+    );
   }
 
   archive(element: CampaignRead) {

@@ -1,0 +1,48 @@
+.container {
+  background: var(--mat-sys-surface);
+}
+
+.campaign {
+  &__title {
+    text-align: center;
+  }
+}
+
+.list {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  padding: 4rem;
+
+  &__item {
+    box-shadow: var(--mat-sys-level5);
+  }
+
+  &__date {
+    display: inline-block;
+    background-color: light-dark(#1dd3b0, #fbd87f);
+    border-radius: 0.5rem;
+    color: #000000;
+    margin-top: 0.8rem;
+    padding: 0.2rem 0.4rem;
+    text-align: left;
+  }
+
+  &__dot {
+    border-radius: 0.7rem;
+    display: inline-block;
+    height: 0.6rem;
+    margin-right: 0.5rem;
+    width: 0.6rem;
+
+    &--purple {
+      background-color: #7209b7;
+    }
+    &--blue {
+      background-color: #5e2bff;
+    }
+    &--pink {
+      background-color: #f75590;
+    }
+  }
+}

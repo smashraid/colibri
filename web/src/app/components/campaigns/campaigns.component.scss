@@ -15,16 +15,16 @@
   //color: var(--mat-sys-on-surface-variant);
   width: 100%;
   //@include mat.elevation(8, light-dark(rgba(0 0 0 / 0.6), rgba(243 70 70 / 0.6)));
-  box-shadow: var(--mat-sys-level5)
+  box-shadow: var(--mat-sys-level5);
 }
 
-tr.example-detail-row {
-  height: 0;
-}
+// tr.example-detail-row {
+//   height: 0;
+// }
 
-tr.example-element-row {
-  cursor: pointer;
-}
+// tr.example-element-row {
+//   cursor: pointer;
+// }
 
 // tr.example-element-row:not(.example-expanded-row):hover {
 //   background: whitesmoke;
@@ -41,9 +41,9 @@ tr.example-element-row {
 //   background: #efefef;
 // }
 
-.example-element-row td {
-  border-bottom-width: 0;
-}
+// .example-element-row td {
+//   border-bottom-width: 0;
+// }
 
 .example-element-detail-wrapper {
   overflow: hidden;

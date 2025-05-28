@@ -24,7 +24,7 @@ import { ProjectRead } from './view-models/project/projectRead.model';
 
 type AppState = {
   loading: boolean;
-  projectId: number | null;
+  projectId: number;
   username: string;
   useremail: string;
   projects: ProjectRead[];
@@ -32,7 +32,7 @@ type AppState = {
 
 const initialState: AppState = {
   loading: false,
-  projectId: null,
+  projectId: 1,
   username: '',
   useremail: '',
   projects: [],
