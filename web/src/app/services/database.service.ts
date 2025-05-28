@@ -4,19 +4,20 @@ import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { of } from 'rxjs/internal/observable/of';
 
-import { environment } from '../../environments/environment'
+import { environment } from '../../environments/environment';
 
 import { CampaignDb } from '../models/campaign/campaing.model';
 import { CampaignListDb } from '../models/campaign/campaignList.model';
 import { ProjectRead } from '../view-models/project/projectRead.model';
 import { CampaignRead } from '../view-models/campaign/campaignRead.model';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DatabaseService {
-  private readonly baseUrl = `${environment.digitalCommunication.url}${'database/'}`;
+  private readonly baseUrl = `${
+    environment.digitalCommunication.url
+  }${'database/'}`;
   private readonly authorizationToken = environment.digitalCommunication.token;
 
   constructor(private httpClient: HttpClient) {}
@@ -60,6 +61,40 @@ export class DatabaseService {
   getCampaigns() {
     return this.httpClient
       .get<CampaignRead[]>(`${this.baseUrl}getCampaignsDb`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        shareReplay(),
+        catchError((error) => {
+          console.error('An error ocurred', error);
+          return of([]);
+        })
+      );
+  }
+
+  getCampaignDb(id: number) {
+    return this.httpClient
+      .get<CampaignRead>(`${this.baseUrl}getCampaignDb/${id}`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        shareReplay(),
+        catchError((error) => {
+          console.error('An error ocurred', error);
+          return of({} as CampaignRead);
+        })
+      );
+  }
+
+  getCampaignsByProject(id: number) {
+    return this.httpClient
+      .get<CampaignRead[]>(`${this.baseUrl}getCampaignsByProject/${id}`, {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,

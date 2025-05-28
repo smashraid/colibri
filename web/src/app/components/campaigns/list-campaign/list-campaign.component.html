@@ -1,0 +1,37 @@
+<div class="container">
+  <div class="list">
+    @for (item of lists$ | async; track item.id) {
+    <mat-card class="list__item" appearance="raised">
+      <mat-card-header>
+        <mat-card-title-group>
+          <mat-card-title>{{ item.name }}</mat-card-title>
+          <mat-card-subtitle>
+            <span class="list__date">
+              {{ item.sendAt }}
+            </span>
+          </mat-card-subtitle>
+        </mat-card-title-group>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="list__content">
+          <h3>Iterable Information</h3>
+          <div class="list__data">
+            <p>
+              <span class="list__dot list__dot--purple"></span>Campaign:
+              {{ item.iterableCampaignId }}
+            </p>
+            <p>
+              <span class="list__dot list__dot--blue"></span>Template:
+              {{ item.iterableTemplateId }}
+            </p>
+            <p>
+              <span class="list__dot list__dot--pink"></span>List:
+              {{ item.iterableListId }}
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    }
+  </div>
+</div>
