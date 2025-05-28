@@ -12,7 +12,7 @@
   <div class="table__wrapper">
     <table
       mat-table
-      [dataSource]="campaigns$"
+      [dataSource]="campaigns()"
       multiTemplateDataRows
       class="table"
     >
@@ -126,5 +126,15 @@
         <td class="mat-cell no-data-cell" colspan="4">No data available</td>
       </tr>
     </table>
+  </div>
+  <div>
+    <mat-paginator
+      [length]="pagedList().totalCount"
+      [pageSize]="pagedList().pageSize"
+      [pageSizeOptions]="pagedList().pageSizeOptions"
+      aria-label="Select page"
+      (page)="onPageChange($event)"
+    >
+    </mat-paginator>
   </div>
 </div>

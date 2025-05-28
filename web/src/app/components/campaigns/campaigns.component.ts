@@ -1,4 +1,11 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MsalModule } from '@azure/msal-angular';
 import { forkJoin, Observable } from 'rxjs';
@@ -22,6 +29,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 import { DatabaseService } from '../../services/database.service';
 import { IterableService } from '../../services/iterable.service';
@@ -31,6 +39,7 @@ import { SnackbarMessageComponent } from '../../shared/snackbar-message/snackbar
 
 import { CampaignRead } from '../../view-models/campaign/campaignRead.model';
 import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiveCampaignRequest.model';
+import { PagedMetadata } from '../../view-models/pagination.model';
 
 @Component({
   selector: 'app-campaigns',
@@ -50,6 +59,7 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
     MatTooltipModule,
     MatSnackBarModule,
     MatMenuModule,
+    MatPaginatorModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -61,7 +71,7 @@ import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiv
   styleUrl: './campaigns.component.scss',
 })
 export class CampaignsComponent implements OnInit {
-  campaigns$!: Observable<CampaignRead[]>;
+  campaigns = signal<CampaignRead[]>([]);
   columnsToDisplay = [
     'name',
     'campaignCount',
@@ -77,6 +87,16 @@ export class CampaignsComponent implements OnInit {
   ];
   expandedElement: CampaignRead | null = null;
 
+  pagedList = signal<PagedMetadata>({
+    totalCount: 0,
+    pageSize: 10,
+    currentPage: 0,
+    pageSizeOptions: [5, 10, 25],
+    hasNext: false,
+    hasPrevious: false,
+    totalPages: 0,
+  });
+
   loading = signal(false);
   readonly store = inject(AppStore);
 
@@ -87,9 +107,7 @@ export class CampaignsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.campaigns$ = this.databaseService.getCampaignsByProject(
-      this.store.projectId()
-    );
+    this.sync();
   }
 
   isExpanded(element: CampaignRead) {
@@ -101,9 +119,25 @@ export class CampaignsComponent implements OnInit {
   }
 
   sync() {
-    this.campaigns$ = this.databaseService.getCampaignsByProject(
-      this.store.projectId()
-    );
+    this.databaseService
+      .getCampaignsByProject(this.store.projectId(), this.pagedList())
+      .subscribe((response) => {
+        const paginationResponse = response.headers.get('x-pagination');
+        if (response.body && paginationResponse) {
+          this.campaigns.set(response.body);
+          const metadata: PagedMetadata = JSON.parse(paginationResponse);
+          this.pagedList.update(() => metadata);
+        }
+      });
+  }
+
+  onPageChange(e: PageEvent) {
+    this.pagedList.update((prev) => ({
+      ...prev,
+      currentPage: e.pageIndex,
+      pageSize: e.pageSize,
+    }));
+    this.sync();
   }
 
   archive(element: CampaignRead) {
@@ -135,10 +169,8 @@ export class CampaignsComponent implements OnInit {
           },
         });
 
-        this.campaigns$ = this.campaigns$.pipe(
-          mergeMap((campaigns) => campaigns),
-          filter((campaign) => campaign.id != element.id),
-          toArray()
+        this.campaigns.update((prev) =>
+          prev.filter((campaign) => campaign.id != element.id)
         );
       });
   }
