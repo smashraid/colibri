@@ -1,6 +1,6 @@
 <div class="container">
   <div class="list">
-    @for (item of lists$ | async; track item.id) {
+    @for (item of lists(); track item.id) {
     <mat-card class="list__item" appearance="raised">
       <mat-card-header>
         <mat-card-title-group>
@@ -33,5 +33,15 @@
       </mat-card-content>
     </mat-card>
     }
+  </div>
+  <div>
+    <mat-paginator
+      [length]="pagedList().totalCount"
+      [pageSize]="pagedList().pageSize"
+      [pageSizeOptions]="pagedList().pageSizeOptions"
+      aria-label="Select page"
+      (page)="onPageChange($event)"
+    >
+    </mat-paginator>
   </div>
 </div>
