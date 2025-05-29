@@ -1,8 +1,15 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  inject,
+  viewChild,
+} from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
 import { switchMap } from 'rxjs/operators';
-import { Observable, lastValueFrom } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -23,7 +30,6 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatCardModule } from '@angular/material/card';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
@@ -32,8 +38,12 @@ import { TemplateIterable } from '../../../view-models/template/templateIterable
 import { IterableService } from '../../../services/iterable.service';
 import { DatabaseService } from '../../../services/database.service';
 import { SpinnerService } from '../../../services/spinner.service';
+
 import { AppStore } from '../../../app.store';
+
 import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.model';
+import { maxCampaignDays } from '../../../validators/maxCampaignDays';
+import { ToastComponent } from '../../../shared/toast/toast.component';
 
 @Component({
   selector: 'app-add-campaign',
@@ -48,11 +58,11 @@ import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.mod
     MatCardModule,
     MatTimepickerModule,
     MatDatepickerModule,
-    MatSnackBarModule,
     MatProgressSpinnerModule,
     FormsModule,
     ReactiveFormsModule,
     AsyncPipe,
+    ToastComponent,
   ],
   templateUrl: './add-campaign.component.html',
   styleUrl: './add-campaign.component.scss',
@@ -69,26 +79,42 @@ export class AddCampaignComponent implements OnInit {
     listId: new FormControl<number | null>(null, [Validators.required]),
   });
 
-  scheduleForm = new FormGroup({
-    campaignName: new FormControl('', [Validators.required]),
-    supressionList: new FormControl<number | null>(null, []),
-    batchSize: new FormControl<number | null>(null, [Validators.required]),
-    sendDate: new FormControl(moment(), [Validators.required]),
-    sendTime: new FormControl(moment(), [Validators.required]),
-    interval: new FormControl<number | null>(null, [Validators.required]),
-  });
+  scheduleForm = new FormGroup(
+    {
+      campaignName: new FormControl('', [Validators.required]),
+      supressionList: new FormControl<number | null>(null, []),
+      batchSize: new FormControl<number | null>(null, [Validators.required]),
+      sendDate: new FormControl(moment(), [Validators.required]),
+      sendTime: new FormControl(moment(), [Validators.required]),
+      interval: new FormControl<number | null>(null, [Validators.required]),
+      totalCount: new FormControl<number | null>({
+        value: null,
+        disabled: true,
+      }),
+    },
+    { validators: maxCampaignDays() }
+  );
 
   scheduleManualForm = new FormGroup({});
+
+  htmlContainer = viewChild<ElementRef<HTMLDivElement>>('htmlContainer');
+  preview = viewChild<ElementRef<HTMLImageElement>>('preview');
 
   constructor(
     private iterableService: IterableService,
     private databaseService: DatabaseService,
     private spinnerService: SpinnerService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
     this.campaignLists$ = this.iterableService.getListByType();
+  }
+
+  sanitizedHtml(htmlString: string) {
+    //return this.sanitizer.bypassSecurityTrustHtml(htmlString);
+    return URL.createObjectURL(new Blob([htmlString], { type: 'text/html' }));
   }
 
   getTemplateListInfo() {
@@ -98,7 +124,14 @@ export class AddCampaignComponent implements OnInit {
     if (templateId && listId) {
       this.template$ = this.iterableService.getTemplateById(templateId);
 
-      this.emailCount$ = this.iterableService.getListSize(listId);
+      this.emailCount$ = this.iterableService.getListSize(listId).pipe(
+        switchMap((value) => {
+          this.scheduleForm.patchValue({
+            totalCount: value,
+          });
+          return of(value);
+        })
+      );
     }
   }
 
@@ -112,6 +145,7 @@ export class AddCampaignComponent implements OnInit {
     const sendDate = this.scheduleForm.get('sendDate')?.value?.utc();
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
     const intervalTime = this.scheduleForm.get('interval')?.value;
+    const totalCount = this.scheduleForm.get('totalCount')?.value;
     const projectId = this.store.projectId();
     const useremail = this.store.useremail();
 
@@ -123,14 +157,11 @@ export class AddCampaignComponent implements OnInit {
       sendDate &&
       sendTime &&
       intervalTime &&
+      totalCount &&
       projectId &&
       useremail
     ) {
       this.spinnerService.show();
-
-      const totalEmails: number = await lastValueFrom(
-        this.iterableService.getListSize(sourceListId)
-      );
 
       const h = sendTime.get('hour');
       const m = sendTime.get('minute');
@@ -139,7 +170,7 @@ export class AddCampaignComponent implements OnInit {
 
       const campaignCreate: CampaignCreate = {
         id: 0,
-        campaignCount: Math.ceil(totalEmails / batchSize),
+        campaignCount: Math.ceil(totalCount / batchSize),
         name: campaignName,
         tags: [],
         projectId,

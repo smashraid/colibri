@@ -25,7 +25,6 @@
 }
 
 .form-group {
-
   margin-bottom: 2rem;
 
   // @include mat.radio-overrides(
@@ -37,17 +36,6 @@
   // @include mat.card-overrides((
   //   outlined-container-color: orange,
   // ));
-
-  .example-radio-group {
-    display: flex;
-    flex-direction: column;
-    margin: 15px 0;
-    align-items: flex-start;
-  }
-
-  .example-radio-button {
-    margin: 5px;
-  }
 
   mat-form-field {
     display: block;
@@ -61,6 +49,38 @@
 
 mat-toolbar {
   mat-icon {
-    margin-right: .5rem;
+    margin-right: 0.5rem;
+  }
+}
+
+.ninja {
+  visibility: hidden;
+}
+
+.template {
+  box-shadow: var(--mat-sys-level5);
+
+  &__subtitle {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: 1rem auto;
+  }
+
+  &__emails {
+    display: flex;
+  }
+
+  &__preview {
+    .mat-icon {
+      height: 2rem;
+      font-size: 2rem;
+      width: 2rem;
+    }
+  }
+  &__description {
+    span {
+      font-weight: 700;
+    }
   }
 }

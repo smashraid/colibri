@@ -1,0 +1,48 @@
+@if (show()) {
+<div [class]="'toast toast--' + toastType()">
+  <div class="toast__header">
+    @switch (toastType()) { @case ("success"){
+    <mat-icon
+      aria-hidden="false"
+      aria-label="check icon"
+      fontIcon="check_circle_outline"
+      class="toast__icon toast__icon--success"
+    ></mat-icon>
+    } @case("error"){
+    <mat-icon
+      aria-hidden="false"
+      aria-label="check icon"
+      fontIcon="error_outline"
+      class="toast__icon toast__icon--error"
+    ></mat-icon>
+    } @case("info"){
+    <mat-icon
+      aria-hidden="false"
+      aria-label="check icon"
+      fontIcon="help_outline"
+      class="toast__icon toast__icon--info"
+    ></mat-icon>
+    } @case("warning"){
+    <mat-icon
+      aria-hidden="false"
+      aria-label="check icon"
+      fontIcon="report_problem"
+      class="toast__icon toast__icon--warning"
+    ></mat-icon>
+    } }
+  </div>
+  <div class="toast__content">
+    <p>{{ message() }}</p>
+  </div>
+  <div class="toast__action">
+    <a
+      matIconButton
+      aria-label="Close Icon"
+      (click)="onCloseToast()"
+      class="toast__action--close"
+    >
+      <mat-icon>close</mat-icon>
+    </a>
+  </div>
+</div>
+}
