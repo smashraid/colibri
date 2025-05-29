@@ -16,7 +16,7 @@
   }
 
   &--error {
-    border-left: 0.5rem solid var(--color-error);
+    border-left: 0.5rem solid var(--color-danger);
   }
 
   &--warning {
@@ -41,7 +41,7 @@
     }
 
     &--error {
-      color: var(--color-error);
+      color: var(--color-danger);
     }
 
     &--warning {

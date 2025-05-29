@@ -22,4 +22,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/", async context =>
+{
+    await context.Response.WriteAsync("Welcome to running ASP.NET Core");
+});
+
 app.Run();

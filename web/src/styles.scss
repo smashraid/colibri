@@ -6,32 +6,12 @@ html {
   color-scheme: light dark;
   @include mat.theme(
     (
-      // color: (
-      //   //theme-type: light,
-      //   primary: mat.$spring-green-palette,
-      //   tertiary: mat.$azure-palette,
-      // ),
       color: mat.$spring-green-palette,
       typography: Roboto,
-      density: 0
+      density: 0,
     )
   );
-
-  // .darkMode {
-  //   background: var(--mat-sys-background);
-
-  //   @include mat.theme(
-  //     (
-  //       color: (
-  //         primary: mat.$spring-green-palette,
-  //         theme-type: dark,
-  //       ),
-  //     ),
-  //     $overrides: ("background": #24292e)
-  //   );
-
-  // }
-} /* You can add global styles to this file, and also import other style files */
+}
 
 * {
   box-sizing: border-box;
@@ -59,25 +39,50 @@ body {
   //   active-indicator-color: orange,
   // ));
   --color-success: #198754;
-  --color-error: #dc3545;
+  --color-success-subtle: #d1e7dd;
+  --color-success-border-subtle: #a3cfbb;
+  --color-success-text-emphasis: #0a3622;
+  --color-danger: #dc3545;
+  --color-danger-bg-subtle: #f8d7da;
+  --color-danger-border-subtle: #f1aeb5;
+  --color-danger-text-emphasis: #58151c;
   --color-warning: #ffc107;
+  --color-warning-bg-subtle: #fff3cd;
+  --color-warning-border-subtle: #ffe69c;
+  --color-warning-text-emphasis: #664d03;
   --color-info: #0dcaf0;
+  --color-info-bg-subtle: #cff4fc;
+  --color-info-border-subtle: #9eeaf9;
+  --color-info-text-emphasis: #055160;
   --color-light: #f8f9fa;
+  --color-light-bg-subtle: #fcfcfd;
+  --color-light-border-subtle: #e9ecef;
+  --color-light-text-emphasis: #495057;
   --color-dark: #212529;
+  --color-dark-bg-subtle: #ced4da;
+  --color-dark-border-subtle: #adb5bd;
+  --color-dark-text-emphasis: #495057;
+
+  .snackbar-success {
+    @include mat.snack-bar-overrides(
+      (
+        button-color: yellow,
+        container-color: rgba(76, 175, 80, 0.75),
+        supporting-text-color: blue,
+      )
+    );
+  }
+
+  .snackbar-error {
+    @include mat.snack-bar-overrides(
+      (
+        button-color: #eeb1ac,
+        container-color: #f44336,
+        supporting-text-color: blue,
+      )
+    );
+  }
 }
-
-// :host {
-//   background: var(--mat-sys-primary-container);
-//   color: var(--mat-sys-on-primary-container);
-//   border: 1px solid var(--mat-sys-outline-variant);
-//   font: var(--mat-sys-body-large);
-// }
-
-// .projects.mat-mdc-select-panel {
-//   background: rgba(255, 0, 0, 0.5) !important;
-//   width: 100% !important;
-//   word-wrap: break-word;
-// }
 
 .mr-8 {
   margin-right: 0.5rem;
