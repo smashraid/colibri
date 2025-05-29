@@ -18,6 +18,8 @@
   box-shadow: var(--mat-sys-level5);
 
   th {
+    border-bottom: 0.2rem solid
+      light-dark(var(--color-dark), var(--color-light));
     font-weight: 700;
   }
 
