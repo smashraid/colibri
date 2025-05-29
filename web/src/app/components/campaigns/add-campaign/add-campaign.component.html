@@ -56,21 +56,39 @@
 
       <div class="valid-content">
         @if (emailCount && template) {
-        <mat-card appearance="outlined">
+        <mat-card appearance="raised" class="template">
           <mat-card-header>
-            <mat-card-title></mat-card-title>
-            <mat-card-subtitle></mat-card-subtitle>
+            <mat-card-title> Template Information </mat-card-title>
+            <mat-card-subtitle>
+              <div class="template__subtitle">
+                <div class="template__emails mr-16">
+                  <mat-icon
+                    aria-hidden="false"
+                    aria-label="check icon"
+                    fontIcon="email"
+                    class="mr-8"
+                  ></mat-icon>
+                  {{ emailCount }} emails
+                </div>
+                <a
+                  mat-button="elevated"
+                  aria-label="preview"
+                  [href]="sanitizedHtml(template.html)"
+                  target="_blank"
+                  class="template__preview"
+                >
+                  <mat-icon>visibility</mat-icon>
+                  Preview
+                </a>
+              </div>
+            </mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
-            <h4>Emails Count</h4>
-            <p>{{ emailCount }}</p>
-
-            <h4>Template Information</h4>
-            <div>
-              <p>Name: {{ template.name }}</p>
-              <p>From Name: {{ template.fromName }}</p>
-              <p>From Email: {{ template.fromEmail }}</p>
-              <p>Subject: {{ template.subject }}</p>
+            <div class="template__description">
+              <p><span>Name:</span> {{ template.name }}</p>
+              <p><span>Subject:</span> {{ template.subject }}</p>
+              <p><span>From Name:</span> {{ template.fromName }}</p>
+              <p><span>From Email:</span> {{ template.fromEmail }}</p>
             </div>
           </mat-card-content>
         </mat-card>
@@ -81,117 +99,127 @@
 
   <h2 class="title">2. Schedule Campaign</h2>
   <div class="form">
-    <div>
-      <form
-        id="scheduleForm"
-        name="scheduleForm"
-        [formGroup]="scheduleForm"
-        (ngSubmit)="createCampaignBatch()"
-      >
-        <div class="form-group">
-          <mat-form-field>
-            <mat-label class="form-label">Campaign Name</mat-label>
-            <input
-              id="campaignName"
-              name="campaignName"
-              matInput
-              placeholder="Name"
-              formControlName="campaignName"
-              required
-            />
-            @if (scheduleForm.get('campaignName')?.invalid) {
-            <mat-error>Campaign Name is required</mat-error>
-            }
-          </mat-form-field>
-        </div>
-        <div class="form-group">
-          <mat-form-field>
-            <mat-label class="form-label">Email Batch Size</mat-label>
-            <input
-              id="batchSize"
-              name="batchSize"
-              matInput
-              placeholder="Size"
-              formControlName="batchSize"
-              required
-            />
-            @if (scheduleForm.get('batchSize')?.invalid) {
-            <mat-error>Batch Size is required</mat-error>
-            }
-          </mat-form-field>
-        </div>
-        <div class="form-group">
-          <mat-form-field>
-            <mat-label class="form-label">Supression List</mat-label>
-            <input
-              id="supressionList"
-              name="supressionList"
-              matInput
-              placeholder="Supression Id"
-              formControlName="supressionList"
-            />
-          </mat-form-field>
-        </div>
-        <div class="form-group">
-          <mat-form-field>
-            <mat-label>Start Date</mat-label>
-            <input
-              matInput
-              [matDatepicker]="datepicker"
-              formControlName="sendDate"
-            />
-            <mat-datepicker #datepicker />
-            <mat-datepicker-toggle [for]="datepicker" matSuffix />
-          </mat-form-field>
-
-          <mat-form-field>
-            <mat-label>Start Time (UTC)</mat-label>
-            <input
-              matInput
-              [matTimepicker]="timepicker"
-              formControlName="sendTime"
-            />
-            <mat-timepicker #timepicker />
-            <mat-timepicker-toggle [for]="timepicker" matSuffix />
-          </mat-form-field>
-
-          @if (scheduleForm.get('sendDate')?.invalid) {
-          <mat-error>Send Date is required</mat-error>
-          } @if (scheduleForm.get('sendTime')?.invalid) {
-          <mat-error>Send Time is required</mat-error>
+    <form
+      id="scheduleForm"
+      name="scheduleForm"
+      [formGroup]="scheduleForm"
+      (ngSubmit)="createCampaignBatch()"
+    >
+      <div>
+        @if (scheduleForm.hasError('maxCampaignDaysError')) {
+        <app-toast
+          message="Only can create campagins up to 21 days."
+          toastType="error"
+        />
+        }
+      </div>
+      <div class="form-group">
+        <mat-form-field>
+          <mat-label class="form-label">Campaign Name</mat-label>
+          <input
+            id="campaignName"
+            name="campaignName"
+            matInput
+            placeholder="Name"
+            formControlName="campaignName"
+            required
+          />
+          @if (scheduleForm.get('campaignName')?.invalid) {
+          <mat-error>Campaign Name is required</mat-error>
           }
-        </div>
-        <div class="form-group">
-          <mat-form-field>
-            <mat-label class="form-label">Interval</mat-label>
-            <mat-select
-              formControlName="interval"
-              id="interval"
-              name="interval"
-            >
-              <mat-option>None</mat-option>
-              <mat-option value="15">Every 15 min</mat-option>
-              <mat-option value="30">Every 30 min</mat-option>
-              <mat-option value="60">Every 1 hr</mat-option>
-            </mat-select>
-            @if (scheduleForm.get('interval')?.invalid) {
-            <mat-error>Interval is required</mat-error>
-            }
-          </mat-form-field>
-        </div>
-        <div class="form-group">
-          <button
-            mat-fab
-            extended
-            type="submit"
-            class="form-button"
-            [disabled]="!scheduleForm.valid"
-          >
-            <mat-icon>schedule_send</mat-icon>
-            Create
-          </button>
-        </div>
-      </form>
-    </div>
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <mat-form-field>
+          <mat-label class="form-label">Email Batch Size</mat-label>
+          <input
+            id="batchSize"
+            name="batchSize"
+            matInput
+            placeholder="Size"
+            formControlName="batchSize"
+            required
+          />
+          @if (scheduleForm.get('batchSize')?.invalid) {
+          <mat-error>Batch Size is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <mat-form-field>
+          <mat-label class="form-label">Supression List</mat-label>
+          <input
+            id="supressionList"
+            name="supressionList"
+            matInput
+            placeholder="Supression Id"
+            formControlName="supressionList"
+          />
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <mat-form-field>
+          <mat-label>Start Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="datepicker"
+            formControlName="sendDate"
+          />
+          <mat-datepicker #datepicker />
+          <mat-datepicker-toggle [for]="datepicker" matSuffix />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Start Time (UTC)</mat-label>
+          <input
+            matInput
+            [matTimepicker]="timepicker"
+            formControlName="sendTime"
+          />
+          <mat-timepicker #timepicker />
+          <mat-timepicker-toggle [for]="timepicker" matSuffix />
+        </mat-form-field>
+
+        @if (scheduleForm.get('sendDate')?.invalid) {
+        <mat-error>Send Date is required</mat-error>
+        } @if (scheduleForm.get('sendTime')?.invalid) {
+        <mat-error>Send Time is required</mat-error>
+        }
+      </div>
+      <div class="form-group">
+        <mat-form-field>
+          <mat-label class="form-label">Interval</mat-label>
+          <mat-select formControlName="interval" id="interval" name="interval">
+            <mat-option>None</mat-option>
+            <mat-option value="15">Every 15 min</mat-option>
+            <mat-option value="30">Every 30 min</mat-option>
+            <mat-option value="60">Every 1 hr</mat-option>
+          </mat-select>
+          @if (scheduleForm.get('interval')?.invalid) {
+          <mat-error>Interval is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <button
+          mat-fab
+          extended
+          type="submit"
+          class="form-button"
+          [disabled]="!scheduleForm.valid"
+        >
+          <mat-icon>schedule_send</mat-icon>
+          Create
+        </button>
+        <input
+          id="totalCount"
+          name="totalCount"
+          matInput
+          placeholder="Total Count"
+          formControlName="totalCount"
+          class="ninja"
+        />
+      </div>
+    </form>
   </div>
 </div>

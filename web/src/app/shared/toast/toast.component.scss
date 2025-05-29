@@ -1,0 +1,72 @@
+.toast {
+  align-items: center;
+  background-color: var(--mat-sys-surface);
+  border-radius: 0.6rem;
+  box-shadow: var(--mat-sys-level5);
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  font-weight: 400;
+  height: 4rem;
+  margin-bottom: 2rem;
+  padding: 0.5rem;
+  width: 100%;
+
+  &--success {
+    border-left: 0.5rem solid var(--color-success);
+  }
+
+  &--error {
+    border-left: 0.5rem solid var(--color-error);
+  }
+
+  &--warning {
+    border-left: 0.5rem solid var(--color-warning);
+  }
+
+  &--info {
+    border-left: 0.5rem solid var(--color-info);
+  }
+
+  &__header {
+    align-self: center;
+
+    .mat-icon {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__icon {
+    &--success {
+      color: var(--color-success);
+    }
+
+    &--error {
+      color: var(--color-error);
+    }
+
+    &--warning {
+      color: var(--color-warning);
+    }
+
+    &--info {
+      color: var(--color-info);
+    }
+  }
+
+  &__content {
+    margin: 0 0.5rem;
+  }
+
+  &__action {
+    align-self: flex-start;
+
+    .mat-icon {
+      font-size: 1rem;
+      color: var(--mat-sys-on-surface);
+    }
+
+    &--close {
+      cursor: pointer;
+    }
+  }
+}

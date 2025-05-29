@@ -11,11 +11,31 @@
 }
 
 .table {
-  background-color: var(--mat-sys-surface-variant);
+  background-color: light-dark(var(--color-light), var(--color-dark));
   //color: var(--mat-sys-on-surface-variant);
   width: 100%;
   //@include mat.elevation(8, light-dark(rgba(0 0 0 / 0.6), rgba(243 70 70 / 0.6)));
   box-shadow: var(--mat-sys-level5);
+
+  th {
+    border-bottom: 0.2rem solid
+      light-dark(var(--color-dark), var(--color-light));
+    font-weight: 700;
+  }
+
+  tr:nth-child(even) {
+    background-color: light-dark(
+      rgba(0, 0, 0, 0.05),
+      rgba(255, 255, 255, 0.05)
+    );
+  }
+
+  tr:not(:first-child):hover {
+    background-color: light-dark(
+      rgba(0, 0, 0, 0.075),
+      rgba(255, 255, 255, 0.075)
+    );
+  }
 }
 
 // tr.example-detail-row {
