@@ -26,24 +26,27 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations: {
-    eks.amazonaws.com/role-arn: "arn:aws:iam::025381531841:role/service.drips.role"
-  }
+  annotations:
+    {
+      eks.amazonaws.com/role-arn: "arn:aws:iam::025381531841:role/service.drips.role",
+    }
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: "colibri-api-role"
 
 # This is for setting Kubernetes Annotations to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ 
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  {}
   # capabilities:
   #   drop:
   #   - ALL
@@ -62,14 +65,15 @@ service:
 ingress:
   enabled: true
   className: "alb"
-  annotations: {
-    alb.ingress.kubernetes.io/load-balancer-name: colibri-api,
-    alb.ingress.kubernetes.io/group.name: colibri-alb-grp,
-    alb.ingress.kubernetes.io/scheme: internal,
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]',
-    alb.ingress.kubernetes.io/target-type: instance,
-    alb.ingress.kubernetes.io/healthcheck-path: /healthz
-  }
+  annotations:
+    {
+      alb.ingress.kubernetes.io/load-balancer-name: colibri-api,
+      alb.ingress.kubernetes.io/group.name: colibri-alb-grp,
+      alb.ingress.kubernetes.io/scheme: internal,
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]',
+      alb.ingress.kubernetes.io/target-type: instance,
+      alb.ingress.kubernetes.io/healthcheck-path: /healthz,
+    }
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -82,7 +86,8 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources: {}
+resources:
+  {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -95,6 +100,10 @@ resources: {}
   #   memory: 128Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+startupProbe:
+  httpGet:
+    path: /
+    port: http
 livenessProbe:
   httpGet:
     path: /
