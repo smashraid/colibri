@@ -88,10 +88,17 @@ export class AddCampaignComponent implements OnInit {
       sendDate: new FormControl(moment(), [Validators.required]),
       sendTime: new FormControl(moment(), [Validators.required]),
       interval: new FormControl<number | null>(null, [Validators.required]),
-      totalCount: new FormControl<number | null>({
-        value: null,
-        disabled: true,
-      }),
+      totalCount: new FormControl<number | null>(
+        {
+          value: null,
+          disabled: true,
+        },
+        [Validators.required]
+      ),
+      // projectId: new FormControl<number>(
+      //   { value: this.store.selectProjectId(), disabled: true },
+      //   [Validators.required]
+      // ),
     },
     { validators: maxCampaignDays() }
   );

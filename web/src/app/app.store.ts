@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import {
   NavigationEnd,
   NavigationError,
@@ -9,6 +9,7 @@ import {
   patchState,
   signalStore,
   withComputed,
+  withProps,
   withHooks,
   withMethods,
   withState,
@@ -41,7 +42,10 @@ const initialState: AppState = {
 export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withComputed(({ loading, projectId, username, useremail }) => ({})),
+  withProps(() => ({})),
+  withComputed(({ loading, projectId, username, useremail }) => ({
+    selectProjectId: computed(() => projectId()),
+  })),
   withMethods((store, databaseService = inject(DatabaseService)) => ({
     updateProject(id: number): void {
       patchState(store, (state) => ({ projectId: id }));

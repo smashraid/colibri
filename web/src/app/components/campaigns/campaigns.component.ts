@@ -1,15 +1,8 @@
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MsalModule } from '@azure/msal-angular';
-import { forkJoin, Observable } from 'rxjs';
-import { delay, filter, mergeMap, switchMap, toArray } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { delay, mergeMap, switchMap } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, UpperCasePipe } from '@angular/common';
@@ -38,7 +31,6 @@ import { AppStore } from '../../app.store';
 import { SnackbarMessageComponent } from '../../shared/snackbar-message/snackbar-message.component';
 
 import { CampaignRead } from '../../view-models/campaign/campaignRead.model';
-import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiveCampaignRequest.model';
 import { PagedMetadata } from '../../view-models/pagination.model';
 
 @Component({
@@ -141,24 +133,25 @@ export class CampaignsComponent implements OnInit {
   }
 
   archive(element: CampaignRead) {
-    const request: ArchiveCampaignRequest = {
-      campaignIds: element.lists.map((list) => list.iterableCampaignId),
-    };
-
-    const listIds = element.lists.map((list) => list.iterableListId);
-
-    this.iterableService
-      .archiveCampaign(request)
+    this.databaseService
+      .getArchiveDb(element.id)
       .pipe(
-        switchMap(() => this.databaseService.deleteCampaign(element.id)),
-        delay(3000),
-        mergeMap(() =>
+        switchMap((archiveReadViewModel) =>
+          this.iterableService
+            .archiveCampaign({
+              campaignIds: archiveReadViewModel.campaigns,
+            })
+            .pipe(mergeMap(() => of(archiveReadViewModel)))
+        ),
+        delay(5000),
+        mergeMap((archiveReadViewModel) =>
           forkJoin(
-            listIds.map((id) =>
+            archiveReadViewModel.lists.map((id) =>
               this.iterableService.deleteList(id).pipe(delay(3000))
             )
           )
-        )
+        ),
+        switchMap(() => this.databaseService.deleteCampaign(element.id))
       )
       .subscribe((result) => {
         this.snackBar.openFromComponent(SnackbarMessageComponent, {

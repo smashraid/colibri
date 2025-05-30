@@ -12,6 +12,7 @@ import { ProjectRead } from '../view-models/project/projectRead.model';
 import { CampaignRead } from '../view-models/campaign/campaignRead.model';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { PagedMetadata } from '../view-models/pagination.model';
+import { ArchiveReadViewModel } from '../view-models/archive/archiveRead.model';
 
 @Injectable({
   providedIn: 'root',
@@ -97,9 +98,7 @@ export class DatabaseService {
   getCampaignsByProject(id: number, metadata: PagedMetadata) {
     return this.httpClient
       .get<CampaignRead[]>(
-        `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${
-          metadata.currentPage + 1
-        }&pageSize=${metadata.pageSize}`,
+        `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
         {
           responseType: 'json',
           headers: {
@@ -144,6 +143,23 @@ export class DatabaseService {
             () =>
               new Error('An error ocurrend Database Service - getCampaignLists')
           );
+        })
+      );
+  }
+
+  getArchiveDb(id: number) {
+    return this.httpClient
+      .get<ArchiveReadViewModel>(`${this.baseUrl}getArchiveDb/${id}`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        shareReplay(),
+        catchError((error) => {
+          console.error('An error ocurred', error);
+          return of({ campaigns: [], lists: [] } as ArchiveReadViewModel);
         })
       );
   }
