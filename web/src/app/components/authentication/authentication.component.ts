@@ -82,7 +82,6 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
         } else {
           this.setLoginDisplay();
         }
-        console.log('msalSubject');
       });
 
     this.msalBroadcastService.msalSubject$
@@ -94,7 +93,6 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
       )
       .subscribe((result) => {
         const payload = result.payload as AuthenticationResult;
-        console.log(payload);
         this.formatUsername(payload.account.name);
         this.store.updateUseremail(payload.account.username);
         this.getProfile();
@@ -120,7 +118,6 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
   }
 
   checkAndSetActiveAccount() {
-    console.log('checkAndSetActiveAccount');
     /**
      * If no active account set but there are accounts signed in, sets first account to active account
      * To use active account set here, subscribe to inProgress$ first in your component
@@ -134,7 +131,6 @@ export class AuthenticationComponent implements OnInit, OnDestroy {
     ) {
       let accounts = this.authService.instance.getAllAccounts();
       this.authService.instance.setActiveAccount(accounts[0]);
-      console.log(accounts);
     }
   }
 

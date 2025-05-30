@@ -37,10 +37,15 @@ import {
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import {
+  provideClientHydration,
+  withEventReplay,
+} from '@angular/platform-browser';
 
 export function loggerCallback(logLevel: LogLevel, message: string) {
-  console.log(message);
+  if (!environment.production) {
+    console.log(message);
+  }
 }
 
 export function MSALInstanceFactory(): IPublicClientApplication {
@@ -69,7 +74,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set(
     environment.apiConfig.uri,
-    environment.apiConfig.scopes,
+    environment.apiConfig.scopes
   );
 
   return {
@@ -96,7 +101,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withRouterConfig({
         paramsInheritanceStrategy: 'always',
-      }),
+      })
     ),
     provideMomentDateAdapter(),
     //provideNoopAnimations(),
@@ -120,7 +125,7 @@ export const appConfig: ApplicationConfig = {
     },
     MsalService,
     MsalGuard,
-    MsalBroadcastService
+    MsalBroadcastService,
   ],
 };
 //provideClientHydration(withEventReplay())
