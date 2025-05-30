@@ -161,7 +161,6 @@ export class CampaignsComponent implements OnInit {
         )
       )
       .subscribe((result) => {
-        console.log(result);
         this.snackBar.openFromComponent(SnackbarMessageComponent, {
           duration: 5000,
           data: {

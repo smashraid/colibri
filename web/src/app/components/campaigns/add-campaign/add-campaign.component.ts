@@ -3,6 +3,7 @@ import {
   ElementRef,
   OnInit,
   inject,
+  signal,
   viewChild,
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -95,10 +96,7 @@ export class AddCampaignComponent implements OnInit {
     { validators: maxCampaignDays() }
   );
 
-  scheduleManualForm = new FormGroup({});
-
-  htmlContainer = viewChild<ElementRef<HTMLDivElement>>('htmlContainer');
-  preview = viewChild<ElementRef<HTMLImageElement>>('preview');
+  preview = signal<string>('');
 
   constructor(
     private iterableService: IterableService,
@@ -122,7 +120,12 @@ export class AddCampaignComponent implements OnInit {
     const listId = this.validateInformationForm.get('listId')?.value;
 
     if (templateId && listId) {
-      this.template$ = this.iterableService.getTemplateById(templateId);
+      this.template$ = this.iterableService.getTemplateById(templateId).pipe(
+        switchMap((templateIterable) => {
+          this.preview.set(this.sanitizedHtml(templateIterable.html));
+          return of(templateIterable);
+        })
+      );
 
       this.emailCount$ = this.iterableService.getListSize(listId).pipe(
         switchMap((value) => {

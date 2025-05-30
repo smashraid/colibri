@@ -92,7 +92,6 @@ export const AppStore = signalStore(
     onInit() {
       store.loaderOnNavigation(router.events);
       store.loadProjects();
-      console.log('Init Store');
     },
   }))
 );

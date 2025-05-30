@@ -55,7 +55,6 @@ export class ListCampaignComponent implements OnInit {
       currentPage: e.pageIndex,
       pageSize: e.pageSize,
     }));
-    console.log(e, this.pagedList());
     this.sync();
   }
 }
