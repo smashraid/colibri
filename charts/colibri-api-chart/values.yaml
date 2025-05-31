@@ -2,6 +2,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+env:
+  Splunk__SplunkHost: "https://qa.gtcnnt.net/splunk/"
+  Splunk__UriPath: "services/collector/event"
+  Splunk__EventCollectorToken: "D6529CD2-9A04-49C0-B3D7-899A5D0CC125"
+  Splunk__Host: "Colibri.Api"
+  Splunk__Index: "iterable_qa"
+  Splunk__Source: "colibri-api"
+  Splunk__SourceType: "colibri-api"
+  Splunk__BatchSizeLimit: 100
+  Splunk__BatchIntervalInSeconds: 2
+  Splunk__RestrictedToMinimumLevel: "Information"
+
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
