@@ -5,7 +5,7 @@ import { forkJoin, of } from 'rxjs';
 import { delay, mergeMap, switchMap } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { DatePipe, UpperCasePipe } from '@angular/common';
+import { DatePipe, JsonPipe, UpperCasePipe } from '@angular/common';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -60,6 +60,7 @@ import { PagedMetadata } from '../../view-models/pagination.model';
     MsalModule,
     UpperCasePipe,
     DatePipe,
+    JsonPipe,
   ],
   templateUrl: './campaigns.component.html',
   styleUrl: './campaigns.component.scss',
