@@ -124,9 +124,7 @@ export class DatabaseService {
   getCampaignLists(campaignId: number, metadata: PagedMetadata) {
     return this.httpClient
       .get<CampaignListDb[]>(
-        `${this.baseUrl}getListsDb?campaignId=${campaignId}&pageNumber=${
-          metadata.currentPage + 1
-        }&pageSize=${metadata.pageSize}`,
+        `${this.baseUrl}getListsDb?campaignId=${campaignId}&pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
         {
           responseType: 'json',
           headers: {
