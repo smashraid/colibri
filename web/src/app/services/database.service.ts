@@ -164,6 +164,23 @@ export class DatabaseService {
       );
   }
 
+  getTagsDb() {
+    return this.httpClient
+      .get<string[]>(`${this.baseUrl}getTagsDb`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+        },
+      })
+      .pipe(
+        shareReplay(),
+        catchError((error) => {
+          console.error('An error ocurred', error);
+          return of([] as string[]);
+        })
+      );
+  }
+
   deleteCampaign(id: number) {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaignDb/${id}`, {
       headers: {

@@ -27,6 +27,14 @@
         <td mat-cell *matCellDef="let element">
           {{ element[column] === 0 ? "PENDING" : "DONE" }}
         </td>
+        }@else if (column === 'tags') {
+        <td mat-cell *matCellDef="let element">
+          <mat-chip-set aria-label="campaigns tags">
+            @for (item of element[column]; track $index) {
+            <mat-chip>{{ item }}</mat-chip>
+            }
+          </mat-chip-set>
+        </td>
         } @else {
         <td mat-cell *matCellDef="let element">{{ element[column] }}</td>
         }

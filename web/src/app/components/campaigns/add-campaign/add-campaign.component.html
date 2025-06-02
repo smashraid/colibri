@@ -159,6 +159,43 @@
       </div>
       <div class="form-group">
         <mat-form-field>
+          <mat-label>Tags</mat-label>
+          <mat-chip-grid
+            #chipGrid
+            aria-label="Enter tags"
+            formControlName="tags"
+          >
+            @for (keyword of tagKeywords(); track keyword) {
+            <mat-chip-row (removed)="removeTag(keyword)">
+              {{ keyword }}
+              <button matChipRemove [attr.aria-label]="'remove tag' + keyword">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+            }
+          </mat-chip-grid>
+          <input
+            id="currentTag"
+            name="currentTag"
+            #currentTag
+            placeholder="New Tag"
+            [matChipInputFor]="chipGrid"
+            [matAutocomplete]="auto"
+            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            (matChipInputTokenEnd)="addTag($event)"
+          />
+          <mat-autocomplete
+            #auto="matAutocomplete"
+            (optionSelected)="onSelectedTag($event); currentTag.value = ''"
+          >
+            @for (tag of filteredTags(); track tag) {
+            <mat-option [value]="tag">{{ tag }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+      <div class="form-group">
+        <mat-form-field>
           <mat-label>Start Date</mat-label>
           <input
             matInput
@@ -212,7 +249,7 @@
           Create
         </button>
       </div>
-      <div>
+      <div class="ninja">
         <input
           id="totalCount"
           name="totalCount"

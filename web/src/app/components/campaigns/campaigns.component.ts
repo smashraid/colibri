@@ -23,6 +23,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatChipsModule } from '@angular/material/chips';
 
 import { DatabaseService } from '../../services/database.service';
 import { IterableService } from '../../services/iterable.service';
@@ -52,6 +53,7 @@ import { PagedMetadata } from '../../view-models/pagination.model';
     MatSnackBarModule,
     MatMenuModule,
     MatPaginatorModule,
+    MatChipsModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -71,6 +73,7 @@ export class CampaignsComponent implements OnInit {
     'createdDate',
     'projectWebsite',
     'status',
+    'tags',
   ];
   columnsOptions = ['options'];
   columnsToDisplayWithExpand = [
