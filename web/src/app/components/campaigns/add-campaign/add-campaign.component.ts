@@ -5,7 +5,15 @@ import {
   inject,
   signal,
   viewChild,
+  ChangeDetectionStrategy,
+  computed,
+  model,
+  Signal,
+  WritableSignal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
@@ -32,6 +40,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
 import { TemplateIterable } from '../../../view-models/template/templateIterable.model';
@@ -60,6 +73,8 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
     MatTimepickerModule,
     MatDatepickerModule,
     MatProgressSpinnerModule,
+    MatChipsModule,
+    MatAutocompleteModule,
     FormsModule,
     ReactiveFormsModule,
     AsyncPipe,
@@ -88,26 +103,46 @@ export class AddCampaignComponent implements OnInit {
       sendDate: new FormControl(moment(), [Validators.required]),
       sendTime: new FormControl(moment(), [Validators.required]),
       interval: new FormControl<number | null>(null, [Validators.required]),
-      totalCount: new FormControl<number | null>({
-        value: null,
-        disabled: true,
-      }),
+      tags: new FormControl<string[]>([]),
+      totalCount: new FormControl<number | null>(
+        {
+          value: null,
+          disabled: false,
+        },
+        [Validators.required]
+      ),
+      // projectId: new FormControl<number>(
+      //   { value: this.store.selectProjectId(), disabled: true },
+      //   [Validators.required]
+      // ),
     },
     { validators: maxCampaignDays() }
   );
 
   preview = signal<string>('');
 
+  readonly tagKeywords = signal<string[]>([]);
+
+  readonly separatorKeysCodes: number[] = [ENTER];
+
+  allTags: WritableSignal<string[]> = signal([]);
+  filteredTags: WritableSignal<string[]> = signal([]);
+
   constructor(
     private iterableService: IterableService,
     private databaseService: DatabaseService,
     private spinnerService: SpinnerService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private announcer: LiveAnnouncer
   ) {}
 
   ngOnInit(): void {
     this.campaignLists$ = this.iterableService.getListByType();
+    this.databaseService.getTagsDb().subscribe((tags) => {
+      this.allTags.set(tags);
+      this.filteredTags.set(tags);
+    });
   }
 
   sanitizedHtml(htmlString: string) {
@@ -138,6 +173,47 @@ export class AddCampaignComponent implements OnInit {
     }
   }
 
+  removeTag(keyword: string) {
+    if (this.allTags().includes(keyword)) {
+      this.filteredTags.update((prev) => [...prev, keyword]);
+    }
+
+    this.tagKeywords.update((keywords) => {
+      const index = keywords.indexOf(keyword);
+      if (index < 0) {
+        return keywords;
+      }
+
+      keywords.splice(index, 1);
+      this.announcer.announce(`removed ${keyword} from reactive form`);
+      return [...keywords];
+    });
+  }
+
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim().toUpperCase();
+    if (this.allTags().includes(value)) {
+      this.filteredTags.update((prev) => prev.filter((tag) => tag != value));
+    }
+
+    // Add our keyword
+    if (value) {
+      this.tagKeywords.update((keywords) => [...keywords, value]);
+      this.announcer.announce(`added ${value} to reactive form`);
+    }
+
+    // Clear the input value
+    event.chipInput!.clear();
+  }
+
+  onSelectedTag(event: MatAutocompleteSelectedEvent): void {
+    this.tagKeywords.update((tags) => [...tags, event.option.viewValue]);
+    this.filteredTags.update((prev) =>
+      prev.filter((tag) => tag != event.option.viewValue)
+    );
+    event.option.deselect();
+  }
+
   async createCampaignBatch() {
     const sourceTemplateId =
       this.validateInformationForm.get('templateId')?.value;
@@ -149,6 +225,7 @@ export class AddCampaignComponent implements OnInit {
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
     const intervalTime = this.scheduleForm.get('interval')?.value;
     const totalCount = this.scheduleForm.get('totalCount')?.value;
+    const tags = this.scheduleForm.get('tags')?.value || [];
     const projectId = this.store.projectId();
     const useremail = this.store.useremail();
 
@@ -175,7 +252,7 @@ export class AddCampaignComponent implements OnInit {
         id: 0,
         campaignCount: Math.ceil(totalCount / batchSize),
         name: campaignName,
-        tags: [],
+        tags: tags,
         projectId,
         createdBy: useremail,
       };
