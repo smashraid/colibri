@@ -197,7 +197,7 @@ export class AddCampaignComponent implements OnInit {
     }
 
     // Add our keyword
-    if (value) {
+    if (value && !this.tagKeywords().includes(value)) {
       this.tagKeywords.update((keywords) => [...keywords, value]);
       this.announcer.announce(`added ${value} to reactive form`);
     }
