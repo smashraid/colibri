@@ -49,19 +49,17 @@ export class IterableService {
 
   readonly store = inject(AppStore);
 
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json',
-    AuthorizationToken: this.authorizationToken,
-    'X-Project': this.store.projectId(),
-  });
-
   constructor(private httpClient: HttpClient) {}
 
   getCampaignByType() {
     return this.httpClient
       .get<CampaignIterable[]>(`${this.baseUrl}getCampaignByType`, {
         responseType: 'json',
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         shareReplay(),
@@ -76,7 +74,11 @@ export class IterableService {
     return this.httpClient
       .get<CampaignListIterable[]>(`${this.baseUrl}getListByType`, {
         responseType: 'json',
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         shareReplay(),
@@ -91,7 +93,11 @@ export class IterableService {
     return this.httpClient
       .get<TemplateIterable>(`${this.baseUrl}getTemplateById?id=${id}`, {
         responseType: 'json',
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         shareReplay(),
@@ -106,7 +112,11 @@ export class IterableService {
     return this.httpClient
       .get<number>(`${this.baseUrl}getListSize?id=${id}`, {
         responseType: 'json',
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         shareReplay(),
@@ -123,7 +133,11 @@ export class IterableService {
         `${this.baseUrl}getListUsers?id=${id}&chunk=${chunk}&preferUserId=true`,
         {
           responseType: 'json',
-          headers: this.headers,
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
         }
       )
       .pipe(
@@ -138,7 +152,11 @@ export class IterableService {
   createStaticList(request: StaticListRequest) {
     return this.httpClient
       .post<StaticListResponse>(`${this.baseUrl}createStaticList`, request, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         //retry(this.retries),
@@ -152,7 +170,11 @@ export class IterableService {
         `${this.baseUrl}createSubscriberList`,
         request,
         {
-          headers: this.headers,
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
         }
       )
       .pipe(
@@ -164,7 +186,11 @@ export class IterableService {
   createCampaign(request: CreateCampaignRequest) {
     return this.httpClient
       .post<CreateCampaginResponse>(`${this.baseUrl}createCampagin`, request, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         //retry(this.retries),
@@ -175,7 +201,11 @@ export class IterableService {
   createBlast(request: BlastRequest) {
     return this.httpClient
       .post<CampaignListDb>(`${this.baseUrl}createBlast`, request, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         //retry(this.retries),
@@ -186,7 +216,11 @@ export class IterableService {
   createBlastList(request: BlastListRequest) {
     return this.httpClient
       .post<number[]>(`${this.baseUrl}createBlastList`, request, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         //retry(this.retries),
@@ -200,7 +234,11 @@ export class IterableService {
         `${this.baseUrl}createBlastListSubscribers`,
         request,
         {
-          headers: this.headers,
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
         }
       )
       .pipe(
@@ -215,7 +253,11 @@ export class IterableService {
         `${this.baseUrl}createBlastCampaign`,
         request,
         {
-          headers: this.headers,
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
         }
       )
       .pipe(
@@ -227,7 +269,11 @@ export class IterableService {
   archiveCampaign(request: ArchiveCampaignRequest) {
     return this.httpClient
       .post<boolean>(`${this.baseUrl}archiveCampaign`, request, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         retry({ count: this.retries, delay: this.delay }),
@@ -238,7 +284,11 @@ export class IterableService {
   deleteList(id: number) {
     return this.httpClient
       .delete(`${this.baseUrl}deleteList?id=${id}`, {
-        headers: this.headers,
+        headers: new HttpHeaders({
+          'Content-Type': 'application/json',
+          AuthorizationToken: this.authorizationToken,
+          'X-Project': this.store.projectId(),
+        }),
       })
       .pipe(
         retry({ count: this.retries, delay: this.delay }),
