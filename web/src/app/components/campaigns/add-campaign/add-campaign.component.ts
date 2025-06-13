@@ -11,14 +11,14 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
-import { AsyncPipe } from '@angular/common';
-import { switchMap } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
+import { AsyncPipe, JsonPipe } from '@angular/common';
+import { map, startWith, switchMap, tap } from 'rxjs/operators';
+import { lastValueFrom, Observable, of } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -54,10 +54,12 @@ import { DatabaseService } from '../../../services/database.service';
 import { SpinnerService } from '../../../services/spinner.service';
 
 import { AppStore } from '../../../app.store';
+import { instanceOf } from '../../../shared/utils';
 
 import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.model';
 import { maxCampaignDays } from '../../../validators/maxCampaignDays';
 import { ToastComponent } from '../../../shared/toast/toast.component';
+import { selecteValidOption } from '../../../validators/selectedValidOption';
 
 @Component({
   selector: 'app-add-campaign',
@@ -78,6 +80,7 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
     FormsModule,
     ReactiveFormsModule,
     AsyncPipe,
+    JsonPipe,
     ToastComponent,
   ],
   templateUrl: './add-campaign.component.html',
@@ -86,13 +89,18 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
 export class AddCampaignComponent implements OnInit {
   private readonly store = inject(AppStore);
 
-  campaignLists$!: Observable<CampaignListIterable[]>;
+  campaignLists = signal<CampaignListIterable[]>([]);
+  filteredList = signal<CampaignListIterable[]>([]);
+
   template$!: Observable<TemplateIterable>;
   emailCount$!: Observable<number>;
 
   validateInformationForm = new FormGroup({
     templateId: new FormControl<number | null>(null, [Validators.required]),
-    listId: new FormControl<number | null>(null, [Validators.required]),
+    listId: new FormControl<CampaignListIterable | null>(null, [
+      Validators.required,
+      selecteValidOption(),
+    ]),
   });
 
   scheduleForm = new FormGroup(
@@ -121,12 +129,18 @@ export class AddCampaignComponent implements OnInit {
 
   preview = signal<string>('');
 
+  readonly minDate = moment().toDate();
+
+  readonly maxDate = moment().add(21, 'days');
+
   readonly tagKeywords = signal<string[]>([]);
 
   readonly separatorKeysCodes: number[] = [ENTER];
 
   allTags: WritableSignal<string[]> = signal([]);
   filteredTags: WritableSignal<string[]> = signal([]);
+
+  updatedList$ = toObservable(this.store.projectId);
 
   constructor(
     private iterableService: IterableService,
@@ -138,11 +152,28 @@ export class AddCampaignComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.campaignLists$ = this.iterableService.getListByType();
+    this.iterableService.getListByType().subscribe((lists) => {
+      this.campaignLists.set(lists);
+      this.filteredList.set(lists);
+    });
+
+    const listsField = this.validateInformationForm.get('listId');
+
+    if (listsField) {
+      listsField.valueChanges.subscribe((value) => this._filter(value));
+    }
+
     this.databaseService.getTagsDb().subscribe((tags) => {
       this.allTags.set(tags);
       this.filteredTags.set(tags);
     });
+    this.updatedList$.subscribe((id) =>
+      this.iterableService.getListByType().subscribe((lists) => {
+        this.campaignLists.set(lists);
+        this.filteredList.set(lists);
+        listsField?.patchValue(null);
+      })
+    );
   }
 
   sanitizedHtml(htmlString: string) {
@@ -162,7 +193,7 @@ export class AddCampaignComponent implements OnInit {
         })
       );
 
-      this.emailCount$ = this.iterableService.getListSize(listId).pipe(
+      this.emailCount$ = this.iterableService.getListSize(listId.id).pipe(
         switchMap((value) => {
           this.scheduleForm.patchValue({
             totalCount: value,
@@ -212,6 +243,24 @@ export class AddCampaignComponent implements OnInit {
       prev.filter((tag) => tag != event.option.viewValue)
     );
     event.option.deselect();
+  }
+
+  displayFn(list: CampaignListIterable): string {
+    return list && list.name ? list.name : '';
+  }
+
+  private _filter(value: string | CampaignListIterable | null): void {
+    let filterValue = '';
+    let result: CampaignListIterable[] = this.campaignLists().slice();
+    if (typeof value === 'string' && value !== '') {
+      filterValue = value.toLowerCase();
+      result = this.campaignLists().filter((option) =>
+        option.name.toLowerCase().includes(filterValue)
+      );
+    } else if (value && instanceOf<CampaignListIterable>(value, 'name')) {
+      result = [value];
+    }
+    this.filteredList.update((prev) => result);
   }
 
   async createCampaignBatch() {
@@ -266,7 +315,7 @@ export class AddCampaignComponent implements OnInit {
               intervalTime,
               listNameFormat: `${campaignName} Blast List {0}`,
               listDescriptionFormat: `Blast List {0}`,
-              sourceListId,
+              sourceListId: sourceListId.id,
               sendAt: sendDate.format('YYYY-MM-DD HH:mm:ss'),
               sourceTemplateId,
               sourceSupressionList,
