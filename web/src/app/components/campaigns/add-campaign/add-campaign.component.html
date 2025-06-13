@@ -27,11 +27,26 @@
         <div class="form-group">
           <mat-form-field>
             <mat-label class="form-label">Email List</mat-label>
-            <mat-select formControlName="listId" id="listId" name="listId">
+
+            <input
+              type="text"
+              matInput
+              formControlName="listId"
+              [matAutocomplete]="auto"
+              id="listId"
+              name="listId"
+            />
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
+              @for (item of filteredList(); track item.id) {
+              <mat-option [value]="item">{{ item.name }}</mat-option>
+              }
+            </mat-autocomplete>
+
+            <!-- <mat-select formControlName="listId" id="listId" name="listId">
               @for (item of campaignLists$ | async; track item.id) {
               <mat-option [value]="item.id">{{ item.name }}</mat-option>
               }
-            </mat-select>
+            </mat-select> -->
             <!-- <mat-hint align="start">Created in Iterable</mat-hint> -->
             @if (validateInformationForm.get('listId')?.invalid) {
             <mat-error>Email List is required</mat-error>
@@ -180,12 +195,12 @@
             #currentTag
             placeholder="New Tag"
             [matChipInputFor]="chipGrid"
-            [matAutocomplete]="auto"
+            [matAutocomplete]="autoTags"
             [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
             (matChipInputTokenEnd)="addTag($event)"
           />
           <mat-autocomplete
-            #auto="matAutocomplete"
+            #autoTags="matAutocomplete"
             (optionSelected)="onSelectedTag($event); currentTag.value = ''"
           >
             @for (tag of filteredTags(); track tag) {
@@ -199,6 +214,8 @@
           <mat-label>Start Date</mat-label>
           <input
             matInput
+            [min]="minDate"
+            [max]="maxDate"
             [matDatepicker]="datepicker"
             formControlName="sendDate"
           />
@@ -231,6 +248,7 @@
             <mat-option value="15">Every 15 min</mat-option>
             <mat-option value="30">Every 30 min</mat-option>
             <mat-option value="60">Every 1 hr</mat-option>
+            <mat-option value="1440">Every 24 hr</mat-option>
           </mat-select>
           @if (scheduleForm.get('interval')?.invalid) {
           <mat-error>Interval is required</mat-error>

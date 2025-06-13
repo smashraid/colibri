@@ -92,61 +92,81 @@ namespace Colibri.Job.Processor
 
             if (blastRequest != null)
             {
-                var project = await _digitalCommunicationService.GetProjectDb(blastRequest.Campaign.ProjectId);
-
-                if (project != null)
+                try
                 {
-                    ResilienceContext context = ResilienceContextPool.Shared.Get(cancellationToken);
+                    var project = await _digitalCommunicationService.GetProjectDb(blastRequest.Campaign.ProjectId);
 
-                    var blastListRequest = new BlastListRequest(blastRequest.Campaign.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
-
-                    var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
-
-                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
-
-                    var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
-
-                    var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
-
-                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
-
-                    var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
-
-                    var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, project.ApiKey, context, cancellationToken);
-
-                    _logger.LogInformation("PostCampaignListDb Start {CampaignName} {Size}", blastRequest.Campaign.Name, blastListSubscriberResponse.Count);
-
-                    for (int i = 0; i < blastListSubscriberResponse.Count; i++)
+                    if (project != null)
                     {
-                        var subscriberList = blastListSubscriberResponse[i];
-                        var campaign = blastCampaignResponse[i];
-                        var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                        ResilienceContext context = ResilienceContextPool.Shared.Get(cancellationToken);
+
+                        var blastListRequest = new BlastListRequest(blastRequest.Campaign.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.GeneratingList);
+
+                        var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
+
+                        await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
+
+                        var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.GeneratingCampaign);
+
+                        var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
+
+                        await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
+
+                        var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.AddingSubscribers);
+
+                        var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, project.ApiKey, context, cancellationToken);
+
+                        _logger.LogInformation("PostCampaignListDb Start {CampaignName} {Size}", blastRequest.Campaign.Name, blastListSubscriberResponse.Count);
+
+                        for (int i = 0; i < blastListSubscriberResponse.Count; i++)
                         {
-                            Emails = subscriberList.Emails,
-                            IterableCampaignId = campaign.CampaignId,
-                            SendAt = campaign.SendAt,
-                            IterableListId = subscriberList.ListId,
-                            IterableTemplateId = blastRequest.SourceTemplateId,
-                            Name = string.Format(blastRequest.ListNameFormat, i + 1),
-                            Order = (short)(i + 1)
-                        }, blastRequest.Campaign.Id);
-                        await Task.Delay(_jobOptions.DelayDatabase, cancellationToken);
+                            var subscriberList = blastListSubscriberResponse[i];
+                            var campaign = blastCampaignResponse[i];
+                            var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                            {
+                                Emails = subscriberList.Emails,
+                                IterableCampaignId = campaign.CampaignId,
+                                SendAt = campaign.SendAt,
+                                IterableListId = subscriberList.ListId,
+                                IterableTemplateId = blastRequest.SourceTemplateId,
+                                Name = string.Format(blastRequest.ListNameFormat, i + 1),
+                                Order = (short)(i + 1)
+                            }, blastRequest.Campaign.Id);
+                            await Task.Delay(_jobOptions.DelayDatabase, cancellationToken);
+                        }
+
+                        _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Complete);
+
+                        _logger.LogInformation("PutCampaignDb Completed {CampaignName}", blastRequest.Campaign.Name);
                     }
-
-                    _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
-
-                    await _digitalCommunicationService.PutCampaignDb(blastRequest.Campaign.Id, new Shared.ViewModels.CampaignUpdateViewModel
-                    {
-                        Id = blastRequest.Campaign.Id,
-                        Tags = blastRequest.Campaign.Tags,
-                        Status = Shared.CampaignStatus.Done,
-                        UpdatedBy = "Colibri.Job",
-                        UpdatedDate = DateTimeOffset.UtcNow
-                    });
-
-                    _logger.LogInformation("PutCampaignDb Completed {CampaignName}", blastRequest.Campaign.Name);
                 }
+                catch (Exception ex)
+                {
+                    await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Error);
+
+                    _logger.LogError(ex, "An error ocurred creating iterable models {Request}", blastRequest);
+                }                
             }
+        }
+
+        private async Task UpdateStatusDb(BlastRequest blastRequest, Shared.CampaignStatus status)
+        {
+            await _digitalCommunicationService.PutCampaignDb(blastRequest.Campaign.Id, new Shared.ViewModels.CampaignUpdateViewModel
+            {
+                Id = blastRequest.Campaign.Id,
+                Tags = blastRequest.Campaign.Tags,
+                Status = status,
+                UpdatedBy = "Colibri.Job",
+                UpdatedDate = DateTimeOffset.UtcNow
+            });
         }
 
         private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
