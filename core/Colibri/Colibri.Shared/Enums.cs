@@ -2,8 +2,12 @@
 {
     public enum CampaignStatus
     {
-        Pending,
-        Done
+        Creating,
+        GeneratingList,
+        GeneratingCampaign,
+        AddingSubscribers,
+        Complete,
+        Error
     }
 
     public enum CampaignType
