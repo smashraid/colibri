@@ -10,8 +10,8 @@ services:
 
   api:
     image: ${REPOSITORY}/colibri-api:${BUILDNUMBER}
-    environment:
-      - ASPNETCORE_URLS=http://+:80
+    #environment:
+    #   - ASPNETCORE_URLS=http://+:80
     #   - ASPNETCORE_ENVIRONMENT=Development
     # ports:
     #   - 9000:80
