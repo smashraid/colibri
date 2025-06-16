@@ -10,6 +10,11 @@ services:
 
   api:
     image: ${REPOSITORY}/colibri-api:${BUILDNUMBER}
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    #   - ASPNETCORE_ENVIRONMENT=Development
+    # ports:
+    #   - 9000:80
     build:
       context: ./core/Colibri
       dockerfile: Colibri.Api/Dockerfile
@@ -23,4 +28,3 @@ services:
       dockerfile: Colibri.Job/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
-      

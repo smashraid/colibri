@@ -8,14 +8,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configure Kestrel to listen on specific ports
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8080); // HTTP
-    options.ListenAnyIP(8081, listenOptions => // HTTPS
-    {
-        listenOptions.UseHttps(); // Ensure you have a valid certificate
-    });
-});
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    options.ListenAnyIP(8080); // HTTP
+//    options.ListenAnyIP(8081, listenOptions => // HTTPS
+//    {
+//        listenOptions.UseHttps(); // Ensure you have a valid certificate
+//    });
+//});
 
 var app = builder.Build();
 
