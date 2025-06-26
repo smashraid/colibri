@@ -89,7 +89,7 @@ namespace Colibri.Job.Processor
 
         public async Task ProcessMessageAsync(RawMessageDelivery rawMessageDelivery, CancellationToken cancellationToken)
         {
-            var blastRequest = JsonSerializer.Deserialize<BlastRequest>(rawMessageDelivery.Message);
+            var blastRequest = System.Text.Json.JsonSerializer.Deserialize<BlastRequest>(rawMessageDelivery.Message);
 
             if (blastRequest != null)
             {
