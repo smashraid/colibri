@@ -12,6 +12,7 @@ using System.Threading;
 using Amazon.Runtime.Internal;
 using Colibri.Job.Options;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace Colibri.Job.Processor
 {
@@ -78,7 +79,7 @@ namespace Colibri.Job.Processor
                     OnRetry = args =>
                     {
                         _logger.LogInformation("CreateBlastCampaign {@retry} {@duration}", args.AttemptNumber, args.Duration);
-                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred" );
+                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred");
                         return default;
                     },
                     UseJitter = true
@@ -153,7 +154,7 @@ namespace Colibri.Job.Processor
                     await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Error);
 
                     _logger.LogError(ex, "An error ocurred creating iterable models {Request}", blastRequest);
-                }                
+                }
             }
         }
 
@@ -214,7 +215,7 @@ namespace Colibri.Job.Processor
 
                     var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
                     {
-                        _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", subscriberListRequest);
+                        _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", JsonConvert.SerializeObject(subscriberListRequest));
                         return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
                     },
                     context);
@@ -245,7 +246,7 @@ namespace Colibri.Job.Processor
 
                 var createCampaignResponse = await _resiliencePipelineCampaign.ExecuteAsync(async context =>
                 {
-                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest);
+                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", JsonConvert.SerializeObject(createCampaignRequest));
                     return await _iterableService.CreateCampagin(createCampaignRequest, token, context.CancellationToken);
                 },
                 context);
