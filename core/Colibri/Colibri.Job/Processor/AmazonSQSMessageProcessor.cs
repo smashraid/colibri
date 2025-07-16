@@ -153,7 +153,7 @@ namespace Colibri.Job.Processor
                 {
                     await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Error);
 
-                    _logger.LogError(ex, "An error ocurred creating iterable models {Request}", blastRequest);
+                    _logger.LogError(ex, "An error ocurred creating iterable models {Request}", JsonConvert.SerializeObject(blastRequest));
                 }
             }
         }
@@ -175,8 +175,8 @@ namespace Colibri.Job.Processor
             List<long> dataResponse = [];
             for (int i = 1; i <= request.CampaignCount; i++)
             {
-                string listDescription = string.Format(request.ListDescriptionFormat, i);
-                string listName = string.Format(request.ListNameFormat, i);
+                string listDescription = string.Format(request.ListNameFormat, i);
+                string listName = Guid.NewGuid().ToString();
                 var staticListRequest = new StaticListRequest(listDescription, listName);
 
                 var staticListResponse = await _resiliencePipelineList.ExecuteAsync(async context =>
