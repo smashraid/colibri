@@ -152,7 +152,7 @@ export class AddCampaignComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.iterableService.getListByType().subscribe((lists) => {
+    this.iterableService.getListByType('Blast List').subscribe((lists) => {
       this.campaignLists.set(lists);
       this.filteredList.set(lists);
     });
@@ -168,7 +168,7 @@ export class AddCampaignComponent implements OnInit {
       this.filteredTags.set(tags);
     });
     this.updatedList$.subscribe((id) =>
-      this.iterableService.getListByType().subscribe((lists) => {
+      this.iterableService.getListByType('Blast List').subscribe((lists) => {
         this.campaignLists.set(lists);
         this.filteredList.set(lists);
         listsField?.patchValue(null);
