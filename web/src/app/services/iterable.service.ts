@@ -70,16 +70,19 @@ export class IterableService {
       );
   }
 
-  getListByType() {
+  getListByType(filter: string) {
     return this.httpClient
-      .get<CampaignListIterable[]>(`${this.baseUrl}getListByType`, {
-        responseType: 'json',
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          AuthorizationToken: this.authorizationToken,
-          'X-Project': this.store.projectId(),
-        }),
-      })
+      .get<CampaignListIterable[]>(
+        `${this.baseUrl}getListByType?filter=${filter}`,
+        {
+          responseType: 'json',
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
+        }
+      )
       .pipe(
         shareReplay(),
         catchError((error) => {
