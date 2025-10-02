@@ -17,4 +17,18 @@ export const environment = {
     retries: 3,
     delay: 6000,
   },
+  errorLogging: {
+    logNetworkErrors: true,
+    logClientErrors: true,
+    logServerErrors: true,
+    log4xxErrors: true,
+    log5xxErrors: true,
+    logRequestBody: true, // Log request bodies in dev
+    logResponseBody: true, // Log response bodies in dev
+    excludeUrls: ['api/operation/clientlogs', 'api/health'],
+    excludeStatusCodes: [],
+    showUserNotifications: true, // Show notifications in dev
+    redirectOn401: true,
+    loginUrl: '/',
+  },
 };

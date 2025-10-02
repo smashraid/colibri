@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  ErrorHandler,
   importProvidersFrom,
   provideZoneChangeDetection,
 } from '@angular/core';
@@ -13,6 +14,7 @@ import {
   withFetch,
   withInterceptorsFromDi,
   HTTP_INTERCEPTORS,
+  withInterceptors,
 } from '@angular/common/http';
 import { provideMomentDateAdapter } from '@angular/material-moment-adapter';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -41,6 +43,13 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
+import { LoggingService } from './services/logging.service';
+import { GlobalErrorHandler } from './providers/global-error-handler';
+import { errorLoggingInterceptor } from './interceptors/error-logging.interceptor';
+import {
+  ERROR_LOGGING_CONFIG,
+  ErrorLoggingConfig,
+} from './interceptors/error-logging.config';
 
 export function loggerCallback(logLevel: LogLevel, message: string) {
   if (!environment.production) {
@@ -105,7 +114,11 @@ export const appConfig: ApplicationConfig = {
     ),
     provideMomentDateAdapter(),
     //provideNoopAnimations(),
-    provideHttpClient(withInterceptorsFromDi(), withFetch()),
+    provideHttpClient(
+      withInterceptorsFromDi(),
+      withInterceptors([errorLoggingInterceptor]),
+      withFetch()
+    ),
     {
       provide: HTTP_INTERCEPTORS,
       useClass: MsalInterceptor,
@@ -126,6 +139,15 @@ export const appConfig: ApplicationConfig = {
     MsalService,
     MsalGuard,
     MsalBroadcastService,
+    {
+      provide: ErrorHandler,
+      useClass: GlobalErrorHandler,
+    },
+    LoggingService,
+    {
+      provide: ERROR_LOGGING_CONFIG,
+      useValue: environment.errorLogging,
+    },
   ],
 };
 //provideClientHydration(withEventReplay())

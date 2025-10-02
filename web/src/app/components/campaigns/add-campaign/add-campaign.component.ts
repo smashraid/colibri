@@ -60,6 +60,7 @@ import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.mod
 import { maxCampaignDays } from '../../../validators/maxCampaignDays';
 import { ToastComponent } from '../../../shared/toast/toast.component';
 import { selecteValidOption } from '../../../validators/selectedValidOption';
+import { LoggingService } from '../../../services/logging.service';
 
 @Component({
   selector: 'app-add-campaign',
@@ -146,6 +147,7 @@ export class AddCampaignComponent implements OnInit {
     private iterableService: IterableService,
     private databaseService: DatabaseService,
     private spinnerService: SpinnerService,
+    private logger: LoggingService,
     private router: Router,
     private sanitizer: DomSanitizer,
     private announcer: LiveAnnouncer
@@ -305,6 +307,8 @@ export class AddCampaignComponent implements OnInit {
         projectId,
         createdBy: useremail,
       };
+
+      this.logger.info('Create Campaign', campaignCreate);
 
       this.databaseService
         .createCampaign(campaignCreate)

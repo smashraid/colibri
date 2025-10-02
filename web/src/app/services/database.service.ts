@@ -69,13 +69,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignDb(id: number) {
@@ -86,13 +80,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of({} as CampaignRead);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignsByProject(id: number, metadata: PagedMetadata) {
@@ -107,18 +95,7 @@ export class DatabaseService {
           observe: 'response',
         }
       )
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return throwError(
-            () =>
-              new Error(
-                'An error ocurrend Database Service - getCampaignsByProject'
-              )
-          );
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignLists(campaignId: number, metadata: PagedMetadata) {
@@ -133,16 +110,7 @@ export class DatabaseService {
           observe: 'response',
         }
       )
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return throwError(
-            () =>
-              new Error('An error ocurrend Database Service - getCampaignLists')
-          );
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getArchiveDb(id: number) {
@@ -153,13 +121,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of({ campaigns: [], lists: [] } as ArchiveReadViewModel);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getTagsDb() {
@@ -170,13 +132,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([] as string[]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   deleteCampaign(id: number) {
@@ -195,13 +151,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   createCampaignNoSql(request: CampaignDb) {
@@ -224,13 +174,7 @@ export class DatabaseService {
           AuthorizationToken: this.authorizationToken,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   deleteCampaignNoSql(id: number) {
