@@ -25,7 +25,7 @@ export const environment = {
     log5xxErrors: true,
     logRequestBody: true, // Log request bodies in dev
     logResponseBody: true, // Log response bodies in dev
-    excludeUrls: ['api/operation/clientlogs', 'api/health'],
+    excludeUrls: ['api/operation/logClientErrorBatch', 'api/health'],
     excludeStatusCodes: [],
     showUserNotifications: true, // Show notifications in dev
     redirectOn401: true,
