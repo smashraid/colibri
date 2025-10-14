@@ -131,7 +131,7 @@ namespace Colibri.Job.Processor
                             var campaign = blastCampaignResponse[i];
                             var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
                             {
-                                Emails = subscriberList.Emails,
+                                Emails = [],
                                 IterableCampaignId = campaign.CampaignId,
                                 SendAt = campaign.SendAt,
                                 IterableListId = subscriberList.ListId,
