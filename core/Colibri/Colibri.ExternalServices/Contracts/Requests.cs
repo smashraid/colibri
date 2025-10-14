@@ -76,7 +76,7 @@ namespace Colibri.ExternalServices.Contracts
 
     public record BlastRequest(
         [property: JsonProperty("campaign")] CampaignCreateViewModel Campaign,
-        [property: JsonProperty("batchSize")] short BatchSize,
+        [property: JsonProperty("batchSize")] int BatchSize,
         [property: JsonProperty("intervalTime")] int IntervalTime,
         [property: JsonProperty("listNameFormat")] string ListNameFormat,
         [property: JsonProperty("listDescriptionFormat")] string ListDescriptionFormat,
@@ -93,7 +93,7 @@ namespace Colibri.ExternalServices.Contracts
     );
 
     public record BlastListSubscriberRequest(
-        [property: JsonProperty("batchSize")] short BatchSize,
+        [property: JsonProperty("batchSize")] int BatchSize,
         [property: JsonProperty("sourceListId")] long SourceListId,
         [property: JsonProperty("listIds")] IEnumerable<long> ListIds
     );
