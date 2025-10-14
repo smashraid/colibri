@@ -42,7 +42,7 @@ namespace Colibri.ExternalServices
         {
             var httpClient = GetHttpClient(token);
             var httpResponseMessage = await httpClient.PostAsJsonAsync($"{url}", request, cancellationToken);
-            var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options);
+            var response = await httpResponseMessage.Content.ReadFromJsonAsync<TResponse>(_options, cancellationToken);
             _logger.LogWithContext(
                 () => _logger.LogInformation("Iterable Api {@Endpoint}", url),
                 new KeyValuePair<string, object>("Request", System.Text.Json.JsonSerializer.Serialize(request)),

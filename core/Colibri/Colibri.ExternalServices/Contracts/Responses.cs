@@ -8,72 +8,72 @@ using System.Threading.Tasks;
 
 namespace Colibri.ExternalServices.Contracts
 {
-     public record StaticListResponse(
-       [property: JsonProperty("listId")] long ListId
-     ) : ErrorResponse();
+    public record StaticListResponse(
+      [property: JsonProperty("listId")] long ListId
+    ) : ErrorResponse();
 
-     public record SubscriberListResponse
-     (
-         [property: JsonProperty("createdFields")]
+    public record SubscriberListResponse
+    (
+        [property: JsonProperty("createdFields")]
          List<string> CreatedFields,
 
-         [property: JsonProperty("failCount")]
+        [property: JsonProperty("failCount")]
          long FailCount,
 
-         [property: JsonProperty("failedUpdates")]
+        [property: JsonProperty("failedUpdates")]
          FailedUpdatesDto FailedUpdates,
 
-         [property: JsonProperty("filteredOutFields")]
+        [property: JsonProperty("filteredOutFields")]
          List<string> FilteredOutFields,
 
-         [property: JsonProperty("invalidEmails")]
+        [property: JsonProperty("invalidEmails")]
          List<string> InvalidEmails,
 
-         [property: JsonProperty("invalidUserIds")]
+        [property: JsonProperty("invalidUserIds")]
          List<string> InvalidUserIds,
 
-         [property: JsonProperty("successCount")]
+        [property: JsonProperty("successCount")]
          long SuccessCount
-     ) : ErrorResponse();
+    );
 
-     public record CreateCampaginResponse
-     (
-         [property: JsonProperty("campaignId")]
+    public record CreateCampaginResponse
+    (
+        [property: JsonProperty("campaignId")]
          long CampaignId
-     ) : ErrorResponse();
+    ) : ErrorResponse();
 
-     public record CampaignResponse
-     (
-         [property: JsonProperty("campaigns")]
+    public record CampaignResponse
+    (
+        [property: JsonProperty("campaigns")]
          List<ProjectCampaignDto> Campaigns
-     );
+    );
 
-     public record ProjectTemplateResponse
-     (
-         [property: JsonProperty("templates")]
+    public record ProjectTemplateResponse
+    (
+        [property: JsonProperty("templates")]
          List<ProjectTemplateDto> Templates
-     ) : ErrorResponse();
+    ) : ErrorResponse();
 
-     public record CampaignListResponse(
-         [property: JsonProperty("lists")] IReadOnlyList<ProjectCampaignListDto> Lists
-     );
+    public record CampaignListResponse(
+        [property: JsonProperty("lists")] IReadOnlyList<ProjectCampaignListDto> Lists
+    );
 
-     public record BlastListSubscriberResponse(
-         [property: JsonProperty("listId")] long ListId,
-         [property: JsonProperty("emails")] string[] Emails
-     );
+    public record BlastListSubscriberResponse(
+        [property: JsonProperty("listId")] long ListId,
+        [property: JsonProperty("emails")] string[] Emails
+    );
 
-     public record BlastCampaignResponse(
-         [property: JsonProperty("campaignId")] long CampaignId,
-         [property: JsonProperty("sendAt")] string SendAt
-     );
+    public record BlastCampaignResponse(
+        [property: JsonProperty("campaignId")] long CampaignId,
+        [property: JsonProperty("sendAt")] string SendAt
+    );
 
-     public record ErrorResponse(
-       [property: JsonProperty("msg")]
+    public record ErrorResponse(
+      [property: JsonProperty("msg")]
        string? Msg = null,
-       [property: JsonProperty("code")]
+      [property: JsonProperty("code")]
        string? Code = null,
-       [property: JsonProperty("params")]
+      [property: JsonProperty("params")]
        JsonElement? Params = null
-     );
+    );
 }
