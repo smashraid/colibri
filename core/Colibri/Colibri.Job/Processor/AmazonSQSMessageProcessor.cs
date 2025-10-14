@@ -229,7 +229,7 @@ namespace Colibri.Job.Processor
                         await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
                         if (subscriberListResponse != null)
                         {
-                            _logger.LogInformation("CreateBlast - CreateSubscriberList ListId {ListId} EmailsAdded{SuccessCount}", listId, subscriberListResponse.SuccessCount);
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList ListId {ListId} EmailsAdded {SuccessCount}", listId, subscriberListResponse.SuccessCount);
                             emailsAdded.AddRange(subChunk);
                         }
                     }
