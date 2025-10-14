@@ -207,24 +207,30 @@ namespace Colibri.Job.Processor
 
                 for (int i = 0; i < request.ListIds.Count(); i++)
                 {
-                    List<SubscriberDto> chunk = [.. emailChunk.ElementAt(i).Select(email => new SubscriberDto(email))];
+                    var emailSubChunk = emailChunk.Chunk(_jobOptions.EmailBatchSize);
+                    _logger.LogInformation("CreateBlast - CreateSubscriberList EmailChunk {EmailChunk} EmailSubChunk {EmailSubChunk}", emailChunk.Count(), emailSubChunk.Count());
 
-                    var listId = request.ListIds.ElementAt(i);
-
-                    var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
-
-                    var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
+                    foreach (var subChunk in emailSubChunk)
                     {
-                        _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", JsonConvert.SerializeObject(subscriberListRequest));
-                        return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
-                    },
-                    context);
+                        List<SubscriberDto> chunk = [.. subChunk.ElementAt(i).Select(email => new SubscriberDto(email))];
 
-                    await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
-                    if (subscriberListResponse != null)
-                    {
-                        _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
-                        dataResponse.Add(new BlastListSubscriberResponse(listId, emailChunk.ElementAt(i)));
+                        var listId = request.ListIds.ElementAt(i);
+
+                        var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
+
+                        var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
+                        {
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", JsonConvert.SerializeObject(subscriberListRequest));
+                            return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
+                        },
+                        context);
+
+                        await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
+                        if (subscriberListResponse != null)
+                        {
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
+                            dataResponse.Add(new BlastListSubscriberResponse(listId, emailChunk.ElementAt(i)));
+                        }
                     }
                 }
             }

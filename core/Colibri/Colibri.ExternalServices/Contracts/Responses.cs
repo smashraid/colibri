@@ -10,7 +10,7 @@ namespace Colibri.ExternalServices.Contracts
 {
     public record StaticListResponse(
       [property: JsonProperty("listId")] long ListId
-    );
+    ) : ErrorResponse();
     public record SubscriberListResponse
     (
         [property: JsonProperty("createdFields")]
@@ -33,13 +33,13 @@ namespace Colibri.ExternalServices.Contracts
 
         [property: JsonProperty("successCount")]
          long SuccessCount
-    );
+    ) : ErrorResponse();
 
     public record CreateCampaginResponse
     (
         [property: JsonProperty("campaignId")]
          long CampaignId
-    );
+    ) : ErrorResponse();
 
     public record CampaignResponse
     (
