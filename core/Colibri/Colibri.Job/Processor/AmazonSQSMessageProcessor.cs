@@ -207,12 +207,12 @@ namespace Colibri.Job.Processor
 
                 for (int i = 0; i < request.ListIds.Count(); i++)
                 {
-                    var emailSubChunk = emailChunk.Chunk(_jobOptions.EmailBatchSize);
+                    IEnumerable<string[]> emailSubChunk = emailChunk.ElementAt(i).Chunk(_jobOptions.EmailBatchSize);
                     _logger.LogInformation("CreateBlast - CreateSubscriberList EmailChunk {EmailChunk} EmailSubChunk {EmailSubChunk}", emailChunk.Count(), emailSubChunk.Count());
 
                     foreach (var subChunk in emailSubChunk)
                     {
-                        List<SubscriberDto> chunk = [.. subChunk.ElementAt(i).Select(email => new SubscriberDto(email))];
+                        List<SubscriberDto> chunk = [.. subChunk.Select(email => new SubscriberDto(email))];
 
                         var listId = request.ListIds.ElementAt(i);
 
