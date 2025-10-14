@@ -210,17 +210,18 @@ namespace Colibri.Job.Processor
                     IEnumerable<string[]> emailSubChunk = emailChunk.ElementAt(i).Chunk(_jobOptions.EmailBatchSize);
                     _logger.LogInformation("CreateBlast - CreateSubscriberList EmailChunk {EmailChunk} EmailSubChunk {EmailSubChunk}", emailChunk.Count(), emailSubChunk.Count());
 
+                    var listId = request.ListIds.ElementAt(i);
+                    var emailsAdded = new List<string>();
+
                     foreach (var subChunk in emailSubChunk)
                     {
                         List<SubscriberDto> chunk = [.. subChunk.Select(email => new SubscriberDto(email))];
-
-                        var listId = request.ListIds.ElementAt(i);
 
                         var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
 
                         var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
                         {
-                            _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", JsonConvert.SerializeObject(subscriberListRequest));
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList Send ListId {ListId} {@SubscriberListRequest}", listId, JsonConvert.SerializeObject(subscriberListRequest));
                             return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
                         },
                         context);
@@ -228,10 +229,12 @@ namespace Colibri.Job.Processor
                         await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
                         if (subscriberListResponse != null)
                         {
-                            _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
-                            dataResponse.Add(new BlastListSubscriberResponse(listId, emailChunk.ElementAt(i)));
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList ListId {ListId} EmailsAdded{SuccessCount}", listId, subscriberListResponse.SuccessCount);
+                            emailsAdded.AddRange(subChunk);
                         }
                     }
+
+                    dataResponse.Add(new BlastListSubscriberResponse(listId, [.. emailsAdded]));
                 }
             }
             return dataResponse;
