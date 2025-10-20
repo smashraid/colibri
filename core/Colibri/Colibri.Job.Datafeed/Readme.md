@@ -89,11 +89,11 @@ This refactored system processes CSV records and enriches them with data from mu
 ### Table Schema
 
 ```
-PartitionKey | RowKey                | NeedRefresh | LastRefreshed
--------------|-----------------------|-------------|-------------------
-CSV          | plan_geo_general.csv  | true        | 2025-10-17 15:00:30Z
-API          | agentApi              | false       | 2025-10-17 16:00:30Z
-Database     | some_table            | true        | 2025-10-17 15:20:30Z
+PartitionKey | RowKey           | NeedRefresh | LastRefreshed
+-------------|------------------|-------------|-------------------
+CSV          | PlanGeoGeneral   | true        | 2025-10-17 15:00:30Z
+API          | UserProfile      | false       | 2025-10-17 16:00:30Z
+Database     | ProductPricing   | true        | 2025-10-17 15:20:30Z
 ```
 
 ### Usage Flow
