@@ -61,6 +61,9 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     services.AddSingleton<IBlobService, BlobService>();
     services.AddSingleton<ITableStorageService, TableStorageService>();
 
+    // Add Database Service
+    services.AddSingleton<IDatabaseService, DatabaseService>();
+
     // Register processors
     services.AddSingleton<ICsvProcessor, CsvProcessor>();
     services.AddSingleton<IMessageProcessor<DataSourceConfiguration>, AzureMessageProcessor>();

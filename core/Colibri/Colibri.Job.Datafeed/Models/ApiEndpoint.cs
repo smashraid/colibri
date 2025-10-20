@@ -15,9 +15,12 @@ public class ApiEndpoint
     public List<ColumnDefinition>? Columns { get; set; }
 
     // For Database sources
+    public string? DatabaseType { get; set; } // "SqlServer", "PostgreSQL", "MySQL"
     public string? ConnectionString { get; set; }
-    public string? Query { get; set; }
-    public List<string>? Parameters { get; set; }
+    public string? Query { get; set; } // SQL query or stored procedure name
+    public List<string>? Parameters { get; set; } // Parameter names from input CSV
+    public string? CommandType { get; set; } // "Text" or "StoredProcedure" (default: "Text")
+
 
     // For API sources
     public string? Method { get; set; }
@@ -25,7 +28,6 @@ public class ApiEndpoint
     public string? AuthenticationType { get; set; }
     public string? AuthenticationHeader { get; set; }
     public string? AuthenticationToken { get; set; }
-    public int TimeoutSeconds { get; set; } = 30;
     public int RetryCount { get; set; } = 3;
     public int ExpectedStatusCode { get; set; } = 200;
     public Dictionary<string, object>? RequestBodyTemplate { get; set; }
@@ -33,5 +35,6 @@ public class ApiEndpoint
     // Common properties
     public List<string> CacheKeyParameters { get; set; } = [];
     public int CacheDurationMinutes { get; set; } = 60;
+    public int TimeoutSeconds { get; set; } = 30;
     public bool UseNestedObject { get; set; } = true;
 }

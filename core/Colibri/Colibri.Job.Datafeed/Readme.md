@@ -609,6 +609,38 @@ Statistics logged per batch:
         "ExpectedStatusCode": 200,
         "CacheKeyParameters": ["email"],
         "CacheDurationMinutes": 60
+      },
+      {
+        "SourceType": "Database",
+        "Name": "ProductPricing",
+        "DatabaseType": "PostgreSQL",
+        "ConnectionString": "Host=myserver.postgres.database.azure.com;Database=Products;Username=user;Password=pass;SSL Mode=Require;",
+        "Query": "SELECT * FROM product_pricing WHERE active = true",
+        "CompositeKey": ["product_id", "region_code"],
+        "CompositeKeyMapping": {
+          "productId": "product_id",
+          "regionCode": "region_code"
+        },
+        "Columns": [
+          {
+            "Name": "product_id",
+            "Type": "int"
+          },
+          {
+            "Name": "region_code",
+            "Type": "string"
+          },
+          {
+            "Name": "price",
+            "Type": "decimal"
+          },
+          {
+            "Name": "currency",
+            "Type": "string"
+          }
+        ],
+        "CacheDurationMinutes": 60,
+        "UseNestedObject": true
       }
     ]
   }

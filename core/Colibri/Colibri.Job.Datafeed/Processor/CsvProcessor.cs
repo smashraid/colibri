@@ -22,6 +22,7 @@ public class CsvProcessor : ICsvProcessor
     private readonly ICacheService _cacheService;
     private readonly IDataSourceCacheService _dataSourceCacheService;
     private readonly IBlobService _blobService;
+    private readonly IDatabaseService _databaseService;
     private readonly ILogger<CsvProcessor> _logger;
 
     // Statistics
@@ -37,6 +38,7 @@ public class CsvProcessor : ICsvProcessor
         ICacheService cacheService,
         IDataSourceCacheService dataSourceCacheService,
         IBlobService blobService,
+        IDatabaseService databaseService,
         ILogger<CsvProcessor> logger,
         IOptions<IterableOptions> iterableOptions)
     {
@@ -46,6 +48,7 @@ public class CsvProcessor : ICsvProcessor
         _cacheService = cacheService;
         _dataSourceCacheService = dataSourceCacheService;
         _blobService = blobService;
+        _databaseService = databaseService;
         _logger = logger;
         _iterableOptions = iterableOptions.Value;
     }
@@ -145,9 +148,34 @@ public class CsvProcessor : ICsvProcessor
         ApiEndpoint endpoint,
         CancellationToken cancellationToken)
     {
-        _logger.LogWarning("Database data source reading not yet implemented: {Name}", endpoint.Name);
-        await Task.CompletedTask;
-        return new List<Dictionary<string, object>>();
+        if (string.IsNullOrWhiteSpace(endpoint.ConnectionString))
+        {
+            throw new ArgumentException("ConnectionString is required for database datasource");
+        }
+
+        if (string.IsNullOrWhiteSpace(endpoint.Query))
+        {
+            throw new ArgumentException("Query is required for database datasource");
+        }
+
+        _logger.LogInformation("Reading Database data source: {Name} from {DatabaseType}",
+            endpoint.Name, endpoint.DatabaseType ?? "Unknown");
+
+        try
+        {
+            // Execute query without parameters (we'll load ALL data for caching)
+            var data = await _databaseService.ExecuteQueryAsync(endpoint, null, cancellationToken);
+
+            _logger.LogInformation("Successfully read {Count} records from database datasource: {Name}",
+                data.Count, endpoint.Name);
+
+            return data;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reading database datasource: {Name}", endpoint.Name);
+            throw;
+        }
     }
 
     private async Task<List<Dictionary<string, object>>> ReadMainCsvFileAsync(
