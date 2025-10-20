@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Colibri.Shared.ViewModels;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Colibri.ExternalServices.Contracts
 {
@@ -108,4 +110,21 @@ namespace Colibri.ExternalServices.Contracts
     );
 
 
+    public class UserUpdateRequest
+    {
+        [JsonPropertyName("createNewFields")]
+        public bool CreateNewFields { get; set; } = true;
+
+        [JsonPropertyName("dataFields")]
+        public Dictionary<string, object>? DataFields { get; init; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [JsonPropertyName("mergeNestedObjects")]
+        public bool MergeNestedObjects { get; set; } = true;
+
+        [JsonPropertyName("preferUserId")]
+        public bool PreferUserId { get; set; } = false;
+    }
 }

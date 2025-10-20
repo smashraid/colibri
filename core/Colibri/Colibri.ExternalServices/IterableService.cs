@@ -108,5 +108,10 @@ namespace Colibri.ExternalServices
                new KeyValuePair<string, object>("Url", httpClient.BaseAddress?.AbsoluteUri ?? string.Empty));
             return result;
         }
+
+        public async Task<ErrorResponse?> UpdateUserAsync(UserUpdateRequest request, string token, CancellationToken cancellationToken)
+        {
+            return await SendPost<ErrorResponse, UserUpdateRequest>("users/update", request, token, cancellationToken);
+        }
     }
 }
