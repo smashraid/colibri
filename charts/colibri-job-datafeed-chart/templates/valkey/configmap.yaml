@@ -12,10 +12,10 @@ data:
     timeout 0
     tcp-keepalive 300
     maxmemory {{ .Values.valkey.config.maxmemory }}
-    maxmemory-policy {{ .Values.valkey.config.maxmemory-policy }}
+    maxmemory-policy {{ .Values.valkey.config.maxmemoryPolicy }}
     appendonly {{ .Values.valkey.config.appendonly }}
-    auto-aof-rewrite-percentage {{ .Values.valkey.config.auto-aof-rewrite-percentage }}
-    auto-aof-rewrite-min-size {{ .Values.valkey.config.auto-aof-rewrite-min-size }}
+    auto-aof-rewrite-percentage {{ .Values.valkey.config.autoAOFRewritePercentage }}
+    auto-aof-rewrite-min-size {{ .Values.valkey.config.autoAOFRewriteMinSize }}
     {{- if .Values.valkey.auth.enabled }}
     requirepass ${VALKEY_PASSWORD}
     {{- end }}

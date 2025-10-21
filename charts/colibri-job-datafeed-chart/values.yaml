@@ -27,8 +27,8 @@ app:
     Splunk__EventCollectorToken: "D6529CD2-9A04-49C0-B3D7-899A5D0CC125"
     Splunk__Host: "Colibri.Job.Datafeed"
     Splunk__Index: "iterable_qa"
-    Splunk__Source: "colibri-job-datafeed"
-    Splunk__SourceType: "colibri-job-datafeed"
+    Splunk__Source: "job-datafeed"
+    Splunk__SourceType: "job-datafeed"
     Splunk__BatchSizeLimit: 100
     Splunk__BatchIntervalInSeconds: 2
     Splunk__RestrictedToMinimumLevel: "Information"
@@ -90,10 +90,10 @@ valkey:
   # Valkey configuration
   config:
     maxmemory: "1gb"
-    maxmemory-policy: "allkeys-lru"
+    maxmemoryPolicy: "allkeys-lru"
     appendonly: "yes"
-    auto-aof-rewrite-percentage: "50"
-    auto-aof-rewrite-min-size: "64mb"
+    autoAOFRewritePercentage: "50"
+    autoAOFRewriteMinSize: "64mb"
 
   resources:
     requests:

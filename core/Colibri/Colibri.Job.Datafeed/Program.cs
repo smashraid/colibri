@@ -64,6 +64,7 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     // Register cache services
     services.AddSingleton<ICacheService, MemoryCacheService>();
     services.AddSingleton<ICacheService, RedisCacheService>();
+    services.AddSingleton<ICacheService, ValkeyCacheService>();
     services.AddSingleton<IDataSourceCacheService, DataSourceCacheService>();
 
     // Register Azure services
@@ -167,12 +168,72 @@ static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheO
     Console.WriteLine("✓ Using Redis Cache");
 }
 
+static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cacheOptions)
+{
+    if (string.IsNullOrWhiteSpace(cacheOptions.RedisConnectionString))
+    {
+        throw new InvalidOperationException(
+            "Valkey connection string is required when Cache:Provider is set to 'Valkey'. " +
+            "Please configure Cache:RedisConnectionString in appsettings.json");
+    }
+
+    // Configure Valkey connection (uses Redis protocol)
+    var valkeyConfigOptions = ConfigurationOptions.Parse(cacheOptions.RedisConnectionString);
+    valkeyConfigOptions.ConnectTimeout = cacheOptions.RedisConnectTimeout;
+    valkeyConfigOptions.SyncTimeout = cacheOptions.RedisSyncTimeout;
+    valkeyConfigOptions.AbortOnConnectFail = cacheOptions.RedisAbortOnConnectFail;
+
+    if (cacheOptions.RedisEnableRetry)
+    {
+        valkeyConfigOptions.ConnectRetry = 3;
+        valkeyConfigOptions.ReconnectRetryPolicy = new ExponentialRetry(5000);
+    }
+
+    // Register ConnectionMultiplexer as singleton
+    services.AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            logger.LogInformation("Connecting to Valkey: {Endpoint}",
+                valkeyConfigOptions.EndPoints.FirstOrDefault());
+
+            var connection = ConnectionMultiplexer.Connect(valkeyConfigOptions);
+
+            connection.ConnectionFailed += (sender, args) =>
+            {
+                logger.LogError("Valkey connection failed: {FailureType} - {Exception}",
+                    args.FailureType, args.Exception?.Message);
+            };
+
+            connection.ConnectionRestored += (sender, args) =>
+            {
+                logger.LogInformation("Valkey connection restored");
+            };
+
+            logger.LogInformation("✓ Connected to Valkey successfully");
+
+            return connection;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to connect to Valkey");
+            throw;
+        }
+    });
+}
+
 static void ConfigureCacheService(IServiceCollection services, CacheOptions cacheOptions)
 {
     var provider = cacheOptions.Provider?.ToLower() ?? "memory";
 
     switch (provider)
     {
+        case "valkey":
+            ConfigureValkeyCache(services, cacheOptions);
+            break;
+
         case "redis":
             ConfigureRedisCache(services, cacheOptions);
             break;
