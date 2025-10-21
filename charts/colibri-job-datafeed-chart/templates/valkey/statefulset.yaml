@@ -1,0 +1,85 @@
+{{- if .Values.valkey.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  serviceName: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: valkey
+  template:
+    metadata:
+      labels:
+        {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: "{{ .Values.valkey.image.repository }}:{{ .Values.valkey.image.tag }}"
+          imagePullPolicy: {{ .Values.valkey.image.pullPolicy }}
+          ports:
+            - name: client
+              containerPort: {{ .Values.valkey.service.port }}
+              protocol: TCP
+          command:
+            - valkey-server
+            - "/etc/valkey/valkey.conf"
+          env:
+            {{- if .Values.valkey.auth.enabled }}
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey-auth
+                  key: password
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/valkey
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.valkey.resources | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - valkey-cli
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - valkey-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey-config
+        {{- if .Values.valkey.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey-data
+        {{- else }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+  {{- if .Values.valkey.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: {{ .Values.valkey.persistence.storageClass | default "" }}
+        resources:
+          requests:
+            storage: {{ .Values.valkey.persistence.size }}
+  {{- end }}
+{{- end }}

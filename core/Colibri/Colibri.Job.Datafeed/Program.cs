@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using StackExchange.Redis;
 
 var hostBuilder = Host.CreateDefaultBuilder()
     .ConfigureHostConfiguration(options =>
@@ -43,18 +44,26 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     var azureStorageOptions = azureStorageSection.Get<AzureServiceStorageOptions>()
         ?? new AzureServiceStorageOptions();
 
+    var cacheSection = configuration.GetRequiredSection(CacheOptions.Path);
+    var cacheOptions = cacheSection.Get<CacheOptions>() ?? new CacheOptions();
+
     // Register configuration options
     services.Configure<ProcessingConfigurationOptions>(processingConfigurationSection);
     services.Configure<IterableOptions>(iterableSection);
     services.Configure<AzureServiceBusOptions>(azureServiceBusSection);
     services.Configure<AzureServiceStorageOptions>(azureStorageSection);
+    services.Configure<CacheOptions>(cacheSection);
 
     // Register HTTP client and memory cache
     services.AddHttpClient();
     services.AddMemoryCache();
 
+    // Configure cache service based on provider
+    ConfigureCacheService(services, cacheOptions);
+
     // Register cache services
     services.AddSingleton<ICacheService, MemoryCacheService>();
+    services.AddSingleton<ICacheService, RedisCacheService>();
     services.AddSingleton<IDataSourceCacheService, DataSourceCacheService>();
 
     // Register Azure services
@@ -88,6 +97,91 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
 
     // Register the background service
     services.AddHostedService<AzureMessageProcessingService>();
+}
+
+static void ConfigureMemoryCache(IServiceCollection services)
+{
+    services.AddSingleton<ICacheService, MemoryCacheService>();
+
+    Console.WriteLine("✓ Using In-Memory Cache");
+}
+
+static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheOptions)
+{
+    if (string.IsNullOrWhiteSpace(cacheOptions.RedisConnectionString))
+    {
+        throw new InvalidOperationException(
+            "Redis connection string is required when Cache:Provider is set to 'Redis'. " +
+            "Please configure Cache:RedisConnectionString in appsettings.json");
+    }
+
+    // Configure Redis connection
+    var redisConfigOptions = ConfigurationOptions.Parse(cacheOptions.RedisConnectionString);
+    redisConfigOptions.ConnectTimeout = cacheOptions.RedisConnectTimeout;
+    redisConfigOptions.SyncTimeout = cacheOptions.RedisSyncTimeout;
+    redisConfigOptions.AbortOnConnectFail = cacheOptions.RedisAbortOnConnectFail;
+
+    if (cacheOptions.RedisEnableRetry)
+    {
+        redisConfigOptions.ConnectRetry = 3;
+        redisConfigOptions.ReconnectRetryPolicy = new ExponentialRetry(5000); // 5 seconds
+    }
+
+    // Register ConnectionMultiplexer as singleton
+    services.AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            logger.LogInformation("Connecting to Redis: {Endpoint}",
+                redisConfigOptions.EndPoints.FirstOrDefault());
+
+            var connection = ConnectionMultiplexer.Connect(redisConfigOptions);
+
+            connection.ConnectionFailed += (sender, args) =>
+            {
+                logger.LogError("Redis connection failed: {FailureType} - {Exception}",
+                    args.FailureType, args.Exception?.Message);
+            };
+
+            connection.ConnectionRestored += (sender, args) =>
+            {
+                logger.LogInformation("Redis connection restored");
+            };
+
+            logger.LogInformation("✓ Connected to Redis successfully");
+
+            return connection;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to connect to Redis. Falling back to in-memory cache.");
+            throw;
+        }
+    });
+
+    // Register Redis cache service
+    services.AddSingleton<ICacheService, RedisCacheService>();
+
+    Console.WriteLine("✓ Using Redis Cache");
+}
+
+static void ConfigureCacheService(IServiceCollection services, CacheOptions cacheOptions)
+{
+    var provider = cacheOptions.Provider?.ToLower() ?? "memory";
+
+    switch (provider)
+    {
+        case "redis":
+            ConfigureRedisCache(services, cacheOptions);
+            break;
+
+        case "memory":
+        default:
+            ConfigureMemoryCache(services);
+            break;
+    }
 }
 
 static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder builder)

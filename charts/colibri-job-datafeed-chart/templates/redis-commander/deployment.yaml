@@ -1,0 +1,58 @@
+{{- if .Values.redisCommander.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-redis-commander
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-commander
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-commander
+  template:
+    metadata:
+      labels:
+        {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-commander
+    spec:
+      containers:
+        - name: redis-commander
+          image: "{{ .Values.redisCommander.image.repository }}:{{ .Values.redisCommander.image.tag }}"
+          imagePullPolicy: {{ .Values.redisCommander.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.redisCommander.service.port }}
+              protocol: TCP
+          env:
+            - name: REDIS_HOSTS
+              value: {{ .Values.redisCommander.env.REDIS_HOSTS | quote }}
+            {{- if .Values.redisCommander.env.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              value: {{ .Values.redisCommander.env.REDIS_PASSWORD | quote }}
+            {{- end }}
+            {{- if .Values.redisCommander.env.HTTP_USER }}
+            - name: HTTP_USER
+              value: {{ .Values.redisCommander.env.HTTP_USER | quote }}
+            {{- end }}
+            {{- if .Values.redisCommander.env.HTTP_PASSWORD }}
+            - name: HTTP_PASSWORD
+              value: {{ .Values.redisCommander.env.HTTP_PASSWORD | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.redisCommander.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+{{- end }}

@@ -1,0 +1,52 @@
+{{- if .Values.redisInsight.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-redis-insight
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-insight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-insight
+  template:
+    metadata:
+      labels:
+        {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-insight
+    spec:
+      containers:
+        - name: redis-insight
+          image: "{{ .Values.redisInsight.image.repository }}:{{ .Values.redisInsight.image.tag }}"
+          imagePullPolicy: {{ .Values.redisInsight.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.redisInsight.service.port }}
+              protocol: TCP
+          env:
+            - name: REDIS_HOST
+              value: {{ .Values.redisInsight.env.REDIS_HOST | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redisInsight.env.REDIS_PORT | quote }}
+            {{- if .Values.redisInsight.env.REDIS_PASSWORD }}
+            - name: REDIS_PASSWORD
+              value: {{ .Values.redisInsight.env.REDIS_PASSWORD | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.redisInsight.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+{{- end }}
