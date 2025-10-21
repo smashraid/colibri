@@ -28,3 +28,11 @@ services:
       dockerfile: Colibri.Job/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
+
+  job-datafeed:
+    image: ${REPOSITORY}/colibri-job-datafeed:${BUILDNUMBER}
+    build:
+      context: ./core/Colibri
+      dockerfile: Colibri.Job.Datafeed/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Release
