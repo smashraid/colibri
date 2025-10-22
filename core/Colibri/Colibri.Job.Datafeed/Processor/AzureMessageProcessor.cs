@@ -11,16 +11,19 @@ public class AzureMessageProcessor : IMessageProcessor<DataSourceConfiguration>
     private readonly ICsvProcessor _csvProcessor;
     private readonly ITableStorageService _tableStorageService;
     private readonly IDataSourceCacheService _dataSourceCacheService;
+    private readonly IDistributedLockService _distributedLockService;
 
     public AzureMessageProcessor(
         ICsvProcessor csvProcessor,
         ITableStorageService tableStorageService,
         IDataSourceCacheService dataSourceCacheService,
+        IDistributedLockService distributedLockService,
         ILogger<AzureMessageProcessor> logger)
     {
         _csvProcessor = csvProcessor;
         _tableStorageService = tableStorageService;
         _dataSourceCacheService = dataSourceCacheService;
+        _distributedLockService = distributedLockService;
         _logger = logger;
     }
 
@@ -39,7 +42,7 @@ public class AzureMessageProcessor : IMessageProcessor<DataSourceConfiguration>
                     if (endpoint.SourceType.Equals("CSV", StringComparison.OrdinalIgnoreCase) ||
                         endpoint.SourceType.Equals("Database", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EnsureDataSourceCachedAsync(endpoint, cancellationToken);
+                        await EnsureDataSourceCachedAsync(endpoint, message.LockConfiguration, cancellationToken);
                     }
                 }
             }
@@ -61,7 +64,10 @@ public class AzureMessageProcessor : IMessageProcessor<DataSourceConfiguration>
         }
     }
 
-    private async Task EnsureDataSourceCachedAsync(ApiEndpoint endpoint, CancellationToken cancellationToken)
+    private async Task EnsureDataSourceCachedAsync(
+           ApiEndpoint endpoint,
+           LockConfiguration lockConfig,
+           CancellationToken cancellationToken)
     {
         var sourceName = endpoint.Name;
         var sourceType = endpoint.SourceType.ToUpper();
@@ -84,17 +90,87 @@ public class AzureMessageProcessor : IMessageProcessor<DataSourceConfiguration>
                 _logger.LogInformation("Cache refresh needed for {SourceType}: {SourceName}",
                     sourceType, sourceName);
 
-                // Load and cache the data source
-                await LoadAndCacheDataSourceAsync(endpoint, cancellationToken);
+                if (lockConfig.EnableDistributedLock)
+                {
+                    // Use distributed lock to prevent multiple pods from refreshing simultaneously
+                    var lockKey = $"cache-refresh:{sourceType}:{sourceName}";
 
-                // Update the table storage to reflect refresh complete
-                await _tableStorageService.UpdateLastRefreshedAsync(
-                    sourceType,
-                    sourceName,
-                    cancellationToken);
+                    var lockAcquired = await _distributedLockService.ExecuteWithLockAsync(
+                        lockKey,
+                        async () =>
+                        {
+                            // Double-check if cache is still needed after acquiring lock
+                            // Another pod might have already refreshed it
+                            var stillNeedRefresh = await _tableStorageService.ShouldRefreshCacheAsync(
+                                sourceType,
+                                sourceName,
+                                cancellationToken);
 
-                _logger.LogInformation("Successfully cached {SourceType}: {SourceName}",
-                    sourceType, sourceName);
+                            var stillNotCached = !await _dataSourceCacheService.IsCachedAsync(
+                                sourceName,
+                                cancellationToken);
+
+                            if (stillNeedRefresh || stillNotCached)
+                            {
+                                _logger.LogInformation(
+                                    "Acquired lock, proceeding with cache refresh for {SourceType}: {SourceName}",
+                                    sourceType, sourceName);
+
+                                // Load and cache the data source
+                                await LoadAndCacheDataSourceAsync(endpoint, cancellationToken);
+
+                                // Update the table storage to reflect refresh complete
+                                await _tableStorageService.UpdateLastRefreshedAsync(
+                                    sourceType,
+                                    sourceName,
+                                    cancellationToken);
+
+                                _logger.LogInformation("Successfully cached {SourceType}: {SourceName}",
+                                    sourceType, sourceName);
+                            }
+                            else
+                            {
+                                _logger.LogInformation(
+                                    "Another pod already refreshed the cache for {SourceType}: {SourceName}",
+                                    sourceType, sourceName);
+                            }
+                        },
+                        lockConfig.WaitTimeSeconds,
+                        lockConfig.LockExpirySeconds,
+                        cancellationToken);
+
+                    if (!lockAcquired)
+                    {
+                        _logger.LogWarning(
+                            "Could not acquire lock for {SourceType}: {SourceName}. " +
+                            "Another pod is likely refreshing the cache. Will use existing cache if available.",
+                            sourceType, sourceName);
+
+                        // Check if cache is now available (another pod might have refreshed it)
+                        if (!await _dataSourceCacheService.IsCachedAsync(sourceName, cancellationToken))
+                        {
+                            throw new InvalidOperationException(
+                                $"Cache refresh required but lock could not be acquired and cache is not available for {sourceType}/{sourceName}");
+                        }
+                    }
+                }
+                else
+                {
+                    // No distributed lock - proceed directly (not recommended for production with multiple pods)
+                    _logger.LogWarning(
+                        "Distributed lock is disabled. Proceeding without lock for {SourceType}: {SourceName}",
+                        sourceType, sourceName);
+
+                    await LoadAndCacheDataSourceAsync(endpoint, cancellationToken);
+
+                    await _tableStorageService.UpdateLastRefreshedAsync(
+                        sourceType,
+                        sourceName,
+                        cancellationToken);
+
+                    _logger.LogInformation("Successfully cached {SourceType}: {SourceName}",
+                        sourceType, sourceName);
+                }
             }
             else
             {

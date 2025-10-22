@@ -54,6 +54,9 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     services.Configure<AzureServiceStorageOptions>(azureStorageSection);
     services.Configure<CacheOptions>(cacheSection);
 
+    // Register Distributed Lock Service (requires Valkey/Redis)
+    services.AddSingleton<IDistributedLockService, DistributedLockService>();
+
     // Register HTTP client and memory cache
     services.AddHttpClient();
     services.AddMemoryCache();
@@ -105,6 +108,7 @@ static void ConfigureMemoryCache(IServiceCollection services)
     services.AddSingleton<ICacheService, MemoryCacheService>();
 
     Console.WriteLine("✓ Using In-Memory Cache");
+    Console.WriteLine("⚠ WARNING: Distributed lock requires Valkey/Redis. In-memory cache does not support distributed locking.");
 }
 
 static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheOptions)
