@@ -1,6 +1,5 @@
 ﻿using Colibri.ExternalServices;
 using Colibri.ExternalServices.Options;
-using Colibri.Job.Datafeed.Models;
 using Colibri.Job.Datafeed.Options;
 using Colibri.Job.Datafeed.Processor;
 using Colibri.Job.Datafeed.Services;
@@ -30,21 +29,18 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
 
     // Bind configuration options
     var processingConfigurationSection = configuration.GetRequiredSection(ProcessingConfigurationOptions.Path);
+    var iterableSection = configuration.GetRequiredSection(IterableOptions.Path);
+    var azureServiceBusSection = configuration.GetRequiredSection(AzureServiceBusOptions.Path);
+    var azureStorageSection = configuration.GetRequiredSection(AzureServiceStorageOptions.Path);
+    var cacheSection = configuration.GetRequiredSection(CacheOptions.Path);
+
     var processingConfigurationOptions = processingConfigurationSection.Get<ProcessingConfigurationOptions>()
         ?? new ProcessingConfigurationOptions();
-
-    var iterableSection = configuration.GetRequiredSection(IterableOptions.Path);
     var iterableOptions = iterableSection.Get<IterableOptions>() ?? new IterableOptions();
-
-    var azureServiceBusSection = configuration.GetRequiredSection(AzureServiceBusOptions.Path);
     var azureServiceBusOptions = azureServiceBusSection.Get<AzureServiceBusOptions>()
         ?? new AzureServiceBusOptions();
-
-    var azureStorageSection = configuration.GetRequiredSection(AzureServiceStorageOptions.Path);
     var azureStorageOptions = azureStorageSection.Get<AzureServiceStorageOptions>()
         ?? new AzureServiceStorageOptions();
-
-    var cacheSection = configuration.GetRequiredSection(CacheOptions.Path);
     var cacheOptions = cacheSection.Get<CacheOptions>() ?? new CacheOptions();
 
     // Register configuration options
@@ -54,20 +50,14 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     services.Configure<AzureServiceStorageOptions>(azureStorageSection);
     services.Configure<CacheOptions>(cacheSection);
 
-    // Register Distributed Lock Service (requires Valkey/Redis)
-    services.AddSingleton<IDistributedLockService, DistributedLockService>();
-
-    // Register HTTP client and memory cache
+    // Register HTTP client and memory cache infrastructure
     services.AddHttpClient();
-    services.AddMemoryCache();
+    services.AddMemoryCache(); // Required by MemoryCacheService
 
-    // Configure cache service based on provider
+    // Configure cache service based on provider (registers ICacheService)
     ConfigureCacheService(services, cacheOptions);
 
-    // Register cache services
-    services.AddSingleton<ICacheService, MemoryCacheService>();
-    services.AddSingleton<ICacheService, RedisCacheService>();
-    services.AddSingleton<ICacheService, ValkeyCacheService>();
+    // Register data source cache service (uses ICacheService)
     services.AddSingleton<IDataSourceCacheService, DataSourceCacheService>();
 
     // Register Azure services
@@ -79,10 +69,12 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
 
     // Register processors
     services.AddSingleton<ICsvProcessor, CsvProcessor>();
-    services.AddSingleton<IMessageProcessor<DataSourceConfiguration>, AzureMessageProcessor>();
 
     // Register business services
     services.AddSingleton<IIterableService, IterableService>();
+
+    // Register Retry Policy Service (Polly)
+    services.AddSingleton<IRetryPolicyService, RetryPolicyService>();
 
     // Register Azure clients
     services.AddAzureClients(builder =>
@@ -99,16 +91,44 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
         builder.AddTableServiceClient(azureStorageOptions.ConnectionString);
     });
 
-    // Register the background service
-    services.AddHostedService<AzureMessageProcessingService>();
+    // ⭐ SERVICE MODE ROUTING - Determines which background service to run
+    var serviceMode = configuration.GetValue<string>("SERVICE_MODE")?.ToUpper() ?? "PROCESSING";
+
+    Console.WriteLine("========================================");
+    Console.WriteLine($"Service Mode: {serviceMode}");
+    Console.WriteLine("========================================");
+
+    if (serviceMode == "WARMUP")
+    {
+        // WARMUP JOB - Loads cache on demand (1 pod only, no RedLock needed)
+        services.AddHostedService<DedicatedCacheWarmupService>();
+        Console.WriteLine("✓ Cache Warmup Service registered");
+        Console.WriteLine("✓ Subscription: " + azureServiceBusOptions.WarmupSubscription);
+        Console.WriteLine("✓ Expected replicas: 1 (single pod)");
+        Console.WriteLine("✓ No distributed lock needed");
+    }
+    else if (serviceMode == "PROCESSING")
+    {
+        // PROCESSING JOB - Processes CSV files using warm cache (3+ pods)
+        services.AddHostedService<CsvProcessingService>();
+        Console.WriteLine("✓ CSV Processing Service registered");
+        Console.WriteLine("✓ Subscription: " + azureServiceBusOptions.Subscription);
+        Console.WriteLine("✓ Expected replicas: 3+ (multi-pod)");
+        Console.WriteLine("✓ Cache must be pre-warmed");
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            $"Invalid SERVICE_MODE: {serviceMode}. Valid values: WARMUP, PROCESSING");
+    }
+
+    Console.WriteLine("========================================");
 }
 
 static void ConfigureMemoryCache(IServiceCollection services)
 {
     services.AddSingleton<ICacheService, MemoryCacheService>();
-
     Console.WriteLine("✓ Using In-Memory Cache");
-    Console.WriteLine("⚠ WARNING: Distributed lock requires Valkey/Redis. In-memory cache does not support distributed locking.");
 }
 
 static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheOptions)
@@ -120,7 +140,6 @@ static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheO
             "Please configure Cache:RedisConnectionString in appsettings.json");
     }
 
-    // Configure Redis connection
     var redisConfigOptions = ConfigurationOptions.Parse(cacheOptions.RedisConnectionString);
     redisConfigOptions.ConnectTimeout = cacheOptions.RedisConnectTimeout;
     redisConfigOptions.SyncTimeout = cacheOptions.RedisSyncTimeout;
@@ -129,10 +148,9 @@ static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheO
     if (cacheOptions.RedisEnableRetry)
     {
         redisConfigOptions.ConnectRetry = 3;
-        redisConfigOptions.ReconnectRetryPolicy = new ExponentialRetry(5000); // 5 seconds
+        redisConfigOptions.ReconnectRetryPolicy = new ExponentialRetry(5000);
     }
 
-    // Register ConnectionMultiplexer as singleton
     services.AddSingleton<IConnectionMultiplexer>(sp =>
     {
         var logger = sp.GetRequiredService<ILogger<Program>>();
@@ -156,19 +174,16 @@ static void ConfigureRedisCache(IServiceCollection services, CacheOptions cacheO
             };
 
             logger.LogInformation("✓ Connected to Redis successfully");
-
             return connection;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to connect to Redis. Falling back to in-memory cache.");
+            logger.LogError(ex, "Failed to connect to Redis");
             throw;
         }
     });
 
-    // Register Redis cache service
     services.AddSingleton<ICacheService, RedisCacheService>();
-
     Console.WriteLine("✓ Using Redis Cache");
 }
 
@@ -181,7 +196,6 @@ static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cache
             "Please configure Cache:RedisConnectionString in appsettings.json");
     }
 
-    // Configure Valkey connection (uses Redis protocol)
     var valkeyConfigOptions = ConfigurationOptions.Parse(cacheOptions.RedisConnectionString);
     valkeyConfigOptions.ConnectTimeout = cacheOptions.RedisConnectTimeout;
     valkeyConfigOptions.SyncTimeout = cacheOptions.RedisSyncTimeout;
@@ -193,7 +207,6 @@ static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cache
         valkeyConfigOptions.ReconnectRetryPolicy = new ExponentialRetry(5000);
     }
 
-    // Register ConnectionMultiplexer as singleton
     services.AddSingleton<IConnectionMultiplexer>(sp =>
     {
         var logger = sp.GetRequiredService<ILogger<Program>>();
@@ -217,7 +230,6 @@ static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cache
             };
 
             logger.LogInformation("✓ Connected to Valkey successfully");
-
             return connection;
         }
         catch (Exception ex)
@@ -226,6 +238,8 @@ static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cache
             throw;
         }
     });
+
+    Console.WriteLine("✓ Using Valkey Cache");
 }
 
 static void ConfigureCacheService(IServiceCollection services, CacheOptions cacheOptions)
@@ -252,8 +266,6 @@ static void ConfigureCacheService(IServiceCollection services, CacheOptions cach
 static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder builder)
 {
     var configuration = context.Configuration;
-    var serilogSplunkConfiguration = configuration.GetRequiredSection(SerilogSplunkOptions.Path)
-       .Get<SerilogSplunkOptions>() ?? new SerilogSplunkOptions();
 
     builder.Configure(options =>
     {
@@ -266,29 +278,6 @@ static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder builder
 
     Log.Logger = new LoggerConfiguration()
         .WriteTo.Console()
-        // Uncomment below for Splunk integration
-        // .WriteTo.EventCollector(
-        //     splunkHost: serilogSplunkConfiguration.SplunkHost,
-        //     eventCollectorToken: serilogSplunkConfiguration.EventCollectorToken,
-        //     sourceType: serilogSplunkConfiguration.SourceType,
-        //     host: serilogSplunkConfiguration.Host,
-        //     index: serilogSplunkConfiguration.Index,
-        //     batchIntervalInSeconds: serilogSplunkConfiguration.BatchIntervalInSeconds,
-        //     batchSizeLimit: serilogSplunkConfiguration.BatchSizeLimit,
-        //     fields: serilogSplunkConfiguration.Fields,
-        //     restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
-        // )
-        // .Enrich.FromGlobalLogContext()
-        // .Enrich.FromLogContext()
-        // .Enrich.WithClientIp()
-        // .Enrich.WithCorrelationId()
-        // .Enrich.WithThreadId()
-        // .Enrich.WithThreadName()
-        // .Enrich.WithMachineName()
-        // .Enrich.WithEnvironmentName()
-        // .Enrich.WithEnvironmentUserName()
-        // .Enrich.WithProcessId()
-        // .Enrich.WithProcessName()
         .CreateLogger();
 
     builder.Services.AddSerilog();
