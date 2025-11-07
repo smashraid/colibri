@@ -1,10 +1,9 @@
-using System;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using Colibri.Job.Datafeed.Exceptions;
 using Colibri.Job.Datafeed.Models;
 using Colibri.Job.Datafeed.Options;
 using Colibri.Job.Datafeed.Processor;
-using Colibri.Job.Datafeed.Services;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -14,10 +13,9 @@ using Serilog.Context;
 namespace Colibri.Job.Datafeed.Services;
 
 /// <summary>
-/// Simplified CSV processing service
-/// Assumes cache is already warmed up by DedicatedCacheWarmupService
+/// CSV processing service - Processes CSV files using pre-warmed cache
 /// Listens to "csv-processing" subscription
-/// Can run with multiple replicas (3+ pods) - no cache loading race conditions!
+/// Can run with multiple replicas (3+ pods) - no cache loading!
 /// </summary>
 internal class CsvProcessingService : BackgroundService, IAsyncDisposable
 {
@@ -39,13 +37,16 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
         _azureServiceBusOptions = azureServiceBusOptions.Value;
         _serviceBusClient = azureClientFactory.CreateClient(_azureServiceBusOptions.Name);
 
+        // Build processor options from configuration
         var processorOptions = new ServiceBusProcessorOptions
         {
-            AutoCompleteMessages = false,
-            MaxConcurrentCalls = 1, // Process one message at a time
-            PrefetchCount = 0,
-            MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(30),
-            ReceiveMode = ServiceBusReceiveMode.PeekLock
+            AutoCompleteMessages = _azureServiceBusOptions.Options.AutoCompleteMessages,
+            MaxConcurrentCalls = _azureServiceBusOptions.Options.MaxConcurrentCalls,
+            PrefetchCount = _azureServiceBusOptions.Options.PrefetchCount,
+            MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(_azureServiceBusOptions.Options.MaxAutoLockRenewalDurationMinutes),
+            ReceiveMode = _azureServiceBusOptions.Options.ReceiveMode.ToLower() == "receiveanddelete"
+                ? ServiceBusReceiveMode.ReceiveAndDelete
+                : ServiceBusReceiveMode.PeekLock
         };
 
         _processor = _serviceBusClient.CreateProcessor(
@@ -59,11 +60,20 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
         _csvProcessor = csvProcessor;
         _dataSourceCacheService = dataSourceCacheService;
         _logger = logger;
+
+        _logger.LogInformation(
+            "CSV Processing Service initialized - Topic: {Topic}, Subscription: {Subscription}, " +
+            "MaxConcurrentCalls: {MaxConcurrentCalls}, AutoComplete: {AutoComplete}",
+            _azureServiceBusOptions.Topic,
+            _azureServiceBusOptions.Subscription,
+            processorOptions.MaxConcurrentCalls,
+            processorOptions.AutoCompleteMessages);
     }
 
     private Task ProcessErrorAsync(ProcessErrorEventArgs args)
     {
-        _logger.LogWarning("Service Bus Error: Identifier={Identifier}, Source={ErrorSource}, Exception={Exception}",
+        _logger.LogWarning(
+            "Service Bus Error: Identifier={Identifier}, Source={ErrorSource}, Exception={Exception}",
             args.Identifier,
             args.ErrorSource,
             args.Exception.Message);
@@ -120,7 +130,7 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
                     args.CancellationToken);
 
                 // Complete the message
-                await args.CompleteMessageAsync(args.Message);
+                await args.CompleteMessageAsync(args.Message, args.CancellationToken);
 
                 _logger.LogInformation("Successfully processed CSV message: {MessageId}", messageId);
             }
@@ -130,10 +140,15 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
 
                 // Don't dead-letter - abandon so it can be retried after cache warmup
                 await args.AbandonMessageAsync(args.Message);
+
+                _logger.LogWarning(
+                    "Message {MessageId} abandoned. Will retry after cache is warmed up.",
+                    messageId);
             }
             catch (OperationCanceledException)
             {
                 _logger.LogWarning("Message processing cancelled: {MessageId}", messageId);
+                // Don't complete or dead-letter - let it be retried
             }
             catch (Exception ex)
             {
@@ -143,17 +158,27 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
                 {
                     await args.DeadLetterMessageAsync(args.Message, "ProcessingFailed",
                         $"Failed after {args.Message.DeliveryCount} attempts: {ex.Message}");
+
+                    _logger.LogError(
+                        "Message {MessageId} dead-lettered after {DeliveryCount} attempts",
+                        messageId,
+                        args.Message.DeliveryCount);
                 }
                 else
                 {
                     await args.AbandonMessageAsync(args.Message);
+
+                    _logger.LogWarning(
+                        "Message {MessageId} abandoned. Attempt {DeliveryCount}/3",
+                        messageId,
+                        args.Message.DeliveryCount);
                 }
             }
         }
     }
 
     private async Task VerifyRequiredDatasourcesAsync(
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken)
     {
         if (requiredDatasources == null || !requiredDatasources.Any())
@@ -167,18 +192,24 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
 
         var missingDatasources = new List<string>();
 
-        foreach (var datasourceName in requiredDatasources)
+        foreach (var datasourceRef in requiredDatasources)
         {
-            var isCached = await _dataSourceCacheService.IsCachedAsync(datasourceName, cancellationToken);
+            var isCached = await _dataSourceCacheService.IsCachedAsync(
+                datasourceRef.DataSourceName,
+                cancellationToken);
 
             if (!isCached)
             {
-                _logger.LogWarning("Required datasource not cached: {DatasourceName}", datasourceName);
-                missingDatasources.Add(datasourceName);
+                _logger.LogWarning(
+                    "Required datasource not cached: {DatasourceName}",
+                    datasourceRef.DataSourceName);
+                missingDatasources.Add(datasourceRef.DataSourceName);
             }
             else
             {
-                _logger.LogDebug("Required datasource is cached: {DatasourceName}", datasourceName);
+                _logger.LogDebug(
+                    "Required datasource is cached: {DatasourceName}",
+                    datasourceRef.DataSourceName);
             }
         }
 
@@ -212,6 +243,30 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
             return false;
         }
 
+        if (message.RequiredDatasources == null || !message.RequiredDatasources.Any())
+        {
+            _logger.LogWarning("No required datasources specified - processing without enrichment");
+            return true;
+        }
+
+        // Validate each datasource reference
+        foreach (var datasourceRef in message.RequiredDatasources)
+        {
+            if (string.IsNullOrWhiteSpace(datasourceRef.DataSourceName))
+            {
+                _logger.LogError("DataSourceName is required for datasource reference");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(datasourceRef.KeyTemplate))
+            {
+                _logger.LogError(
+                    "KeyTemplate is required for datasource: {DatasourceName}",
+                    datasourceRef.DataSourceName);
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -238,6 +293,7 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
             await _processor.StartProcessingAsync(stoppingToken);
             _logger.LogInformation("CSV Processor started successfully");
 
+            // Wait until cancellation is requested
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (OperationCanceledException)
@@ -260,15 +316,5 @@ internal class CsvProcessingService : BackgroundService, IAsyncDisposable
     {
         _logger.LogInformation("CSV Processing Service stop requested");
         await base.StopAsync(cancellationToken);
-    }
-}
-
-/// <summary>
-/// Exception thrown when required cache is not available
-/// </summary>
-public class CacheNotAvailableException : Exception
-{
-    public CacheNotAvailableException(string message) : base(message)
-    {
     }
 }

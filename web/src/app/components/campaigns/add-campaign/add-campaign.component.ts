@@ -46,6 +46,8 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 
+import { TimeFormatDirective } from '../../../shared/time-format.directive';
+
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
 import { TemplateIterable } from '../../../view-models/template/templateIterable.model';
 
@@ -83,12 +85,15 @@ import { LoggingService } from '../../../services/logging.service';
     AsyncPipe,
     JsonPipe,
     ToastComponent,
+    TimeFormatDirective,
   ],
   templateUrl: './add-campaign.component.html',
   styleUrl: './add-campaign.component.scss',
 })
 export class AddCampaignComponent implements OnInit {
   private readonly store = inject(AppStore);
+
+  timeValue = '';
 
   campaignLists = signal<CampaignListIterable[]>([]);
   filteredList = signal<CampaignListIterable[]>([]);

@@ -9,7 +9,7 @@ public interface ICsvProcessor
     /// </summary>
     Task ProcessCsvFileAsync(
         CsvConfiguration csvConfiguration,
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken);
 
     /// <summary>

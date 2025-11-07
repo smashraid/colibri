@@ -1,0 +1,31 @@
+{{- if and .Values.kubePrometheusStack.enabled .Values.externalEndpoints.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring-stack.fullname" . }}-additional-scrape
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monitoring-stack.labels" . | nindent 4 }}
+data:
+  additional-scrape-configs.yaml: |
+    # Blackbox exporter for external endpoints
+    - job_name: 'blackbox-external'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+        - targets:
+          {{- range .Values.externalEndpoints.targets }}
+          - {{ .url }}
+          {{- end }}
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: {{ include "monitoring-stack.fullname" . }}-blackbox-exporter:9115
+        - source_labels: []
+          target_label: __param_module
+          replacement: http_2xx
+{{- end }}

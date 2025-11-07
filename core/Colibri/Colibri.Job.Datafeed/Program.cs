@@ -76,6 +76,8 @@ static void ConfigureServices(HostBuilderContext context, IServiceCollection ser
     // Register Retry Policy Service (Polly)
     services.AddSingleton<IRetryPolicyService, RetryPolicyService>();
 
+    services.AddSingleton<ICacheKeyGenerator, CacheKeyGenerator>();
+
     // Register Azure clients
     services.AddAzureClients(builder =>
     {
@@ -239,6 +241,7 @@ static void ConfigureValkeyCache(IServiceCollection services, CacheOptions cache
         }
     });
 
+    services.AddSingleton<ICacheService, ValkeyCacheService>();
     Console.WriteLine("✓ Using Valkey Cache");
 }
 

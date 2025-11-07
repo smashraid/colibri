@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Colibri.ExternalServices;
 using Colibri.ExternalServices.Contracts;
 using Colibri.ExternalServices.Options;
@@ -14,12 +13,12 @@ namespace Colibri.Job.Datafeed.Processor;
 public class CsvProcessor : ICsvProcessor
 {
     private readonly ProcessingConfigurationOptions _processingConfigurationOptions;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IIterableService _iterableService;
     private readonly IterableOptions _iterableOptions;
     private readonly IDataSourceCacheService _dataSourceCacheService;
     private readonly IBlobService _blobService;
     private readonly IDatabaseService _databaseService;
+    private readonly ICacheKeyGenerator _cacheKeyGenerator;
     private readonly ILogger<CsvProcessor> _logger;
 
     // Statistics
@@ -28,27 +27,27 @@ public class CsvProcessor : ICsvProcessor
 
     public CsvProcessor(
         IOptions<ProcessingConfigurationOptions> processingConfigurationOptions,
-        IHttpClientFactory httpClientFactory,
         IIterableService iterableService,
         IDataSourceCacheService dataSourceCacheService,
         IBlobService blobService,
         IDatabaseService databaseService,
+        ICacheKeyGenerator cacheKeyGenerator,
         ILogger<CsvProcessor> logger,
         IOptions<IterableOptions> iterableOptions)
     {
         _processingConfigurationOptions = processingConfigurationOptions.Value;
-        _httpClientFactory = httpClientFactory;
         _iterableService = iterableService;
         _dataSourceCacheService = dataSourceCacheService;
         _blobService = blobService;
         _databaseService = databaseService;
+        _cacheKeyGenerator = cacheKeyGenerator;
         _logger = logger;
         _iterableOptions = iterableOptions.Value;
     }
 
     public async Task ProcessCsvFileAsync(
         CsvConfiguration csvConfiguration,
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting CSV file processing");
@@ -98,11 +97,11 @@ public class CsvProcessor : ICsvProcessor
 
             var records = new List<Dictionary<string, object>>();
             var columnNames = endpoint.Columns?.Select(c => c.Name).ToArray()
-                ?? [];
+                ?? Array.Empty<string>();
 
             if (endpoint.HasHeader)
             {
-                await reader.ReadLineAsync();
+                await reader.ReadLineAsync(cancellationToken);
             }
 
             string? line;
@@ -287,12 +286,12 @@ public class CsvProcessor : ICsvProcessor
         }
 
         values.Add(current.ToString());
-        return [.. values];
+        return values.ToArray();
     }
 
     private async Task ProcessRecordsInBatchesAsync(
         List<Dictionary<string, object>> records,
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken)
     {
         var semaphore = new SemaphoreSlim(_processingConfigurationOptions.MaxConcurrentBatches);
@@ -342,7 +341,7 @@ public class CsvProcessor : ICsvProcessor
     private async Task ProcessBatchAsync(
         List<Dictionary<string, object>> batch,
         int batchNumber,
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken)
     {
         var tasks = batch.Select(record => ProcessSingleRecordAsync(record, requiredDatasources, cancellationToken));
@@ -355,7 +354,7 @@ public class CsvProcessor : ICsvProcessor
 
     private async Task<bool> ProcessSingleRecordAsync(
         Dictionary<string, object> record,
-        List<string> requiredDatasources,
+        List<DatasourceReference> requiredDatasources,
         CancellationToken cancellationToken)
     {
         try
@@ -364,31 +363,43 @@ public class CsvProcessor : ICsvProcessor
             var dataFields = new Dictionary<string, object>(record);
 
             // Process each required datasource
-            foreach (var datasourceName in requiredDatasources)
+            foreach (var datasourceRef in requiredDatasources)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Build composite key from record for this datasource
-                // Note: You may need to pass composite key field info here
-                // For now, we'll get data by datasource name only
-                var result = await GetDataFromDatasourceAsync(datasourceName, record, cancellationToken);
+                // Generate cache key from template
+                var cacheKey = _cacheKeyGenerator.GenerateKey(datasourceRef.KeyTemplate, record);
+
+                // Get data from cache using generated key
+                var result = await GetDataFromCacheAsync(cacheKey, datasourceRef.DataSourceName, cancellationToken);
 
                 if (result != null && result.Count > 0)
                 {
-                    // Add prefixed fields (flat structure)
-                    foreach (var kvp in result)
+                    if (datasourceRef.UseNestedObject)
                     {
-                        var prefixedKey = $"{datasourceName}_{kvp.Key}";
-                        dataFields[prefixedKey] = kvp.Value;
-                    }
+                        // Add as single nested object
+                        dataFields[datasourceRef.DataSourceName] = result;
 
-                    _logger.LogDebug("Added {Count} fields from datasource {DatasourceName}",
-                        result.Count, datasourceName);
+                        _logger.LogDebug("Added nested object '{DatasourceName}' with {Count} fields",
+                            datasourceRef.DataSourceName, result.Count);
+                    }
+                    else
+                    {
+                        // Add prefixed fields (flat structure)
+                        foreach (var kvp in result)
+                        {
+                            var prefixedKey = $"{datasourceRef.DataSourceName}_{kvp.Key}";
+                            dataFields[prefixedKey] = kvp.Value;
+                        }
+
+                        _logger.LogDebug("Added {Count} prefixed fields from datasource {DatasourceName}",
+                            result.Count, datasourceRef.DataSourceName);
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Datasource {DatasourceName} returned no data for record",
-                        datasourceName);
+                    _logger.LogWarning("Datasource {DatasourceName} returned no data for cache key: {CacheKey}",
+                        datasourceRef.DataSourceName, cacheKey);
                 }
             }
 
@@ -410,42 +421,37 @@ public class CsvProcessor : ICsvProcessor
         }
     }
 
-    private async Task<Dictionary<string, object>?> GetDataFromDatasourceAsync(
+    private async Task<Dictionary<string, object>?> GetDataFromCacheAsync(
+        string cacheKey,
         string datasourceName,
-        Dictionary<string, object> record,
         CancellationToken cancellationToken)
     {
-        // Build composite key from record
-        // This is simplified - you may need to know which fields to use for the key
-        // For now, let's assume the datasource name and basic fields
-        var compositeKey = new Dictionary<string, object>();
-
-        // Try common key fields
-        if (record.TryGetValue("year", out var year))
-            compositeKey["year"] = year;
-        if (record.TryGetValue("zipCode", out var zipCode))
-            compositeKey["zip"] = zipCode; // Note: using mapped name
-        if (record.TryGetValue("agentEmailAddress", out var agentEmail))
-            compositeKey["AgentId"] = agentEmail;
-
-        // Get from cache (already warmed up!)
-        var cachedData = await _dataSourceCacheService.GetCachedDataAsync(
-            datasourceName,
-            compositeKey,
-            cancellationToken);
-
-        if (cachedData != null)
+        try
         {
-            Interlocked.Increment(ref _cacheHits);
-            _logger.LogDebug("Cache hit for {DatasourceName}", datasourceName);
+            // Direct cache lookup using the generated key
+            var cachedData = await _dataSourceCacheService.GetByKeyAsync(cacheKey, cancellationToken);
+
+            if (cachedData != null)
+            {
+                Interlocked.Increment(ref _cacheHits);
+                _logger.LogDebug("Cache hit for {DatasourceName} with key: {CacheKey}",
+                    datasourceName, cacheKey);
+            }
+            else
+            {
+                Interlocked.Increment(ref _cacheMisses);
+                _logger.LogWarning("Cache miss for {DatasourceName} with key: {CacheKey}",
+                    datasourceName, cacheKey);
+            }
+
+            return cachedData;
         }
-        else
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error getting data from cache for key: {CacheKey}", cacheKey);
             Interlocked.Increment(ref _cacheMisses);
-            _logger.LogWarning("Cache miss for {DatasourceName}", datasourceName);
+            return null;
         }
-
-        return cachedData;
     }
 
     private async Task<bool> UpdateIterableUserAsync(

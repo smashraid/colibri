@@ -1,0 +1,34 @@
+{{- if .Values.warmup.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-warmup
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: warmup
+spec:
+  replicas: {{ .Values.warmup.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: warmup
+  template:
+    metadata:
+      labels:
+        {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: warmup
+        service-mode: warmup
+    spec:
+      containers:
+        - name: warmup-service
+          image: "{{ .Values.warmup.image.repository }}:{{ .Values.warmup.image.tag }}"
+          imagePullPolicy: {{ .Values.warmup.image.pullPolicy }}
+          # REMOVED: ports section - no need to expose ports
+          env:
+            {{- range $key, $value := .Values.warmup.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }} 
+          resources:
+            {{- toYaml .Values.warmup.resources | nindent 12 }}
+{{- end }}

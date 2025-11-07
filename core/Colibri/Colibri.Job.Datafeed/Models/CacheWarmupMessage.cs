@@ -12,10 +12,5 @@ public class CacheWarmupMessage
     /// <summary>
     /// List of datasources to warm up
     /// </summary>
-    public List<DataSourceConfiguration> DataSources { get; set; } = new();
-
-    /// <summary>
-    /// Lock configuration for warmup operations
-    /// </summary>
-    public LockConfiguration LockConfiguration { get; set; } = new();
+    public List<DataSourceConfiguration> DataSources { get; set; } = [];
 }

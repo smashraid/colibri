@@ -42,11 +42,13 @@ public class DedicatedCacheWarmupService : BackgroundService, IAsyncDisposable
 
         var processorOptions = new ServiceBusProcessorOptions
         {
-            AutoCompleteMessages = false,
-            MaxConcurrentCalls = 1, // Process one warmup at a time
-            PrefetchCount = 0,
-            MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(60), // Long warmup operations
-            ReceiveMode = ServiceBusReceiveMode.PeekLock
+            AutoCompleteMessages = _azureServiceBusOptions.Options.AutoCompleteMessages,
+            MaxConcurrentCalls = _azureServiceBusOptions.Options.MaxConcurrentCalls,
+            PrefetchCount = _azureServiceBusOptions.Options.PrefetchCount,
+            MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(_azureServiceBusOptions.Options.MaxAutoLockRenewalDurationMinutes),
+            ReceiveMode = _azureServiceBusOptions.Options.ReceiveMode.ToLower() == "receiveanddelete"
+                     ? ServiceBusReceiveMode.ReceiveAndDelete
+                     : ServiceBusReceiveMode.PeekLock
         };
 
         // Use dedicated subscription for cache warmup

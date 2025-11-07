@@ -1,0 +1,78 @@
+{{- if .Values.grafana.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "monitoring-stack.fullname" . }}-grafana
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monitoring-stack.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.grafana.ingress.className }}
+    {{- if .Values.grafana.ingress.annotations }}
+    {{- toYaml .Values.grafana.ingress.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+    {{- include "monitoring-stack.grafana.hosts" . | nindent 4 }}
+  {{- if .Values.grafana.ingress.tls }}
+  tls:
+    {{- toYaml .Values.grafana.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}
+ 
+{{- if .Values.prometheus.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "monitoring-stack.fullname" . }}-prometheus
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monitoring-stack.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.prometheus.ingress.className }}
+    {{- if .Values.prometheus.ingress.annotations }}
+    {{- toYaml .Values.prometheus.ingress.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+    {{- include "monitoring-stack.prometheus.hosts" . | nindent 4 }}
+  {{- if .Values.prometheus.ingress.tls }}
+  tls:
+    {{- toYaml .Values.prometheus.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}
+ 
+{{- if .Values.alertmanager.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "monitoring-stack.fullname" . }}-alertmanager
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "monitoring-stack.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.alertmanager.ingress.className }}
+    {{- if .Values.alertmanager.ingress.annotations }}
+    {{- toYaml .Values.alertmanager.ingress.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  rules:
+    - host: {{ index .Values.alertmanager.ingress.hosts 0 | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "monitoring-stack.fullname" . }}-alertmanager
+                port:
+                  number: 9093
+  {{- if .Values.alertmanager.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ index .Values.alertmanager.ingress.hosts 0 | quote }}
+      secretName: {{ .Values.alertmanager.ingress.tls.secretName }}
+  {{- end }}
+{{- end }}

@@ -143,4 +143,42 @@ public class DataSourceCacheService : IDataSourceCacheService
 
         return string.Join(":", keyParts);
     }
+
+    // Add this method to your existing DataSourceCacheService.cs
+
+    /// <summary>
+    /// Gets cached data by direct cache key (generated from template)
+    /// </summary>
+    public async Task<Dictionary<string, object>?> GetByKeyAsync(
+        string cacheKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(cacheKey))
+        {
+            throw new ArgumentException("Cache key cannot be null or empty", nameof(cacheKey));
+        }
+
+        try
+        {
+            _logger.LogDebug("Getting data from cache by key: {CacheKey}", cacheKey);
+
+            var cachedData = await _cacheService.GetAsync<Dictionary<string, object>>(cacheKey);
+
+            if (cachedData != null)
+            {
+                _logger.LogDebug("Cache hit for key: {CacheKey}", cacheKey);
+            }
+            else
+            {
+                _logger.LogDebug("Cache miss for key: {CacheKey}", cacheKey);
+            }
+
+            return cachedData;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting data from cache by key: {CacheKey}", cacheKey);
+            return null;
+        }
+    }
 }

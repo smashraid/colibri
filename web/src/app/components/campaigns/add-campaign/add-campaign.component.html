@@ -250,6 +250,16 @@
             <mat-option value="60">Every 1 hr</mat-option>
             <mat-option value="1440">Every 24 hr</mat-option>
           </mat-select>
+          <input
+            type="text"
+            appTimeFormat
+            [(ngModel)]="timeValue"
+            placeholder="Enter decimal (1.5) or time format (1h 30m)"
+            class="time-input"
+          />
+          <div class="current-value">
+            <strong>Current Value:</strong> {{ timeValue }}
+          </div>
           @if (scheduleForm.get('interval')?.invalid) {
           <mat-error>Interval is required</mat-error>
           }

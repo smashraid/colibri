@@ -20,5 +20,5 @@ public class AzureServiceBusOptions
     /// </summary>
     public string WarmupSubscription { get; set; } = "cache-warmup";
 
-    public Dictionary<string, object> Options { get; set; } = new();
+    public ServiceBusOptions Options { get; set; } = new();
 }

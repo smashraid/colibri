@@ -1,0 +1,141 @@
+# Production configuration
+global:
+  environment: "production"
+  clusterName: "eks-production"
+ 
+# Enable all production features
+grafana:
+  ingress:
+    enabled: true
+    className: "alb"
+    hosts:
+      - "grafana.yourcompany.com"
+    tls:
+      - secretName: "grafana-tls"
+        hosts:
+          - "grafana.yourcompany.com"
+  persistence:
+    enabled: true
+    storageClassName: "gp2"
+    size: "20Gi"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+ 
+prometheus:
+  ingress:
+    enabled: true
+    className: "alb"
+    hosts:
+      - "prometheus.yourcompany.com"
+    tls:
+      - secretName: "prometheus-tls"
+        hosts:
+          - "prometheus.yourcompany.com"
+  persistence:
+    enabled: true
+    storageClassName: "gp2"
+    size: "50Gi"
+  retention: "30d"
+  retentionSize: "50GB"
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "1"
+    limits:
+      memory: "8Gi"
+      cpu: "2"
+ 
+alertmanager:
+  ingress:
+    enabled: true
+    className: "alb"
+    hosts:
+      - "alertmanager.yourcompany.com"
+ 
+# Production external endpoints
+externalEndpoints:
+  targets:
+    - name: "debounce-api"
+      url: "https://api.debounce.io/v1/health"
+      module: "http_2xx"
+    - name: "drips-api"
+      url: "https://api.drips.com/status"
+      module: "http_2xx"
+    - name: "iterable-api"
+      url: "https://api.iterable.com/api/docs"
+      module: "http_2xx"
+ 
+# Enable all components
+components:
+  grafana: true
+  prometheus: true
+  alertmanager: true
+  blackboxExporter: true
+  nodeExporter: true
+  kubeStateMetrics: true
+ 
+# Kube Prometheus Stack Overrides for Production (camelCase)
+kubePrometheusStack:
+  grafana:
+    ingress:
+      enabled: true
+      className: "alb"
+      hosts:
+        - "grafana.yourcompany.com"
+      tls:
+        - secretName: "grafana-tls"
+          hosts:
+            - "grafana.yourcompany.com"
+    persistence:
+      enabled: true
+      storageClassName: "gp2"
+      size: "20Gi"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+  
+  prometheus:
+    ingress:
+      enabled: true
+      className: "alb"
+      hosts:
+        - "prometheus.yourcompany.com"
+      tls:
+        - secretName: "prometheus-tls"
+          hosts:
+            - "prometheus.yourcompany.com"
+    prometheusSpec:
+      retention: "30d"
+      retentionSize: "50GB"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: "gp2"
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: "50Gi"
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "1"
+        limits:
+          memory: "8Gi"
+          cpu: "2"
+  
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: true
+      className: "alb"
+      hosts:
+        - "alertmanager.yourcompany.com"

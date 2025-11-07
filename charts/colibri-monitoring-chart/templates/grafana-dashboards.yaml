@@ -1,0 +1,60 @@
+{{- if .Values.kubePrometheusStack.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring-stack.fullname" . }}-grafana-dashboards
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    grafana_dashboard: "1"
+    {{- include "monitoring-stack.labels" . | nindent 4 }}
+data:
+  business-overview.json: |-
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Business Overview - {{ .Values.global.environment | title }}",
+        "tags": ["business", "{{ .Values.global.environment }}"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Service Health",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up",
+                "legendFormat": "{{`{{job}}`}}",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "green", "value": 1}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Endpoint Health",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "probe_success",
+                "legendFormat": "{{`{{instance}}`}}",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          }
+        ],
+        "time": {"from": "now-1h", "to": "now"}
+      }
+    }
+{{- end }}

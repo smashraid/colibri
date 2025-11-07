@@ -17,10 +17,5 @@ public class CsvProcessingMessage
     /// <summary>
     /// Names of datasources to use (must be warmed up first!)
     /// </summary>
-    public List<string> RequiredDatasources { get; set; } = new();
-
-    /// <summary>
-    /// Lock configuration (usually not needed if cache is pre-warmed)
-    /// </summary>
-    public LockConfiguration LockConfiguration { get; set; } = new();
+    public List<DatasourceReference> RequiredDatasources { get; set; } = [];
 }
