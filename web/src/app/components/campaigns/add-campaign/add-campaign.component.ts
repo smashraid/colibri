@@ -63,6 +63,10 @@ import { maxCampaignDays } from '../../../validators/maxCampaignDays';
 import { ToastComponent } from '../../../shared/toast/toast.component';
 import { selecteValidOption } from '../../../validators/selectedValidOption';
 import { LoggingService } from '../../../services/logging.service';
+import {
+  timeFormatToMinutes,
+  timeFormatValidator,
+} from '../../../validators/timeFormat';
 
 @Component({
   selector: 'app-add-campaign',
@@ -111,12 +115,15 @@ export class AddCampaignComponent implements OnInit {
 
   scheduleForm = new FormGroup(
     {
-      campaignName: new FormControl('', [Validators.required]),
+      campaignName: new FormControl(''),
       supressionList: new FormControl<number | null>(null, []),
       batchSize: new FormControl<number | null>(null, [Validators.required]),
       sendDate: new FormControl(moment(), [Validators.required]),
       sendTime: new FormControl(moment(), [Validators.required]),
-      interval: new FormControl<number | null>(null, [Validators.required]),
+      interval: new FormControl<string | null>(null, [
+        Validators.required,
+        timeFormatValidator(),
+      ]),
       tags: new FormControl<string[]>([]),
       totalCount: new FormControl<number | null>(
         {
@@ -130,7 +137,7 @@ export class AddCampaignComponent implements OnInit {
       //   [Validators.required]
       // ),
     },
-    { validators: maxCampaignDays() }
+    { validators: [] }
   );
 
   preview = signal<string>('');
@@ -196,6 +203,9 @@ export class AddCampaignComponent implements OnInit {
       this.template$ = this.iterableService.getTemplateById(templateId).pipe(
         switchMap((templateIterable) => {
           this.preview.set(this.sanitizedHtml(templateIterable.html));
+          this.scheduleForm.patchValue({
+            campaignName: templateIterable.name,
+          });
           return of(templateIterable);
         })
       );
@@ -315,13 +325,15 @@ export class AddCampaignComponent implements OnInit {
 
       this.logger.info('Create Campaign', campaignCreate);
 
+      const totalIntervalMinutes = timeFormatToMinutes(intervalTime) || 0;
+
       this.databaseService
         .createCampaign(campaignCreate)
         .pipe(
           switchMap((campaign) =>
             this.iterableService.createBlast({
               batchSize,
-              intervalTime,
+              intervalTime: totalIntervalMinutes,
               listNameFormat: `${campaignName} Blast List {0}`,
               listDescriptionFormat: `Blast List {0}`,
               sourceListId: sourceListId.id,
@@ -335,9 +347,12 @@ export class AddCampaignComponent implements OnInit {
             })
           )
         )
-        .subscribe(() => {
-          this.spinnerService.hide();
-          this.router.navigate(['/campaigns']);
+        .subscribe({
+          next: () => {
+            this.router.navigate(['/campaigns']);
+          },
+          error: () => this.spinnerService.hide(),
+          complete: () => this.spinnerService.hide(),
         });
     }
   }

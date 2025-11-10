@@ -138,10 +138,8 @@
             placeholder="Name"
             formControlName="campaignName"
             required
+            readonly
           />
-          @if (scheduleForm.get('campaignName')?.invalid) {
-          <mat-error>Campaign Name is required</mat-error>
-          }
         </mat-form-field>
       </div>
       <div class="form-group">
@@ -243,23 +241,15 @@
       <div class="form-group">
         <mat-form-field>
           <mat-label class="form-label">Interval</mat-label>
-          <mat-select formControlName="interval" id="interval" name="interval">
-            <mat-option>None</mat-option>
-            <mat-option value="15">Every 15 min</mat-option>
-            <mat-option value="30">Every 30 min</mat-option>
-            <mat-option value="60">Every 1 hr</mat-option>
-            <mat-option value="1440">Every 24 hr</mat-option>
-          </mat-select>
           <input
-            type="text"
+            id="interval"
+            name="interval"
+            matInput
+            placeholder="Size"
+            formControlName="interval"
+            required
             appTimeFormat
-            [(ngModel)]="timeValue"
-            placeholder="Enter decimal (1.5) or time format (1h 30m)"
-            class="time-input"
           />
-          <div class="current-value">
-            <strong>Current Value:</strong> {{ timeValue }}
-          </div>
           @if (scheduleForm.get('interval')?.invalid) {
           <mat-error>Interval is required</mat-error>
           }

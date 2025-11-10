@@ -22,6 +22,7 @@ export class DatabaseService {
     environment.digitalCommunication.url
   }${'database/'}`;
   private readonly authorizationToken = environment.digitalCommunication.token;
+  private correlationId = `${Date.now()}-${Math.random().toString(36)}`;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -32,6 +33,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -44,6 +46,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -56,6 +59,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -67,6 +71,7 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
@@ -78,12 +83,15 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
   }
 
   getCampaignsByProject(id: number, metadata: PagedMetadata) {
+    console.log(metadata);
+
     return this.httpClient
       .get<CampaignRead[]>(
         `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
@@ -91,6 +99,7 @@ export class DatabaseService {
           responseType: 'json',
           headers: {
             AuthorizationToken: this.authorizationToken,
+            'X-Correlation-ID': this.correlationId,
           },
           observe: 'response',
         }
@@ -106,6 +115,7 @@ export class DatabaseService {
           responseType: 'json',
           headers: {
             AuthorizationToken: this.authorizationToken,
+            'X-Correlation-ID': this.correlationId,
           },
           observe: 'response',
         }
@@ -119,6 +129,7 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
@@ -130,6 +141,7 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
@@ -139,6 +151,7 @@ export class DatabaseService {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaignDb/${id}`, {
       headers: {
         AuthorizationToken: this.authorizationToken,
+        'X-Correlation-ID': this.correlationId,
       },
     });
   }
@@ -149,6 +162,7 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
@@ -161,6 +175,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -172,6 +187,7 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
       .pipe(shareReplay());
@@ -181,6 +197,7 @@ export class DatabaseService {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaign/${id}`, {
       headers: {
         AuthorizationToken: this.authorizationToken,
+        'X-Correlation-ID': this.correlationId,
       },
     });
   }

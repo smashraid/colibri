@@ -86,7 +86,7 @@ export class CampaignsComponent implements OnInit {
   pagedList = signal<PagedMetadata>({
     totalCount: 0,
     pageSize: 10,
-    currentPage: 0,
+    currentPage: 1,
     pageSizeOptions: [5, 10, 25],
     hasNext: false,
     hasPrevious: false,
