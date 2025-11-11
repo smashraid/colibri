@@ -46,7 +46,7 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 
-import { TimeFormatDirective } from '../../../shared/time-format.directive';
+import { TimeFormatDirective } from '../../../shared/directives/time-format.directive';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
 import { TemplateIterable } from '../../../view-models/template/templateIterable.model';
