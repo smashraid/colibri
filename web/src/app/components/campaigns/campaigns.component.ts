@@ -38,8 +38,8 @@ import { AppStore } from '../../app.store';
 import { SnackbarMessageComponent } from '../../shared/snackbar-message/snackbar-message.component';
 
 import { CampaignRead } from '../../view-models/campaign/campaignRead.model';
-import { ArchiveCampaignRequest } from '../../view-models/archive/request/archiveCampaignRequest.model';
-import { PagedMetadata } from '../../view-models/pagination.model';
+import { ArchiveCampaignRequest } from '../../core/models/api/requests/archive-campaign';
+import { PagedMetadata } from '../../core/models/domain/pagination.model';
 
 @Component({
   selector: 'app-campaigns',
