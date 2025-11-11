@@ -6,7 +6,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 import { CampaignRead } from '../../../view-models/campaign/campaignRead.model';
 import { CampaignListDb } from '../../../models/campaign/campaignList.model';
-import { PagedMetadata } from '../../../view-models/pagination.model';
+import { PagedMetadata } from '../../../core/models/domain/pagination.model';
 
 @Component({
   selector: 'app-list-campaign',

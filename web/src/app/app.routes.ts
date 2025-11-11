@@ -26,4 +26,9 @@ export const routes: Routes = [
     component: ListCampaignComponent,
     canActivate: [MsalGuard],
   },
+  {
+    path: 'blasts',
+    loadChildren: () =>
+      import('./features/blasts/blasts.routes').then((m) => m.BLASTS_ROUTES),
+  },
 ];
