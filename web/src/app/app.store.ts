@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import {
   NavigationEnd,
   NavigationError,
@@ -9,6 +9,7 @@ import {
   patchState,
   signalStore,
   withComputed,
+  withProps,
   withHooks,
   withMethods,
   withState,
@@ -21,6 +22,8 @@ import { switchMap, tap } from 'rxjs/operators';
 import { DatabaseService } from './services/database.service';
 
 import { ProjectRead } from './view-models/project/projectRead.model';
+import { MsalService } from '@azure/msal-angular';
+import { AccountInfo } from '@azure/msal-browser';
 
 type AppState = {
   loading: boolean;
@@ -41,58 +44,84 @@ const initialState: AppState = {
 export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
-  withComputed(({ loading, projectId, username, useremail }) => ({})),
-  withMethods((store, databaseService = inject(DatabaseService)) => ({
-    updateProject(id: number): void {
-      patchState(store, (state) => ({ projectId: id }));
-    },
-    updateUsername(username: string): void {
-      patchState(store, { username });
-    },
-    updateUseremail(useremail: string): void {
-      patchState(store, { useremail });
-    },
-    startLoading(): void {
-      patchState(store, { loading: true });
-    },
-    stopLoading(): void {
-      patchState(store, { loading: false });
-    },
-    loaderOnNavigation: rxMethod<any>(
-      pipe(
-        tap((event) => {
-          if (event instanceof NavigationStart) {
-            patchState(store, { loading: true });
-          } else if (
-            event instanceof NavigationEnd ||
-            event instanceof NavigationError
-          ) {
-            patchState(store, { loading: false });
-          }
-        })
-      )
-    ),
-    loadProjects: rxMethod<void>(
-      pipe(
-        switchMap(() => {
-          return databaseService.getProjects().pipe(
-            tapResponse({
-              next: (projects: ProjectRead[]) =>
-                patchState(store, { projects }),
-              error: (err: any) => {
-                console.log(err);
-              },
-            })
-          );
-        })
-      )
-    ),
+  withProps(() => ({})),
+  withComputed(({ loading, projectId, username, useremail }) => ({
+    selectProjectId: computed(() => projectId()),
   })),
+  withMethods(
+    (
+      store,
+      databaseService = inject(DatabaseService),
+      msalService = inject(MsalService)
+    ) => ({
+      updateProject(id: number): void {
+        patchState(store, (state) => ({ projectId: id }));
+      },
+      updateUsername(username: string): void {
+        patchState(store, { username });
+      },
+      updateUseremail(useremail: string): void {
+        patchState(store, { useremail });
+      },
+      startLoading(): void {
+        patchState(store, { loading: true });
+      },
+      stopLoading(): void {
+        patchState(store, { loading: false });
+      },
+      loaderOnNavigation: rxMethod<any>(
+        pipe(
+          tap((event) => {
+            if (event instanceof NavigationStart) {
+              patchState(store, { loading: true });
+            } else if (
+              event instanceof NavigationEnd ||
+              event instanceof NavigationError
+            ) {
+              patchState(store, { loading: false });
+            }
+          })
+        )
+      ),
+      loadProjects: rxMethod<void>(
+        pipe(
+          switchMap(() => {
+            return databaseService.getProjects().pipe(
+              tapResponse({
+                next: (projects: ProjectRead[]) =>
+                  patchState(store, { projects }),
+                error: (err: any) => {
+                  console.log(err);
+                },
+              })
+            );
+          })
+        )
+      ),
+      loadUsername(): void {
+        const accountInfo: AccountInfo | null =
+          msalService.instance.getActiveAccount();
+        if (accountInfo && accountInfo.name) {
+          const splitFullName = accountInfo.name.split(' ');
+          const num = splitFullName.length;
+          const letters = `${splitFullName[0]
+            .charAt(0)
+            .toUpperCase()}${splitFullName[num - 1].charAt(0).toUpperCase()}`;
+          patchState(store, {
+            useremail: accountInfo.username,
+            username: letters,
+          });
+        } else {
+          patchState(store, { useremail: '', username: '' });
+        }
+      },
+    })
+  ),
   withHooks((store, router = inject(Router)) => ({
     onInit() {
       store.loaderOnNavigation(router.events);
       store.loadProjects();
-      console.log('Init Store');
+      store.loadUsername();
     },
   }))
 );

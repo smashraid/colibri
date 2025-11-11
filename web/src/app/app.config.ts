@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  ErrorHandler,
   importProvidersFrom,
   provideZoneChangeDetection,
 } from '@angular/core';
@@ -13,6 +14,7 @@ import {
   withFetch,
   withInterceptorsFromDi,
   HTTP_INTERCEPTORS,
+  withInterceptors,
 } from '@angular/common/http';
 import { provideMomentDateAdapter } from '@angular/material-moment-adapter';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -37,10 +39,22 @@ import {
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import {
+  provideClientHydration,
+  withEventReplay,
+} from '@angular/platform-browser';
+import { LoggingService } from './services/logging.service';
+import { GlobalErrorHandler } from './providers/global-error-handler';
+import { errorLoggingInterceptor } from './interceptors/error-logging.interceptor';
+import {
+  ERROR_LOGGING_CONFIG,
+  ErrorLoggingConfig,
+} from './interceptors/error-logging.config';
 
 export function loggerCallback(logLevel: LogLevel, message: string) {
-  console.log(message);
+  if (!environment.production) {
+    console.log(message);
+  }
 }
 
 export function MSALInstanceFactory(): IPublicClientApplication {
@@ -69,7 +83,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set(
     environment.apiConfig.uri,
-    environment.apiConfig.scopes,
+    environment.apiConfig.scopes
   );
 
   return {
@@ -96,11 +110,15 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withRouterConfig({
         paramsInheritanceStrategy: 'always',
-      }),
+      })
     ),
     provideMomentDateAdapter(),
     //provideNoopAnimations(),
-    provideHttpClient(withInterceptorsFromDi(), withFetch()),
+    provideHttpClient(
+      withInterceptorsFromDi(),
+      withInterceptors([errorLoggingInterceptor]),
+      withFetch()
+    ),
     {
       provide: HTTP_INTERCEPTORS,
       useClass: MsalInterceptor,
@@ -120,7 +138,16 @@ export const appConfig: ApplicationConfig = {
     },
     MsalService,
     MsalGuard,
-    MsalBroadcastService
+    MsalBroadcastService,
+    {
+      provide: ErrorHandler,
+      useClass: GlobalErrorHandler,
+    },
+    LoggingService,
+    {
+      provide: ERROR_LOGGING_CONFIG,
+      useValue: environment.errorLogging,
+    },
   ],
 };
 //provideClientHydration(withEventReplay())

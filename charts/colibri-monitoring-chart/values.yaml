@@ -1,0 +1,199 @@
+global:
+  namespace: monitoring
+  clusterName: "eks-cluster"
+  environment: "development"
+ 
+# Enable/disable components
+components:
+  grafana: true
+  prometheus: true
+  alertmanager: true
+  blackboxExporter: true
+  nodeExporter: true
+  kubeStateMetrics: true
+ 
+# Grafana Configuration
+grafana:
+  enabled: true
+  adminUser: "admin"
+  adminPassword: "admin"
+  
+  # Ingress Configuration
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - "grafana.local.demo"
+    tls: []
+  
+  # Persistence
+  persistence:
+    enabled: true
+    storageClassName: "standard"
+    size: "10Gi"
+  
+  # Resources
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+ 
+# Prometheus Configuration
+prometheus:
+  enabled: true
+  
+  # Ingress Configuration
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - "prometheus.local.demo"
+    tls: []
+  
+  # Storage
+  persistence:
+    enabled: true
+    storageClassName: "standard"
+    size: "20Gi"
+    
+  # Retention
+  retention: "7d"
+  retentionSize: "10GB"
+  
+  # Resources
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Service Discovery
+  serviceMonitorSelector: {}
+  serviceMonitorSelectorNilUsesHelmValues: false
+  podMonitorSelector: {}
+  podMonitorSelectorNilUsesHelmValues: false
+ 
+# Alertmanager Configuration
+alertmanager:
+  enabled: true
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - "alertmanager.local.demo"
+ 
+# Blackbox Exporter Configuration
+blackboxExporter:
+  enabled: true
+  config:
+    modules:
+      http_2xx:
+        prober: http
+        timeout: "10s"
+        http:
+          valid_status_codes: [200, 301, 302]
+          method: GET
+          headers:
+            UserAgent: "Blackbox Exporter"
+ 
+# External Service Monitoring
+externalEndpoints:
+  enabled: true
+  targets:
+    - name: "httpbin-200"
+      url: "https://httpbin.org/status/200"
+      module: "http_2xx"
+    - name: "httpbin-404"
+      url: "https://httpbin.org/status/404"
+      module: "http_2xx"
+ 
+# Kube Prometheus Stack Configuration (camelCase)
+kubePrometheusStack:
+  enabled: true
+  fullnameOverride: "monitoring-stack"
+  
+  # Grafana
+  grafana:
+    enabled: true
+    adminPassword: "admin"
+    
+    ingress:
+      enabled: false
+    
+    persistence:
+      enabled: true
+      storageClassName: "standard"
+      size: "10Gi"
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  
+  # Prometheus
+  prometheus:
+    enabled: true
+    ingress:
+      enabled: false
+    
+    prometheusSpec:
+      retention: "7d"
+      retentionSize: "10GB"
+      serviceMonitorSelector: {}
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+      
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: "standard"
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: "20Gi"
+      
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "500m"
+        limits:
+          memory: "2Gi"
+          cpu: "1000m"
+  
+  # Alertmanager
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: false
+  
+  # Blackbox Exporter
+  blackboxExporter:
+    enabled: true
+  
+  # Node Exporter
+  nodeExporter:
+    enabled: true
+  
+  # Kube State Metrics
+  kubeStateMetrics:
+    enabled: true
+  
+  # Default Rules
+  defaultRules:
+    create: true
+    rules:
+      alertmanager: true
+      etcd: false
+      general: true
+      k8s: true
+      node: true
+      prometheus: true

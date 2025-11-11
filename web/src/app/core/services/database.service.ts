@@ -12,6 +12,7 @@ import { ProjectRead } from '../view-models/project/projectRead.model';
 import { CampaignRead } from '../view-models/campaign/campaignRead.model';
 import { throwError } from 'rxjs/internal/observable/throwError';
 import { PagedMetadata } from '../view-models/pagination.model';
+import { ArchiveReadViewModel } from '../view-models/archive/archiveRead.model';
 
 @Injectable({
   providedIn: 'root',
@@ -21,6 +22,7 @@ export class DatabaseService {
     environment.digitalCommunication.url
   }${'database/'}`;
   private readonly authorizationToken = environment.digitalCommunication.token;
+  private correlationId = `${Date.now()}-${Math.random().toString(36)}`;
 
   constructor(private httpClient: HttpClient) {}
 
@@ -31,6 +33,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -43,6 +46,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -55,6 +59,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -66,15 +71,10 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignDb(id: number) {
@@ -83,75 +83,75 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of({} as CampaignRead);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignsByProject(id: number, metadata: PagedMetadata) {
+    console.log(metadata);
+
     return this.httpClient
       .get<CampaignRead[]>(
-        `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${
-          metadata.currentPage + 1
-        }&pageSize=${metadata.pageSize}`,
+        `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
         {
           responseType: 'json',
           headers: {
             AuthorizationToken: this.authorizationToken,
+            'X-Correlation-ID': this.correlationId,
           },
           observe: 'response',
         }
       )
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return throwError(
-            () =>
-              new Error(
-                'An error ocurrend Database Service - getCampaignsByProject'
-              )
-          );
-        })
-      );
+      .pipe(shareReplay());
   }
 
   getCampaignLists(campaignId: number, metadata: PagedMetadata) {
     return this.httpClient
       .get<CampaignListDb[]>(
-        `${this.baseUrl}getListsDb?campaignId=${campaignId}&pageNumber=${
-          metadata.currentPage + 1
-        }&pageSize=${metadata.pageSize}`,
+        `${this.baseUrl}getListsDb?campaignId=${campaignId}&pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
         {
           responseType: 'json',
           headers: {
             AuthorizationToken: this.authorizationToken,
+            'X-Correlation-ID': this.correlationId,
           },
           observe: 'response',
         }
       )
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return throwError(
-            () =>
-              new Error('An error ocurrend Database Service - getCampaignLists')
-          );
-        })
-      );
+      .pipe(shareReplay());
+  }
+
+  getArchiveDb(id: number) {
+    return this.httpClient
+      .get<ArchiveReadViewModel>(`${this.baseUrl}getArchiveDb/${id}`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
+        },
+      })
+      .pipe(shareReplay());
+  }
+
+  getTagsDb() {
+    return this.httpClient
+      .get<string[]>(`${this.baseUrl}getTagsDb`, {
+        responseType: 'json',
+        headers: {
+          AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
+        },
+      })
+      .pipe(shareReplay());
   }
 
   deleteCampaign(id: number) {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaignDb/${id}`, {
       headers: {
         AuthorizationToken: this.authorizationToken,
+        'X-Correlation-ID': this.correlationId,
       },
     });
   }
@@ -162,15 +162,10 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   createCampaignNoSql(request: CampaignDb) {
@@ -180,6 +175,7 @@ export class DatabaseService {
       {
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       }
     );
@@ -191,21 +187,17 @@ export class DatabaseService {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
+          'X-Correlation-ID': this.correlationId,
         },
       })
-      .pipe(
-        shareReplay(),
-        catchError((error) => {
-          console.error('An error ocurred', error);
-          return of([]);
-        })
-      );
+      .pipe(shareReplay());
   }
 
   deleteCampaignNoSql(id: number) {
     return this.httpClient.delete(`${this.baseUrl}deleteCampaign/${id}`, {
       headers: {
         AuthorizationToken: this.authorizationToken,
+        'X-Correlation-ID': this.correlationId,
       },
     });
   }

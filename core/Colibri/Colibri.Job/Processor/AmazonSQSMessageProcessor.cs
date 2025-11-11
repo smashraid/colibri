@@ -12,6 +12,7 @@ using System.Threading;
 using Amazon.Runtime.Internal;
 using Colibri.Job.Options;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace Colibri.Job.Processor
 {
@@ -78,7 +79,7 @@ namespace Colibri.Job.Processor
                     OnRetry = args =>
                     {
                         _logger.LogInformation("CreateBlastCampaign {@retry} {@duration}", args.AttemptNumber, args.Duration);
-                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred" );
+                        _logger.LogError(args.Outcome.Exception, "CreateBlastCampaign an error ocurred");
                         return default;
                     },
                     UseJitter = true
@@ -88,65 +89,85 @@ namespace Colibri.Job.Processor
 
         public async Task ProcessMessageAsync(RawMessageDelivery rawMessageDelivery, CancellationToken cancellationToken)
         {
-            var blastRequest = JsonSerializer.Deserialize<BlastRequest>(rawMessageDelivery.Message);
+            var blastRequest = System.Text.Json.JsonSerializer.Deserialize<BlastRequest>(rawMessageDelivery.Message);
 
             if (blastRequest != null)
             {
-                var project = await _digitalCommunicationService.GetProjectDb(blastRequest.Campaign.ProjectId);
-
-                if (project != null)
+                try
                 {
-                    ResilienceContext context = ResilienceContextPool.Shared.Get(cancellationToken);
+                    var project = await _digitalCommunicationService.GetProjectDb(blastRequest.Campaign.ProjectId);
 
-                    var blastListRequest = new BlastListRequest(blastRequest.Campaign.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
-
-                    var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
-
-                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
-
-                    var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
-
-                    var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
-
-                    await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
-
-                    var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
-
-                    var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, project.ApiKey, context, cancellationToken);
-
-                    _logger.LogInformation("PostCampaignListDb Start {CampaignName} {Size}", blastRequest.Campaign.Name, blastListSubscriberResponse.Count);
-
-                    for (int i = 0; i < blastListSubscriberResponse.Count; i++)
+                    if (project != null)
                     {
-                        var subscriberList = blastListSubscriberResponse[i];
-                        var campaign = blastCampaignResponse[i];
-                        var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                        ResilienceContext context = ResilienceContextPool.Shared.Get(cancellationToken);
+
+                        var blastListRequest = new BlastListRequest(blastRequest.Campaign.CampaignCount, blastRequest.ListNameFormat, blastRequest.ListDescriptionFormat);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.GeneratingList);
+
+                        var listIds = await CreateBlastList(blastListRequest, project.ApiKey, context, cancellationToken);
+
+                        await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
+
+                        var blastCampaignRequest = new BlastCampaignRequest(listIds, blastRequest.Campaign.Name, blastRequest.SourceTemplateId, Convert.ToDateTime(blastRequest.SendAt), blastRequest.IntervalTime, blastRequest.SourceSupressionList);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.GeneratingCampaign);
+
+                        var blastCampaignResponse = await CreateBlastCampaign(blastCampaignRequest, project.ApiKey, context, cancellationToken);
+
+                        await Task.Delay(_jobOptions.DelayBetweenCalls, cancellationToken);
+
+                        var blastListSubscriberRequest = new BlastListSubscriberRequest(blastRequest.BatchSize, blastRequest.SourceListId, listIds);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.AddingSubscribers);
+
+                        var blastListSubscriberResponse = await CreateBlastListSubscribers(blastListSubscriberRequest, project.ApiKey, context, cancellationToken);
+
+                        _logger.LogInformation("PostCampaignListDb Start {CampaignName} {Size}", blastRequest.Campaign.Name, blastListSubscriberResponse.Count);
+
+                        for (int i = 0; i < blastListSubscriberResponse.Count; i++)
                         {
-                            Emails = subscriberList.Emails,
-                            IterableCampaignId = campaign.CampaignId,
-                            SendAt = campaign.SendAt,
-                            IterableListId = subscriberList.ListId,
-                            IterableTemplateId = blastRequest.SourceTemplateId,
-                            Name = string.Format(blastRequest.ListNameFormat, i + 1),
-                            Order = (short)(i + 1)
-                        }, blastRequest.Campaign.Id);
-                        await Task.Delay(_jobOptions.DelayDatabase, cancellationToken);
+                            var subscriberList = blastListSubscriberResponse[i];
+                            var campaign = blastCampaignResponse[i];
+                            var listDbResponse = await _digitalCommunicationService.PostCampaignListDb(new Shared.ViewModels.CampaignListCreateViewModel
+                            {
+                                Emails = [],
+                                IterableCampaignId = campaign.CampaignId,
+                                SendAt = campaign.SendAt,
+                                IterableListId = subscriberList.ListId,
+                                IterableTemplateId = blastRequest.SourceTemplateId,
+                                Name = string.Format(blastRequest.ListNameFormat, i + 1),
+                                Order = (short)(i + 1)
+                            }, blastRequest.Campaign.Id);
+                            await Task.Delay(_jobOptions.DelayDatabase, cancellationToken);
+                        }
+
+                        _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
+
+                        await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Complete);
+
+                        _logger.LogInformation("PutCampaignDb Completed {CampaignName}", blastRequest.Campaign.Name);
                     }
+                }
+                catch (Exception ex)
+                {
+                    await UpdateStatusDb(blastRequest, Shared.CampaignStatus.Error);
 
-                    _logger.LogInformation("PutCampaignDb Start {CampaignName}", blastRequest.Campaign.Name);
-
-                    await _digitalCommunicationService.PutCampaignDb(blastRequest.Campaign.Id, new Shared.ViewModels.CampaignUpdateViewModel
-                    {
-                        Id = blastRequest.Campaign.Id,
-                        Tags = blastRequest.Campaign.Tags,
-                        Status = Shared.CampaignStatus.Done,
-                        UpdatedBy = "Colibri.Job",
-                        UpdatedDate = DateTimeOffset.UtcNow
-                    });
-
-                    _logger.LogInformation("PutCampaignDb Completed {CampaignName}", blastRequest.Campaign.Name);
+                    _logger.LogError(ex, "An error ocurred creating iterable models {Request}", JsonConvert.SerializeObject(blastRequest));
                 }
             }
+        }
+
+        private async Task UpdateStatusDb(BlastRequest blastRequest, Shared.CampaignStatus status)
+        {
+            await _digitalCommunicationService.PutCampaignDb(blastRequest.Campaign.Id, new Shared.ViewModels.CampaignUpdateViewModel
+            {
+                Id = blastRequest.Campaign.Id,
+                Tags = blastRequest.Campaign.Tags,
+                Status = status,
+                UpdatedBy = "Colibri.Job",
+                UpdatedDate = DateTimeOffset.UtcNow
+            });
         }
 
         private async Task<IEnumerable<long>> CreateBlastList(BlastListRequest request, string token, ResilienceContext context, CancellationToken cancellationToken)
@@ -154,8 +175,8 @@ namespace Colibri.Job.Processor
             List<long> dataResponse = [];
             for (int i = 1; i <= request.CampaignCount; i++)
             {
-                string listDescription = string.Format(request.ListDescriptionFormat, i);
-                string listName = string.Format(request.ListNameFormat, i);
+                string listDescription = string.Format(request.ListNameFormat, i);
+                string listName = Guid.NewGuid().ToString();
                 var staticListRequest = new StaticListRequest(listDescription, listName);
 
                 var staticListResponse = await _resiliencePipelineList.ExecuteAsync(async context =>
@@ -186,25 +207,34 @@ namespace Colibri.Job.Processor
 
                 for (int i = 0; i < request.ListIds.Count(); i++)
                 {
-                    List<SubscriberDto> chunk = [.. emailChunk.ElementAt(i).Select(email => new SubscriberDto(email))];
+                    IEnumerable<string[]> emailSubChunk = emailChunk.ElementAt(i).Chunk(_jobOptions.EmailBatchSize);
+                    _logger.LogInformation("CreateBlast - CreateSubscriberList EmailChunk {EmailChunk} EmailSubChunk {EmailSubChunk}", emailChunk.Count(), emailSubChunk.Count());
 
                     var listId = request.ListIds.ElementAt(i);
+                    var emailsAdded = new List<string>();
 
-                    var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
-
-                    var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
+                    foreach (var subChunk in emailSubChunk)
                     {
-                        _logger.LogInformation("CreateBlast - CreateSubscriberList Send {0}", subscriberListRequest);
-                        return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
-                    },
-                    context);
+                        List<SubscriberDto> chunk = [.. subChunk.Select(email => new SubscriberDto(email))];
 
-                    await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
-                    if (subscriberListResponse != null)
-                    {
-                        _logger.LogInformation("CreateBlast - CreateSubscriberList {0}", subscriberListResponse.SuccessCount);
-                        dataResponse.Add(new BlastListSubscriberResponse(listId, emailChunk.ElementAt(i)));
+                        var subscriberListRequest = new SubscriberListRequest(listId, chunk, true);
+
+                        var subscriberListResponse = await _resiliencePipelineSubscriber.ExecuteAsync(async context =>
+                        {
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList Send ListId {ListId} {@SubscriberListRequest}", listId, JsonConvert.SerializeObject(subscriberListRequest));
+                            return await _iterableService.CreateSubscriberList(subscriberListRequest, token, context.CancellationToken);
+                        },
+                        context);
+
+                        await Task.Delay(_jobOptions.DelaySubscribers, cancellationToken);
+                        if (subscriberListResponse != null)
+                        {
+                            _logger.LogInformation("CreateBlast - CreateSubscriberList ListId {ListId} EmailsAdded {SuccessCount}", listId, subscriberListResponse.SuccessCount);
+                            emailsAdded.AddRange(subChunk);
+                        }
                     }
+
+                    dataResponse.Add(new BlastListSubscriberResponse(listId, [.. emailsAdded]));
                 }
             }
             return dataResponse;
@@ -225,7 +255,7 @@ namespace Colibri.Job.Processor
 
                 var createCampaignResponse = await _resiliencePipelineCampaign.ExecuteAsync(async context =>
                 {
-                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", createCampaignRequest);
+                    _logger.LogInformation("CreateBlast - CreateCampagin Send {0}", JsonConvert.SerializeObject(createCampaignRequest));
                     return await _iterableService.CreateCampagin(createCampaignRequest, token, context.CancellationToken);
                 },
                 context);

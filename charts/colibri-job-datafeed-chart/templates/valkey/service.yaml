@@ -1,0 +1,19 @@
+{{- if .Values.valkey.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-valkey
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  type: {{ .Values.valkey.service.type }}
+  ports:
+    - port: {{ .Values.valkey.service.port }}
+      targetPort: client
+      protocol: TCP
+      name: client
+  selector:
+    {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+{{- end }}

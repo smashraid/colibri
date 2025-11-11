@@ -1,0 +1,53 @@
+{{- if .Values.ingress.enabled }}
+{{- $fullName := include "colibri-job-datafeed-chart.fullname" . }}
+{{- $svcPort := .Values.app.service.port }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              {{- if eq .host (printf "colibri-job-datafeed.%s" $.Values.global.domain) }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else if eq .host (printf "redis-commander.%s" $.Values.global.domain) }}
+              service:
+                name: {{ $fullName }}-redis-commander
+                port:
+                  number: {{ $.Values.redisCommander.service.port }}
+              {{- else if eq .host (printf "redis-insight.%s" $.Values.global.domain) }}
+              service:
+                name: {{ $fullName }}-redis-insight
+                port:
+                  number: {{ $.Values.redisInsight.service.port }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- range .Values.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+{{- end }}

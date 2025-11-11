@@ -11,5 +11,6 @@
         public int DelaySubscribers { get; set; }
         public int DelayBetweenCalls { get; set; }
         public int DelayDatabase { get; set; }
+        public int EmailBatchSize { get; set; } = 15000;
     }
 }

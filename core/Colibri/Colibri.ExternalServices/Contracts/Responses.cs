@@ -3,67 +3,43 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Colibri.ExternalServices.Contracts
 {
     public record StaticListResponse(
       [property: JsonProperty("listId")] long ListId
-    );
-
+    ) : ErrorResponse();
     public record SubscriberListResponse
     (
         [property: JsonProperty("createdFields")]
-             List<string> CreatedFields,
+         List<string> CreatedFields,
 
         [property: JsonProperty("failCount")]
-             long FailCount,
+         long FailCount,
 
         [property: JsonProperty("failedUpdates")]
-             FailedUpdatesDto FailedUpdates,
+         FailedUpdatesDto FailedUpdates,
 
         [property: JsonProperty("filteredOutFields")]
-             List<string> FilteredOutFields,
+         List<string> FilteredOutFields,
 
         [property: JsonProperty("invalidEmails")]
-             List<string> InvalidEmails,
+         List<string> InvalidEmails,
 
         [property: JsonProperty("invalidUserIds")]
-             List<string> InvalidUserIds,
+         List<string> InvalidUserIds,
 
         [property: JsonProperty("successCount")]
-             long SuccessCount
-    );
-
-    public record DeleteListResponse
-    (
-       [property: JsonProperty("code")]
-         string Code,
-
-       [property: JsonProperty("msg")]
-         string Msg,
-
-       [property: JsonProperty("params")]
-         Dictionary<string, object> Params
-    );
+         long SuccessCount
+    ) : ErrorResponse();
 
     public record CreateCampaginResponse
     (
         [property: JsonProperty("campaignId")]
-            long CampaignId
-    );
-
-    public record ScheduleCampaignResponse
-    (
-       [property: JsonProperty("code")]
-             string Code,
-
-       [property: JsonProperty("msg")]
-             string Msg,
-
-       [property: JsonProperty("params")]
-             Dictionary<string, object> Params
-    );
+         long CampaignId
+    ) : ErrorResponse();
 
     public record CampaignResponse
     (
@@ -74,7 +50,7 @@ namespace Colibri.ExternalServices.Contracts
     public record ProjectTemplateResponse
     (
         [property: JsonProperty("templates")]
-        List<ProjectTemplateDto> Templates
+         List<ProjectTemplateDto> Templates
     );
 
     public record CampaignListResponse(
@@ -89,5 +65,14 @@ namespace Colibri.ExternalServices.Contracts
     public record BlastCampaignResponse(
         [property: JsonProperty("campaignId")] long CampaignId,
         [property: JsonProperty("sendAt")] string SendAt
+    );
+
+    public record ErrorResponse(
+      [property: JsonProperty("msg")]
+       string? Msg = null,
+      [property: JsonProperty("code")]
+       string? Code = null,
+      [property: JsonProperty("params")]
+       JsonElement? Params = null
     );
 }

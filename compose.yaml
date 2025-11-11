@@ -1,6 +1,6 @@
 services:
   web:
-    image: ${REPOSITORY}/colibri-web:${BUILDNUMBER}
+    image: colibri-web:7.0
     build:
       context: ./web
       dockerfile: Dockerfile
@@ -9,7 +9,12 @@ services:
         - NAME=colibri
 
   api:
-    image: ${REPOSITORY}/colibri-api:${BUILDNUMBER}
+    image: colibri-api:7.0
+    #environment:
+    #   - ASPNETCORE_URLS=http://+:80
+    #   - ASPNETCORE_ENVIRONMENT=Development
+    # ports:
+    #   - 9000:80
     build:
       context: ./core/Colibri
       dockerfile: Colibri.Api/Dockerfile
@@ -17,10 +22,17 @@ services:
         - BUILD_CONFIGURATION=Release
 
   job:
-    image: ${REPOSITORY}/colibri-job:${BUILDNUMBER}
+    image: colibri-job:7.0
     build:
       context: ./core/Colibri
       dockerfile: Colibri.Job/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
-      
+
+  job-datafeed:
+    image: colibri-job-datafeed:7.0
+    build:
+      context: ./core/Colibri
+      dockerfile: Colibri.Job.Datafeed/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Release

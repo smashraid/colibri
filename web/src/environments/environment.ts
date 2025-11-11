@@ -6,7 +6,7 @@ export const environment = {
   production: true,
   msalConfig: {
     auth: {
-      clientId: 'a8083a09-0c99-4e59-8b5c-aea127f19da2',
+      clientId: '4bc15bea-cf50-4c40-8551-6acca007cd8d',
       authority:
         'https://login.microsoftonline.com/7427676f-ed2e-4126-b3b1-06279ba31283',
     },
@@ -20,6 +20,24 @@ export const environment = {
     token: '0194f1f6-c99a-7c68-a713-4ca978bc5627',
     retries: 3,
     delay: 6000,
+  },
+  errorLogging: {
+    logNetworkErrors: true,
+    logClientErrors: true,
+    logServerErrors: true,
+    log4xxErrors: true,
+    log5xxErrors: true,
+    logRequestBody: false,
+    logResponseBody: false,
+    excludeUrls: [
+      'api/operation/logClientErrorBatch',
+      'api/health',
+      'api/ping',
+    ],
+    excludeStatusCodes: [401, 404],
+    showUserNotifications: false,
+    redirectOn401: false,
+    loginUrl: '/',
   },
 };
 

@@ -1,0 +1,171 @@
+fullnameOverride: "colibri-job-datafeed"
+
+global:
+  replicaCount: 3
+  domain: "localhost"
+
+warmup:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: smashraid/colibri-job-datafeed
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  # REMOVED: service section
+  env:
+    SERVICE_MODE: "WARMUP"
+    Cache__Provider: "valkey"
+    Cache__RedisConnectionString: "colibri-job-datafeed-valkey:6379"
+    Cache__RedisInstanceName: "ColibriCache"
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+processing:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: smashraid/colibri-job-datafeed
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  # REMOVED: service section
+  env:
+    SERVICE_MODE: "PROCESSING"
+    Cache__Provider: "valkey"
+    Cache__RedisConnectionString: "colibri-job-datafeed-valkey:6379"
+    Cache__RedisInstanceName: "ColibriCache"
+    Azure__ServiceBus__Subscription: "csv-processor"
+  initContainers:
+    - name: wait-for-valkey
+      image: busybox:1.35
+      command:
+        [
+          "sh",
+          "-c",
+          'until nc -z colibri-job-datafeed-valkey 6379; do echo "Waiting for Valkey..."; sleep 2; done; echo "Valkey is ready!"',
+        ]
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Valkey Configuration
+valkey:
+  enabled: true
+  image:
+    repository: valkey/valkey
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  architecture: standalone
+  auth:
+    enabled: false
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  persistence:
+    enabled: false
+
+  # Fixed: Use kebab-case for config keys
+  config:
+    maxmemory: "256mb"
+    maxmemory-policy: "allkeys-lru"
+    appendonly: "no"
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "100m"
+
+# Redis Commander Configuration
+redisCommander:
+  enabled: true
+  image:
+    repository: rediscommander/redis-commander
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: NodePort
+    port: 8081
+    nodePort: 30081
+
+  # Fixed: Use consistent service name
+  env:
+    REDIS_HOSTS: "local:colibri-job-datafeed-valkey:6379"
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "25m"
+    limits:
+      memory: "128Mi"
+      cpu: "50m"
+
+# Redis Insight Configuration
+redisInsight:
+  enabled: true
+  image:
+    repository: redis/redisinsight
+    tag: "latest" # Use specific version for stability
+    pullPolicy: IfNotPresent
+
+  service:
+    type: NodePort
+    port: 5540
+    nodePort: 30540
+
+  # Fixed: Use consistent service name and add timeout
+  env:
+    REDIS_HOST: "colibri-job-datafeed-valkey"
+    REDIS_PORT: "6379"
+    # Add connection timeout
+    REDIS_CONNECTION_TIMEOUT: "30000"
+
+  resources:
+    requests:
+      memory: "256Mi" # Increased for Redis Insight
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+
+  # Add health checks for Redis Insight
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 5540
+    initialDelaySeconds: 60 # Give it more time to start
+    periodSeconds: 30
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 5540
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Disable Ingress for local
+ingress:
+  enabled: false
+
+# Service Account
+serviceAccount:
+  create: true
+  #automount: true
+  name: colibri-job-datafeed-role
+
+# Security context
+podSecurityContext: {}
+securityContext: {}

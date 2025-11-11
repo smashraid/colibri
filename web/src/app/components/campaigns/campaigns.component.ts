@@ -1,18 +1,11 @@
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MsalModule } from '@azure/msal-angular';
-import { forkJoin, Observable } from 'rxjs';
-import { delay, filter, mergeMap, switchMap, toArray } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { delay, mergeMap, switchMap } from 'rxjs/operators';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { DatePipe, UpperCasePipe } from '@angular/common';
+import { DatePipe, JsonPipe, UpperCasePipe } from '@angular/common';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -30,6 +23,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatChipsModule } from '@angular/material/chips';
 
 import { DatabaseService } from '../../services/database.service';
 import { IterableService } from '../../services/iterable.service';
@@ -38,8 +32,7 @@ import { AppStore } from '../../app.store';
 import { SnackbarMessageComponent } from '../../shared/snackbar-message/snackbar-message.component';
 
 import { CampaignRead } from '../../view-models/campaign/campaignRead.model';
-import { ArchiveCampaignRequest } from '../../core/models/api/requests/archive-campaign';
-import { PagedMetadata } from '../../core/models/domain/pagination.model';
+import { PagedMetadata } from '../../view-models/pagination.model';
 
 @Component({
   selector: 'app-campaigns',
@@ -60,12 +53,14 @@ import { PagedMetadata } from '../../core/models/domain/pagination.model';
     MatSnackBarModule,
     MatMenuModule,
     MatPaginatorModule,
+    MatChipsModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
     MsalModule,
     UpperCasePipe,
     DatePipe,
+    JsonPipe,
   ],
   templateUrl: './campaigns.component.html',
   styleUrl: './campaigns.component.scss',
@@ -79,6 +74,7 @@ export class CampaignsComponent implements OnInit {
     'createdDate',
     'projectWebsite',
     'status',
+    'tags',
   ];
   columnsOptions = ['options'];
   columnsToDisplayWithExpand = [
@@ -90,7 +86,7 @@ export class CampaignsComponent implements OnInit {
   pagedList = signal<PagedMetadata>({
     totalCount: 0,
     pageSize: 10,
-    currentPage: 0,
+    currentPage: 1,
     pageSizeOptions: [5, 10, 25],
     hasNext: false,
     hasPrevious: false,
@@ -141,27 +137,27 @@ export class CampaignsComponent implements OnInit {
   }
 
   archive(element: CampaignRead) {
-    const request: ArchiveCampaignRequest = {
-      campaignIds: element.lists.map((list) => list.iterableCampaignId),
-    };
-
-    const listIds = element.lists.map((list) => list.iterableListId);
-
-    this.iterableService
-      .archiveCampaign(request)
+    this.databaseService
+      .getArchiveDb(element.id)
       .pipe(
-        switchMap(() => this.databaseService.deleteCampaign(element.id)),
-        delay(3000),
-        mergeMap(() =>
+        switchMap((archiveReadViewModel) =>
+          this.iterableService
+            .archiveCampaign({
+              campaignIds: archiveReadViewModel.campaigns,
+            })
+            .pipe(mergeMap(() => of(archiveReadViewModel)))
+        ),
+        delay(5000),
+        mergeMap((archiveReadViewModel) =>
           forkJoin(
-            listIds.map((id) =>
+            archiveReadViewModel.lists.map((id) =>
               this.iterableService.deleteList(id).pipe(delay(3000))
             )
           )
-        )
+        ),
+        switchMap(() => this.databaseService.deleteCampaign(element.id))
       )
       .subscribe((result) => {
-        console.log(result);
         this.snackBar.openFromComponent(SnackbarMessageComponent, {
           duration: 5000,
           data: {

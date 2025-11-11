@@ -1,0 +1,210 @@
+global:
+  # This will set the replicaset count
+  replicaCount: 1
+
+  # Domain for ingress (set this per environment)
+  domain: "qa.gtcnnt.net"
+
+# Your .NET Application Configuration
+app:
+  name: "colibri-job-datafeed"
+  image:
+    repository: 338589391164.dkr.ecr.us-east-2.amazonaws.com/tranzact/tzdigital-communications/colibri-job-datafeed
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  # Environment variables for your .NET app
+  env:
+    Valkey__ConnectionString: "valkey:6379"
+    Valkey__InstanceName: "ColibriCache"
+    # Add your other environment variables here
+    Splunk__SplunkHost: "https://qa.gtcnnt.net/splunk/"
+    Splunk__UriPath: "services/collector/event"
+    Splunk__EventCollectorToken: "D6529CD2-9A04-49C0-B3D7-899A5D0CC125"
+    Splunk__Host: "Colibri.Job.Datafeed"
+    Splunk__Index: "iterable_qa"
+    Splunk__Source: "job-datafeed"
+    Splunk__SourceType: "job-datafeed"
+    Splunk__BatchSizeLimit: 100
+    Splunk__BatchIntervalInSeconds: 2
+    Splunk__RestrictedToMinimumLevel: "Information"
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Probes
+  startupProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Valkey Configuration (Redis-compatible)
+valkey:
+  enabled: true
+  image:
+    repository: valkey/valkey
+    tag: "7.2.5"
+    pullPolicy: IfNotPresent
+
+  architecture: standalone # or "replication" for production
+
+  # Authentication (optional)
+  auth:
+    enabled: false
+    password: ""
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  # Persistence
+  persistence:
+    enabled: true
+    size: "10Gi"
+    storageClass: "" # Use default storage class
+
+  # Valkey configuration
+  config:
+    maxmemory: "1gb"
+    maxmemoryPolicy: "allkeys-lru"
+    appendonly: "yes"
+    autoAOFRewritePercentage: "50"
+    autoAOFRewriteMinSize: "64mb"
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Redis Commander Configuration
+redisCommander:
+  enabled: true
+  image:
+    repository: rediscommander/redis-commander
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8081
+
+  # Environment variables for Redis Commander
+  env:
+    REDIS_HOSTS: "local:valkey:6379"
+    REDIS_PASSWORD: "" # Set if Valkey auth is enabled
+    HTTP_USER: "" # Optional basic auth
+    HTTP_PASSWORD: "" # Optional basic auth
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "100m"
+
+# Redis Insight Configuration
+redisInsight:
+  enabled: true
+  image:
+    repository: redis/redisinsight
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 5540
+
+  # Environment variables for Redis Insight
+  env:
+    REDIS_HOST: "valkey"
+    REDIS_PORT: "6379"
+    REDIS_PASSWORD: "" # Set if Valkey auth is enabled
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+
+# Ingress Configuration (following DevOps pattern)
+ingress:
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: "dig-qa-internal-lb"
+    alb.ingress.kubernetes.io/group.name: "dig-qa-internal-lb-group"
+    alb.ingress.kubernetes.io/scheme: "internal"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/target-type: "instance"
+    alb.ingress.kubernetes.io/healthcheck-path: "/healthz"
+
+  hosts:
+    - host: "colibri-job-datafeed.{{ .Values.global.domain }}"
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+    - host: "redis-commander.{{ .Values.global.domain }}"
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+    - host: "redis-insight.{{ .Values.global.domain }}"
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+# Service Account Configuration
+serviceAccount:
+  create: true
+  automount: true
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::025381531841:role/service.drips.role"
+  name: "colibri-job-datafeed-role"
+
+# Additional configurations
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: {}
+affinity: {}
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80

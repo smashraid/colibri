@@ -1,0 +1,34 @@
+{{- if .Values.processing.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "colibri-job-datafeed-chart.fullname" . }}-processing
+  labels:
+    {{- include "colibri-job-datafeed-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: processing
+spec:
+  replicas: {{ .Values.processing.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: processing
+  template:
+    metadata:
+      labels:
+        {{- include "colibri-job-datafeed-chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: processing
+        service-mode: processing
+    spec:
+      containers:
+        - name: processing-service
+          image: "{{ .Values.processing.image.repository }}:{{ .Values.processing.image.tag }}"
+          imagePullPolicy: {{ .Values.processing.image.pullPolicy }}
+          # REMOVED: ports section - no need to expose ports
+          env:
+            {{- range $key, $value := .Values.processing.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.processing.resources | nindent 12 }}
+{{- end }}

@@ -1,0 +1,70 @@
+# Development configuration for Docker Desktop
+global:
+  environment: "development"
+  clusterName: "docker-desktop"
+ 
+# Disable persistence and ingress for development
+grafana:
+  persistence:
+    enabled: false
+  ingress:
+    enabled: false
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "100m"
+ 
+prometheus:
+  persistence:
+    enabled: false
+  ingress:
+    enabled: false
+  retention: "1d"
+  retentionSize: "2GB"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+ 
+alertmanager:
+  ingress:
+    enabled: false
+ 
+# Disable alertmanager in development to save resources
+components:
+  alertmanager: false
+ 
+# Kube Prometheus Stack Overrides for Development (camelCase)
+kubePrometheusStack:
+  grafana:
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "100m"
+  
+  prometheus:
+    prometheusSpec:
+      retention: "1d"
+      retentionSize: "2GB"
+      storageSpec: {}
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "250m"
+        limits:
+          memory: "1Gi"
+          cpu: "500m"
+  
+  alertmanager:
+    enabled: false

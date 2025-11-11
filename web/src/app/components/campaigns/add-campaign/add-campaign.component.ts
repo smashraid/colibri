@@ -3,13 +3,22 @@ import {
   ElementRef,
   OnInit,
   inject,
+  signal,
   viewChild,
+  ChangeDetectionStrategy,
+  computed,
+  model,
+  Signal,
+  WritableSignal,
 } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Router } from '@angular/router';
-import { AsyncPipe } from '@angular/common';
-import { switchMap } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
+import { AsyncPipe, JsonPipe } from '@angular/common';
+import { map, startWith, switchMap, tap } from 'rxjs/operators';
+import { lastValueFrom, Observable, of } from 'rxjs';
 import moment from 'moment';
 
 import {
@@ -31,6 +40,13 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
+
+import { TimeFormatDirective } from '../../../shared/time-format.directive';
 
 import { CampaignListIterable } from '../../../view-models/campaign/campaignListIterable.model';
 import { TemplateIterable } from '../../../view-models/template/templateIterable.model';
@@ -40,10 +56,17 @@ import { DatabaseService } from '../../../services/database.service';
 import { SpinnerService } from '../../../services/spinner.service';
 
 import { AppStore } from '../../../app.store';
+import { instanceOf } from '../../../shared/utils';
 
 import { CampaignCreate } from '../../../view-models/campaign/campaignCreate.model';
 import { maxCampaignDays } from '../../../validators/maxCampaignDays';
 import { ToastComponent } from '../../../shared/toast/toast.component';
+import { selecteValidOption } from '../../../validators/selectedValidOption';
+import { LoggingService } from '../../../services/logging.service';
+import {
+  timeFormatToMinutes,
+  timeFormatValidator,
+} from '../../../validators/timeFormat';
 
 @Component({
   selector: 'app-add-campaign',
@@ -59,10 +82,14 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
     MatTimepickerModule,
     MatDatepickerModule,
     MatProgressSpinnerModule,
+    MatChipsModule,
+    MatAutocompleteModule,
     FormsModule,
     ReactiveFormsModule,
     AsyncPipe,
+    JsonPipe,
     ToastComponent,
+    TimeFormatDirective,
   ],
   templateUrl: './add-campaign.component.html',
   styleUrl: './add-campaign.component.scss',
@@ -70,46 +97,97 @@ import { ToastComponent } from '../../../shared/toast/toast.component';
 export class AddCampaignComponent implements OnInit {
   private readonly store = inject(AppStore);
 
-  campaignLists$!: Observable<CampaignListIterable[]>;
+  timeValue = '';
+
+  campaignLists = signal<CampaignListIterable[]>([]);
+  filteredList = signal<CampaignListIterable[]>([]);
+
   template$!: Observable<TemplateIterable>;
   emailCount$!: Observable<number>;
 
   validateInformationForm = new FormGroup({
     templateId: new FormControl<number | null>(null, [Validators.required]),
-    listId: new FormControl<number | null>(null, [Validators.required]),
+    listId: new FormControl<CampaignListIterable | null>(null, [
+      Validators.required,
+      selecteValidOption(),
+    ]),
   });
 
   scheduleForm = new FormGroup(
     {
-      campaignName: new FormControl('', [Validators.required]),
+      campaignName: new FormControl(''),
       supressionList: new FormControl<number | null>(null, []),
       batchSize: new FormControl<number | null>(null, [Validators.required]),
       sendDate: new FormControl(moment(), [Validators.required]),
       sendTime: new FormControl(moment(), [Validators.required]),
-      interval: new FormControl<number | null>(null, [Validators.required]),
-      totalCount: new FormControl<number | null>({
-        value: null,
-        disabled: true,
-      }),
+      interval: new FormControl<string | null>(null, [
+        Validators.required,
+        timeFormatValidator(),
+      ]),
+      tags: new FormControl<string[]>([]),
+      totalCount: new FormControl<number | null>(
+        {
+          value: null,
+          disabled: false,
+        },
+        [Validators.required]
+      ),
+      // projectId: new FormControl<number>(
+      //   { value: this.store.selectProjectId(), disabled: true },
+      //   [Validators.required]
+      // ),
     },
-    { validators: maxCampaignDays() }
+    { validators: [] }
   );
 
-  scheduleManualForm = new FormGroup({});
+  preview = signal<string>('');
 
-  htmlContainer = viewChild<ElementRef<HTMLDivElement>>('htmlContainer');
-  preview = viewChild<ElementRef<HTMLImageElement>>('preview');
+  readonly minDate = moment().toDate();
+
+  readonly maxDate = moment().add(21, 'days');
+
+  readonly tagKeywords = signal<string[]>([]);
+
+  readonly separatorKeysCodes: number[] = [ENTER];
+
+  allTags: WritableSignal<string[]> = signal([]);
+  filteredTags: WritableSignal<string[]> = signal([]);
+
+  updatedList$ = toObservable(this.store.projectId);
 
   constructor(
     private iterableService: IterableService,
     private databaseService: DatabaseService,
     private spinnerService: SpinnerService,
+    private logger: LoggingService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private announcer: LiveAnnouncer
   ) {}
 
   ngOnInit(): void {
-    this.campaignLists$ = this.iterableService.getListByType();
+    this.iterableService.getListByType('Blast List').subscribe((lists) => {
+      this.campaignLists.set(lists);
+      this.filteredList.set(lists);
+    });
+
+    const listsField = this.validateInformationForm.get('listId');
+
+    if (listsField) {
+      listsField.valueChanges.subscribe((value) => this._filter(value));
+    }
+
+    this.databaseService.getTagsDb().subscribe((tags) => {
+      this.allTags.set(tags);
+      this.filteredTags.set(tags);
+    });
+    this.updatedList$.subscribe((id) =>
+      this.iterableService.getListByType('Blast List').subscribe((lists) => {
+        this.campaignLists.set(lists);
+        this.filteredList.set(lists);
+        listsField?.patchValue(null);
+      })
+    );
   }
 
   sanitizedHtml(htmlString: string) {
@@ -122,9 +200,17 @@ export class AddCampaignComponent implements OnInit {
     const listId = this.validateInformationForm.get('listId')?.value;
 
     if (templateId && listId) {
-      this.template$ = this.iterableService.getTemplateById(templateId);
+      this.template$ = this.iterableService.getTemplateById(templateId).pipe(
+        switchMap((templateIterable) => {
+          this.preview.set(this.sanitizedHtml(templateIterable.html));
+          this.scheduleForm.patchValue({
+            campaignName: templateIterable.name,
+          });
+          return of(templateIterable);
+        })
+      );
 
-      this.emailCount$ = this.iterableService.getListSize(listId).pipe(
+      this.emailCount$ = this.iterableService.getListSize(listId.id).pipe(
         switchMap((value) => {
           this.scheduleForm.patchValue({
             totalCount: value,
@@ -133,6 +219,65 @@ export class AddCampaignComponent implements OnInit {
         })
       );
     }
+  }
+
+  removeTag(keyword: string) {
+    if (this.allTags().includes(keyword)) {
+      this.filteredTags.update((prev) => [...prev, keyword]);
+    }
+
+    this.tagKeywords.update((keywords) => {
+      const index = keywords.indexOf(keyword);
+      if (index < 0) {
+        return keywords;
+      }
+
+      keywords.splice(index, 1);
+      this.announcer.announce(`removed ${keyword} from reactive form`);
+      return [...keywords];
+    });
+  }
+
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim().toUpperCase();
+    if (this.allTags().includes(value)) {
+      this.filteredTags.update((prev) => prev.filter((tag) => tag != value));
+    }
+
+    // Add our keyword
+    if (value && !this.tagKeywords().includes(value)) {
+      this.tagKeywords.update((keywords) => [...keywords, value]);
+      this.announcer.announce(`added ${value} to reactive form`);
+    }
+
+    // Clear the input value
+    event.chipInput!.clear();
+  }
+
+  onSelectedTag(event: MatAutocompleteSelectedEvent): void {
+    this.tagKeywords.update((tags) => [...tags, event.option.viewValue]);
+    this.filteredTags.update((prev) =>
+      prev.filter((tag) => tag != event.option.viewValue)
+    );
+    event.option.deselect();
+  }
+
+  displayFn(list: CampaignListIterable): string {
+    return list && list.name ? list.name : '';
+  }
+
+  private _filter(value: string | CampaignListIterable | null): void {
+    let filterValue = '';
+    let result: CampaignListIterable[] = this.campaignLists().slice();
+    if (typeof value === 'string' && value !== '') {
+      filterValue = value.toLowerCase();
+      result = this.campaignLists().filter((option) =>
+        option.name.toLowerCase().includes(filterValue)
+      );
+    } else if (value && instanceOf<CampaignListIterable>(value, 'name')) {
+      result = [value];
+    }
+    this.filteredList.update((prev) => result);
   }
 
   async createCampaignBatch() {
@@ -146,6 +291,7 @@ export class AddCampaignComponent implements OnInit {
     const sendTime = this.scheduleForm.get('sendTime')?.value?.utc();
     const intervalTime = this.scheduleForm.get('interval')?.value;
     const totalCount = this.scheduleForm.get('totalCount')?.value;
+    const tags = this.scheduleForm.get('tags')?.value || [];
     const projectId = this.store.projectId();
     const useremail = this.store.useremail();
 
@@ -172,10 +318,14 @@ export class AddCampaignComponent implements OnInit {
         id: 0,
         campaignCount: Math.ceil(totalCount / batchSize),
         name: campaignName,
-        tags: [],
+        tags: tags,
         projectId,
         createdBy: useremail,
       };
+
+      this.logger.info('Create Campaign', campaignCreate);
+
+      const totalIntervalMinutes = timeFormatToMinutes(intervalTime) || 0;
 
       this.databaseService
         .createCampaign(campaignCreate)
@@ -183,10 +333,10 @@ export class AddCampaignComponent implements OnInit {
           switchMap((campaign) =>
             this.iterableService.createBlast({
               batchSize,
-              intervalTime,
+              intervalTime: totalIntervalMinutes,
               listNameFormat: `${campaignName} Blast List {0}`,
               listDescriptionFormat: `Blast List {0}`,
-              sourceListId,
+              sourceListId: sourceListId.id,
               sendAt: sendDate.format('YYYY-MM-DD HH:mm:ss'),
               sourceTemplateId,
               sourceSupressionList,
@@ -197,9 +347,12 @@ export class AddCampaignComponent implements OnInit {
             })
           )
         )
-        .subscribe(() => {
-          this.spinnerService.hide();
-          this.router.navigate(['/campaigns']);
+        .subscribe({
+          next: () => {
+            this.router.navigate(['/campaigns']);
+          },
+          error: () => this.spinnerService.hide(),
+          complete: () => this.spinnerService.hide(),
         });
     }
   }
