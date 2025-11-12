@@ -12,29 +12,28 @@ import {
   shareReplay,
   throwError,
 } from 'rxjs';
-
-import { environment } from '../../environments/environment';
-
-import { AppStore } from '../app.store';
-
-import { CampaignIterable } from '../view-models/campaign/campaignIterable.model';
-import { CampaignListIterable } from '../view-models/campaign/campaignListIterable.model';
-import { TemplateIterable } from '../view-models/template/templateIterable.model';
-import { SubscriberIterable } from '../view-models/subscriber/subscriberIterable.model';
-import { StaticListRequest } from '../view-models/static-list/request/staticListRequest.model';
-import { StaticListResponse } from '../view-models/static-list/response/staticListResponse.model';
-import { SubscriberListRequest } from '../view-models/subscriber/request/subscriberListRequest.model';
-import { SubscriberListResponse } from '../view-models/subscriber/response/subscriberListResponse.model';
-import { CreateCampaignRequest } from '../view-models/campaign/request/createCampaignRequest.model';
-import { CreateCampaginResponse } from '../view-models/campaign/response/createCampaginResponse.model';
-import { ArchiveCampaignRequest } from '../view-models/archive/request/archiveCampaignRequest.model';
-import { CampaignListDb } from '../models/campaign/campaignList.model';
-import { BlastRequest } from '../view-models/campaign/request/blastRequest.model';
-import { BlastListRequest } from '../view-models/campaign/request/blastListRequest.model';
-import { BlastListSubscriberRequest } from '../view-models/campaign/request/blastListSubscriberRequest.model';
-import { BlastCampaignRequest } from '../view-models/campaign/request/blastCampaignRequest.model';
-import { BlastListSubscriberResponse } from '../view-models/campaign/response/blastListSubscriberResponse.model';
-import { BlastCampaignResponse } from '../view-models/campaign/response/blastCampaignResponse.model';
+import { environment } from '../../../environments/environment';
+import { AppStore } from '../../app.store';
+import {
+  CampaignResponse,
+  CreateCampaignResponse,
+} from '../models/api/response/campaign';
+import { CampaignListResponse } from '../models/api/response/campaign-list';
+import { TemplateDetailResponse } from '../models/api/response/template';
+import {
+  CreateSubscribersResponse,
+  SubscriberResponse,
+} from '../models/api/response/subscriber';
+import { CreateStaticListRequest } from '../models/api/requests/static-list';
+import { CreateSubscribersRequest } from '../models/api/requests/subscriber';
+import {
+  ArchiveCampaignRequest,
+  CreateCampaignRequest,
+} from '../models/api/requests/campaign';
+import {
+  CreateStaticListResponse,
+  DeleteStaticListResponse,
+} from '../models/api/response/static-list';
 
 @Injectable({
   providedIn: 'root',
@@ -53,7 +52,7 @@ export class IterableService {
 
   getCampaignByType() {
     return this.httpClient
-      .get<CampaignIterable[]>(`${this.baseUrl}getCampaignByType`, {
+      .get<CampaignResponse[]>(`${this.baseUrl}getCampaignByType`, {
         responseType: 'json',
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
@@ -66,7 +65,7 @@ export class IterableService {
 
   getListByType(filter: string) {
     return this.httpClient
-      .get<CampaignListIterable[]>(
+      .get<CampaignListResponse[]>(
         `${this.baseUrl}getListByType?filter=${filter}`,
         {
           responseType: 'json',
@@ -82,7 +81,7 @@ export class IterableService {
 
   getTemplateById(id: number) {
     return this.httpClient
-      .get<TemplateIterable>(`${this.baseUrl}getTemplateById?id=${id}`, {
+      .get<TemplateDetailResponse>(`${this.baseUrl}getTemplateById?id=${id}`, {
         responseType: 'json',
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
@@ -108,7 +107,7 @@ export class IterableService {
 
   getListUsers(id: number, chunk: number) {
     return this.httpClient
-      .get<SubscriberIterable[][]>(
+      .get<SubscriberResponse[][]>(
         `${this.baseUrl}getListUsers?id=${id}&chunk=${chunk}&preferUserId=true`,
         {
           responseType: 'json',
@@ -122,23 +121,27 @@ export class IterableService {
       .pipe(shareReplay());
   }
 
-  createStaticList(request: StaticListRequest) {
+  createStaticList(request: CreateStaticListRequest) {
     return this.httpClient
-      .post<StaticListResponse>(`${this.baseUrl}createStaticList`, request, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          AuthorizationToken: this.authorizationToken,
-          'X-Project': this.store.projectId(),
-        }),
-      })
+      .post<CreateStaticListResponse>(
+        `${this.baseUrl}createStaticList`,
+        request,
+        {
+          headers: new HttpHeaders({
+            'Content-Type': 'application/json',
+            AuthorizationToken: this.authorizationToken,
+            'X-Project': this.store.projectId(),
+          }),
+        }
+      )
       .pipe
       //retry(this.retries),
       ();
   }
 
-  createSubscriberList(request: SubscriberListRequest) {
+  createSubscriberList(request: CreateSubscribersRequest) {
     return this.httpClient
-      .post<SubscriberListResponse>(
+      .post<CreateSubscribersResponse>(
         `${this.baseUrl}createSubscriberList`,
         request,
         {
@@ -156,77 +159,13 @@ export class IterableService {
 
   createCampaign(request: CreateCampaignRequest) {
     return this.httpClient
-      .post<CreateCampaginResponse>(`${this.baseUrl}createCampagin`, request, {
+      .post<CreateCampaignResponse>(`${this.baseUrl}createCampaign`, request, {
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
           AuthorizationToken: this.authorizationToken,
           'X-Project': this.store.projectId(),
         }),
       })
-      .pipe
-      //retry(this.retries),
-      ();
-  }
-
-  createBlast(request: BlastRequest) {
-    return this.httpClient
-      .post<CampaignListDb>(`${this.baseUrl}createBlast`, request, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          AuthorizationToken: this.authorizationToken,
-          'X-Project': this.store.projectId(),
-        }),
-      })
-      .pipe
-      //retry(this.retries),
-      ();
-  }
-
-  createBlastList(request: BlastListRequest) {
-    return this.httpClient
-      .post<number[]>(`${this.baseUrl}createBlastList`, request, {
-        headers: new HttpHeaders({
-          'Content-Type': 'application/json',
-          AuthorizationToken: this.authorizationToken,
-          'X-Project': this.store.projectId(),
-        }),
-      })
-      .pipe
-      //retry(this.retries),
-      ();
-  }
-
-  createBlastListSubscribers(request: BlastListSubscriberRequest) {
-    return this.httpClient
-      .post<BlastListSubscriberResponse[]>(
-        `${this.baseUrl}createBlastListSubscribers`,
-        request,
-        {
-          headers: new HttpHeaders({
-            'Content-Type': 'application/json',
-            AuthorizationToken: this.authorizationToken,
-            'X-Project': this.store.projectId(),
-          }),
-        }
-      )
-      .pipe
-      //retry(this.retries),
-      ();
-  }
-
-  createBlastCampaign(request: BlastCampaignRequest) {
-    return this.httpClient
-      .post<BlastCampaignResponse[]>(
-        `${this.baseUrl}createBlastCampaign`,
-        request,
-        {
-          headers: new HttpHeaders({
-            'Content-Type': 'application/json',
-            AuthorizationToken: this.authorizationToken,
-            'X-Project': this.store.projectId(),
-          }),
-        }
-      )
       .pipe
       //retry(this.retries),
       ();
@@ -244,9 +183,9 @@ export class IterableService {
       .pipe(retry({ count: this.retries, delay: this.delay }));
   }
 
-  deleteList(id: number) {
+  deleteList(id: bigint) {
     return this.httpClient
-      .delete(`${this.baseUrl}deleteList?id=${id}`, {
+      .delete<DeleteStaticListResponse>(`${this.baseUrl}deleteList?id=${id}`, {
         headers: new HttpHeaders({
           'Content-Type': 'application/json',
           AuthorizationToken: this.authorizationToken,

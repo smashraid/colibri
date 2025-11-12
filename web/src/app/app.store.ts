@@ -19,18 +19,17 @@ import { tapResponse } from '@ngrx/operators';
 import { Observable, pipe } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { DatabaseService } from './services/database.service';
-
-import { ProjectRead } from './view-models/project/projectRead.model';
 import { MsalService } from '@azure/msal-angular';
 import { AccountInfo } from '@azure/msal-browser';
+import { DatabaseService } from './core/services/database.service';
+import { ProjectResponse } from './features/projects/models/project';
 
 type AppState = {
   loading: boolean;
   projectId: number;
   username: string;
   useremail: string;
-  projects: ProjectRead[];
+  projects: ProjectResponse[];
 };
 
 const initialState: AppState = {
@@ -88,7 +87,7 @@ export const AppStore = signalStore(
           switchMap(() => {
             return databaseService.getProjects().pipe(
               tapResponse({
-                next: (projects: ProjectRead[]) =>
+                next: (projects: ProjectResponse[]) =>
                   patchState(store, { projects }),
                 error: (err: any) => {
                   console.log(err);

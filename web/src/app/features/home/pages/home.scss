@@ -1,0 +1,31 @@
+.content {
+  align-items: center;
+  display: flex;
+  flex-flow: column nowrap;
+
+  .title {
+    font-size: 4rem;
+    font-weight: 600;
+    letter-spacing: 0.5rem;
+    margin: 4rem auto;
+  }
+
+  .companies {
+    display: flex;
+    flex-flow: row nowrap;
+  }
+
+  .company {
+    text-align: center;
+  }
+
+  .name {
+    font-size: 4rem;
+    font-weight: 300;
+    letter-spacing: 1rem;
+  }
+
+  svg {
+    height: 16rem;
+  }
+}

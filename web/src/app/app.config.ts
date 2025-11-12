@@ -43,13 +43,13 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
-import { LoggingService } from './services/logging.service';
-import { GlobalErrorHandler } from './providers/global-error-handler';
-import { errorLoggingInterceptor } from './interceptors/error-logging.interceptor';
+import { LoggingService } from './core/services/logging.service';
+import { GlobalErrorHandler } from './core/providers/global-error-handler';
+import { errorLoggingInterceptor } from './core/interceptors/error-logging.interceptor';
 import {
   ERROR_LOGGING_CONFIG,
   ErrorLoggingConfig,
-} from './interceptors/error-logging.config';
+} from './core/interceptors/error-logging.config';
 
 export function loggerCallback(logLevel: LogLevel, message: string) {
   if (!environment.production) {

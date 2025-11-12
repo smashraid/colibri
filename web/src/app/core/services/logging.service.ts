@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
-import { environment } from '../../environments/environment';
-import { ClientLog, LogLevel } from '../view-models/client-log.model';
+import { environment } from '../../../environments/environment';
+import { ClientLog, LogLevel } from '../models/domain/client-log.model';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError } from 'rxjs/internal/operators/catchError';
 import { of } from 'rxjs/internal/observable/of';

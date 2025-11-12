@@ -1,0 +1,31 @@
+<mat-form-field class="project-list-form-field">
+  <mat-label>Project</mat-label>
+  <input
+    type="text"
+    placeholder="Start typing to search"
+    aria-label="Project"
+    matInput
+    [formControl]="projectControl"
+    [matAutocomplete]="auto"
+    (input)="onInputCleared()"
+  />
+
+  <mat-autocomplete
+    #auto="matAutocomplete"
+    [displayWith]="displayFn"
+    (optionSelected)="onOptionSelected($event)"
+  >
+    <!-- Use the new @for syntax to loop through the filtered list -->
+    @for (project of filteredList(); track project.id) {
+    <mat-option [value]="project">
+      <!-- You can customize the display here, e.g., show more details -->
+      <span>{{ project.name }}</span>
+    </mat-option>
+    } @empty {
+    <!-- This content is displayed only when filteredList() is empty -->
+    <mat-option [disabled]="true">
+      <span>No projects found.</span>
+    </mat-option>
+    }
+  </mat-autocomplete>
+</mat-form-field>

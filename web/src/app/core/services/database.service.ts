@@ -1,18 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
-import { catchError } from 'rxjs/internal/operators/catchError';
-import { of } from 'rxjs/internal/observable/of';
 
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 
-import { CampaignDb } from '../models/campaign/campaing.model';
-import { CampaignListDb } from '../models/campaign/campaignList.model';
-import { ProjectRead } from '../view-models/project/projectRead.model';
-import { CampaignRead } from '../view-models/campaign/campaignRead.model';
-import { throwError } from 'rxjs/internal/observable/throwError';
-import { PagedMetadata } from '../view-models/pagination.model';
-import { ArchiveReadViewModel } from '../view-models/archive/archiveRead.model';
+import { PagedMetadata } from '../models/domain/pagination.model';
+import { BlastsResponse } from '../../features/blasts/models/blasts';
+import { CreateBlastRequest } from '../../features/blasts/models/create-blast';
+import { ProjectResponse } from '../../features/projects/models/project';
+import { ArchiveCampaignsResponse } from '../../features/blasts/models/archive-campaigns';
+//import { ArchiveReadViewModel } from '../view-models/archive/archiveRead.model';
 
 @Injectable({
   providedIn: 'root',
@@ -26,75 +23,19 @@ export class DatabaseService {
 
   constructor(private httpClient: HttpClient) {}
 
-  createCampaign(request: CampaignDb) {
-    return this.httpClient.post<CampaignDb>(
-      `${this.baseUrl}postCampaignDb`,
-      request,
-      {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      }
-    );
+  postBlast(request: CreateBlastRequest) {
+    return this.httpClient.post<number>(`${this.baseUrl}postBlast`, request, {
+      headers: {
+        AuthorizationToken: this.authorizationToken,
+        'X-Correlation-ID': this.correlationId,
+      },
+    });
   }
 
-  createCampaignList(request: CampaignListDb, campaignId: number) {
-    return this.httpClient.post<CampaignListDb>(
-      `${this.baseUrl}postListDb?campaignId=${campaignId}`,
-      request,
-      {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      }
-    );
-  }
-
-  createCampaignLists(request: CampaignListDb[], campaignId: number) {
-    return this.httpClient.post(
-      `${this.baseUrl}postListsDb?campaignId=${campaignId}`,
-      request,
-      {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      }
-    );
-  }
-
-  getCampaigns() {
+  getBlastsByProject(id: number, metadata: PagedMetadata) {
     return this.httpClient
-      .get<CampaignRead[]>(`${this.baseUrl}getCampaignsDb`, {
-        responseType: 'json',
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      })
-      .pipe(shareReplay());
-  }
-
-  getCampaignDb(id: number) {
-    return this.httpClient
-      .get<CampaignRead>(`${this.baseUrl}getCampaignDb/${id}`, {
-        responseType: 'json',
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      })
-      .pipe(shareReplay());
-  }
-
-  getCampaignsByProject(id: number, metadata: PagedMetadata) {
-    console.log(metadata);
-
-    return this.httpClient
-      .get<CampaignRead[]>(
-        `${this.baseUrl}getCampaignsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
+      .get<BlastsResponse[]>(
+        `${this.baseUrl}getBlastsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
         {
           responseType: 'json',
           headers: {
@@ -107,25 +48,9 @@ export class DatabaseService {
       .pipe(shareReplay());
   }
 
-  getCampaignLists(campaignId: number, metadata: PagedMetadata) {
+  getArchive(id: number) {
     return this.httpClient
-      .get<CampaignListDb[]>(
-        `${this.baseUrl}getListsDb?campaignId=${campaignId}&pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
-        {
-          responseType: 'json',
-          headers: {
-            AuthorizationToken: this.authorizationToken,
-            'X-Correlation-ID': this.correlationId,
-          },
-          observe: 'response',
-        }
-      )
-      .pipe(shareReplay());
-  }
-
-  getArchiveDb(id: number) {
-    return this.httpClient
-      .get<ArchiveReadViewModel>(`${this.baseUrl}getArchiveDb/${id}`, {
+      .get<ArchiveCampaignsResponse>(`${this.baseUrl}getArchive/${id}`, {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
@@ -135,9 +60,9 @@ export class DatabaseService {
       .pipe(shareReplay());
   }
 
-  getTagsDb() {
+  getTags() {
     return this.httpClient
-      .get<string[]>(`${this.baseUrl}getTagsDb`, {
+      .get<string[]>(`${this.baseUrl}getTags`, {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
@@ -158,7 +83,7 @@ export class DatabaseService {
 
   getProjects() {
     return this.httpClient
-      .get<ProjectRead[]>(`${this.baseUrl}getProjectsDb`, {
+      .get<ProjectResponse[]>(`${this.baseUrl}getProjects`, {
         responseType: 'json',
         headers: {
           AuthorizationToken: this.authorizationToken,
@@ -166,39 +91,5 @@ export class DatabaseService {
         },
       })
       .pipe(shareReplay());
-  }
-
-  createCampaignNoSql(request: CampaignDb) {
-    return this.httpClient.post<CampaignDb>(
-      `${this.baseUrl}postCampaign`,
-      request,
-      {
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      }
-    );
-  }
-
-  getCampaignsNoSql() {
-    return this.httpClient
-      .get<CampaignRead[]>(`${this.baseUrl}getCampaigns`, {
-        responseType: 'json',
-        headers: {
-          AuthorizationToken: this.authorizationToken,
-          'X-Correlation-ID': this.correlationId,
-        },
-      })
-      .pipe(shareReplay());
-  }
-
-  deleteCampaignNoSql(id: number) {
-    return this.httpClient.delete(`${this.baseUrl}deleteCampaign/${id}`, {
-      headers: {
-        AuthorizationToken: this.authorizationToken,
-        'X-Correlation-ID': this.correlationId,
-      },
-    });
   }
 }
