@@ -1,4 +1,4 @@
-<div class="stepper-container">
+<div class="wizard stepper-container">
   <p class="step-indicator">
     Step {{ currentStepNumber }} of {{ steps.length }} : {{ currentStepTitle }}
   </p>
@@ -10,44 +10,7 @@
   >
   </mat-progress-bar>
 
-  <!-- Breadcrumbs -->
-  <div class="breadcrumb-container">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <div class="breadcrumb-links">
-        @for (step of steps; track $index; let i = $index; let isLast = $last) {
-        <div class="breadcrumb-item">
-          <a
-            class="breadcrumb-link"
-            [class.completed]="step.completed"
-            [class.active]="i === currentStepIndex"
-            [class.disabled]="i > currentStepIndex && !step.completed"
-            (click)="goToStep(i)"
-          >
-            <span class="step-icon">
-              @if (step.completed) {
-              <span class="material-symbols-outlined check-icon">check</span>
-              } @else {
-              <span class="step-number">{{ i + 1 }}</span>
-              }
-            </span>
-
-            <span class="step-label">{{ step.label }}</span>
-          </a>
-
-          @if (!isLast) {
-          <div
-            class="breadcrumb-connector"
-            [class.active]="step.completed"
-            [class.inactive]="!step.completed"
-          ></div>
-          }
-        </div>
-        }
-      </div>
-    </nav>
-  </div>
-
-  <div class="wizard">
+  <div class="">
     <!-- Stepper -->
     <mat-stepper
       labelPosition="bottom"
@@ -57,7 +20,7 @@
     >
       <!-- Step 1: Personal Information -->
       <mat-step
-        [stepControl]="personalInfoForm"
+        [stepControl]="templateForm"
         [completed]="steps[0].completed"
         class="wizard__step"
       >
@@ -66,48 +29,144 @@
             class="wizard__title"
             [class.wizard__title--complete]="steps[0].completed"
           >
-            Personal Info
+            {{steps[0].label}}
           </p>
         </ng-template>
 
         <div class="step-content">
-          <h2>Personal Information</h2>
-          <form [formGroup]="personalInfoForm">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Full Name</mat-label>
-              <input
-                matInput
-                formControlName="fullName"
-                placeholder="Enter your full name"
-              />
+          <form
+            id="templateForm"
+            name="templateForm"
+            [formGroup]="templateForm"
+            (ngSubmit)="getTemplateListInfo()"
+          >
+            <h2 class="title">{{steps[0].label}}</h2>
+            <div class="form">
+              <div>
+                <div class="form-group">
+                  <mat-form-field>
+                    <mat-label class="form-label">Template Id</mat-label>
+                    <input
+                      id="iterableTemplateId"
+                      name="iterableTemplateId"
+                      matInput
+                      formControlName="iterableTemplateId"
+                      required
+                    />
+                    <!-- <mat-hint align="start">Created in Iterable</mat-hint> -->
+                    @if (templateFormControls.iterableTemplateId.invalid) {
+                    <mat-error>TemplateId is required</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+                <div class="form-group">
+                  <mat-form-field>
+                    <mat-label class="form-label">Email List</mat-label>
+                    <input
+                      type="text"
+                      matInput
+                      formControlName="iterableListId"
+                      [matAutocomplete]="auto"
+                      id="iterableListId"
+                      name="iterableListId"
+                    />
+                    <mat-autocomplete
+                      #auto="matAutocomplete"
+                      [displayWith]="displayIterableCampaignListFn"
+                      (optionSelected)="onListOptionSelected($event)"
+                    >
+                      @for (item of filteredIterableCampaignList(); track
+                      item.id) {
+                      <mat-option [value]="item">{{ item.name }}</mat-option>
+                      } @empty {
+                      <mat-option [disabled]="true">
+                        <span>No email list found.</span>
+                      </mat-option>
+                      }
+                    </mat-autocomplete>
 
-              @if (personalInfoForm.get('fullName')?.hasError('required')) {
-              <mat-error> Full name is required </mat-error>
-              }
-            </mat-form-field>
+                    @if (templateFormControls.iterableListId.invalid &&
+                    templateFormControls.iterableListId.touched) {
+                    <mat-error>Email List is required</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+                <div class="form-group">
+                  <button
+                    mat-fab
+                    extended
+                    type="submit"
+                    class="form-button"
+                    [disabled]="!templateForm.valid"
+                  >
+                    <mat-icon>search</mat-icon>
+                    Validate
+                  </button>
+                </div>
+              </div>
 
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Email</mat-label>
-              <input
-                matInput
-                formControlName="email"
-                placeholder="Enter your email"
-              />
-              @if (personalInfoForm.get('email')?.hasError('required')) {
-              <mat-error> Email is required </mat-error>
-              } @if (personalInfoForm.get('email')?.hasError('email')) {
-              <mat-error> Please enter a valid email </mat-error>
-              }
-            </mat-form-field>
+              @let templateInfo = templateListInfo$ | async;
+
+              <div class="valid-content">
+                @if (templateInfo) {
+                <mat-card appearance="raised" class="template">
+                  <mat-card-header>
+                    <mat-card-title> Template Information </mat-card-title>
+                    <mat-card-subtitle>
+                      <div class="template__subtitle">
+                        <div class="template__emails mr-16">
+                          <mat-icon
+                            aria-hidden="false"
+                            aria-label="check icon"
+                            fontIcon="email"
+                            class="mr-8"
+                          ></mat-icon>
+                          {{ templateInfo.size }} emails
+                        </div>
+                        <a
+                          mat-button="elevated"
+                          aria-label="preview"
+                          [href]="previewUrl()"
+                          target="_blank"
+                          class="template__preview"
+                        >
+                          <mat-icon>visibility</mat-icon>
+                          Preview
+                        </a>
+                      </div>
+                    </mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="template__description">
+                      <p><span>Name:</span> {{ templateInfo.template.name }}</p>
+                      <p>
+                        <span>Subject:</span> {{ templateInfo.template.subject
+                        }}
+                      </p>
+                      <p>
+                        <span>From Name:</span> {{
+                        templateInfo.template.fromName }}
+                      </p>
+                      <p>
+                        <span>From Email:</span> {{
+                        templateInfo.template.fromEmail }}
+                      </p>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+                }
+              </div>
+            </div>
           </form>
 
           <div class="step-actions">
-            <button mat-button (click)="stepper.reset()">Reset</button>
+            <button matButton="outlined" (click)="stepper.reset()">
+              Reset
+            </button>
             <button
-              mat-raised-button
-              color="primary"
+              matButton="filled"
               (click)="nextStep()"
-              [disabled]="!personalInfoForm.valid"
+              [disabled]="!templateForm.valid"
             >
               Next
             </button>
@@ -117,7 +176,7 @@
 
       <!-- Step 2: Address Details -->
       <mat-step
-        [stepControl]="addressForm"
+        [stepControl]="batchScalingForm"
         [completed]="steps[1].completed"
         class="wizard__step"
       >
@@ -132,7 +191,7 @@
 
         <div class="step-content">
           <h2>Address Details</h2>
-          <form [formGroup]="addressForm">
+          <!-- <form [formGroup]="addressForm">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Street Address</mat-label>
               <input
@@ -170,7 +229,7 @@
                 }
               </mat-form-field>
             </div>
-          </form>
+          </form> -->
 
           <div class="step-actions">
             <button mat-button (click)="previousStep()">Back</button>
@@ -178,7 +237,7 @@
               mat-raised-button
               color="primary"
               (click)="nextStep()"
-              [disabled]="!addressForm.valid"
+              [disabled]="!batchScalingForm.valid"
             >
               Next
             </button>
@@ -188,7 +247,7 @@
 
       <!-- Step 3: Professional Information -->
       <mat-step
-        [stepControl]="professionalForm"
+        [stepControl]="scheduleForm"
         [completed]="steps[2].completed"
         class="wizard__step"
       >
@@ -203,7 +262,7 @@
 
         <div class="step-content">
           <h2>Professional Information</h2>
-          <form [formGroup]="professionalForm">
+          <!-- <form [formGroup]="scheduleForm">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Job Title</mat-label>
               <input
@@ -240,7 +299,7 @@
               <mat-error> Experience is required </mat-error>
               }
             </mat-form-field>
-          </form>
+          </form> -->
 
           <div class="step-actions">
             <button mat-button (click)="previousStep()">Back</button>
@@ -248,7 +307,7 @@
               mat-raised-button
               color="primary"
               (click)="nextStep()"
-              [disabled]="!professionalForm.valid"
+              [disabled]="!scheduleForm.valid"
             >
               Next
             </button>
@@ -276,7 +335,7 @@
               <mat-card-subtitle>Sub</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <div class="review-section">
+              <!-- <div class="review-section">
                 <h3>Personal Information</h3>
                 <p>
                   <strong>Name:</strong> {{ personalInfoForm.value.fullName }}
@@ -308,7 +367,7 @@
                   <strong>Experience:</strong>
                   {{ professionalForm.value.experience }} years
                 </p>
-              </div>
+              </div> -->
             </mat-card-content>
             <mat-card-actions> Test Actions </mat-card-actions>
             <mat-card-footer> Test Footer </mat-card-footer>

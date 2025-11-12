@@ -3,8 +3,8 @@
 .wizard {
   @include mat.stepper-overrides(
     (
-      container-color: light-dark(var(--color-gray-50), var(--color-gray-800)),
-      line-color: var(--color-blue-600),
+      container-color: light-dark(#ffffff, #1a1d1a),
+      line-color: var(--mat-sys-primary),
       header-icon-background-color: transparent,
       header-icon-foreground-color: var(--mat-sys-secondary-fixed-dim),
       header-label-text-color: var(--mat-sys-outline),
@@ -53,9 +53,13 @@
 
   ::ng-deep {
     .mat-step-icon {
-      width: 32px;
-      height: 32px;
+      width: 2rem;
+      height: 2rem;
       border: 2px solid #d1d5db;
+
+      &.mat-step-icon-selected {
+        border-color: var(--mat-sys-primary);
+      }
 
       &.mat-step-icon-state-done {
         border-color: var(--mat-sys-primary);
@@ -96,7 +100,7 @@
 .step-indicator {
   font-size: 16px;
   font-weight: 500;
-  color: #333;
+  color: var(--mat-sys-on-surface);
   margin-bottom: 16px;
 }
 
@@ -389,4 +393,8 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #e0e0e0;
+}
+
+.test {
+  background-color: rgba(17, 20, 17, 0.5);
 }

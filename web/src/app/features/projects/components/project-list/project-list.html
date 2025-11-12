@@ -7,7 +7,7 @@
     matInput
     [formControl]="projectControl"
     [matAutocomplete]="auto"
-    (input)="onInputCleared()"
+    (blur)="onInputBlur()"
   />
 
   <mat-autocomplete
@@ -24,7 +24,7 @@
     } @empty {
     <!-- This content is displayed only when filteredList() is empty -->
     <mat-option [disabled]="true">
-      <span>No projects found.</span>
+      <span>No project found.</span>
     </mat-option>
     }
   </mat-autocomplete>

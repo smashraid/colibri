@@ -79,7 +79,7 @@ export class IterableService {
       .pipe(shareReplay());
   }
 
-  getTemplateById(id: number) {
+  getTemplateById(id: bigint) {
     return this.httpClient
       .get<TemplateDetailResponse>(`${this.baseUrl}getTemplateById?id=${id}`, {
         responseType: 'json',
@@ -92,9 +92,9 @@ export class IterableService {
       .pipe(shareReplay());
   }
 
-  getListSize(id: number) {
+  getListSize(id: bigint) {
     return this.httpClient
-      .get<number>(`${this.baseUrl}getListSize?id=${id}`, {
+      .get<bigint>(`${this.baseUrl}getListSize?id=${id}`, {
         responseType: 'json',
         headers: new HttpHeaders({
           'Content-Type': 'application/json',

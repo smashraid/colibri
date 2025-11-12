@@ -82,9 +82,24 @@ export class ProjectList {
     this.store.updateProject(selectedProject.id);
   }
 
-  onInputCleared(): void {
-    if (!this.projectControl.value) {
-      //this.store.updateProject(null);
+  onInputBlur(): void {
+    const controlValue = this.projectControl.value;
+    const isValueSelected =
+      typeof controlValue === 'object' && controlValue !== null;
+
+    if (!isValueSelected) {
+      const storedProjectId = this.store.projectId();
+      const allProjects = this.projects();
+
+      const projectToResetTo = allProjects.find(
+        (p) => p.id === storedProjectId
+      );
+
+      if (projectToResetTo) {
+        this.projectControl.setValue(projectToResetTo, { emitEvent: false });
+      } else {
+        this.projectControl.setValue('', { emitEvent: false });
+      }
     }
   }
 }

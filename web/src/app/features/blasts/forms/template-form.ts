@@ -1,15 +1,17 @@
 import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { CampaignListResponse } from '../../../core/models/api/response/campaign-list';
+import { requireAutocompleteObject } from '../../../shared/validators/require-autocomplete-object';
 
 export interface TemplateFormValue {
-  iterableTemplateId: number | null;
-  iterableListId: number | null;
-  iterableSupressionId: number | null;
+  iterableTemplateId: bigint | null;
+  iterableListId: CampaignListResponse | null;
+  iterableSupressionId: bigint | null;
 }
 
 export interface TemplateForm {
-  iterableTemplateId: FormControl<number | null>;
-  iterableListId: FormControl<number | null>;
-  iterableSupressionId: FormControl<number | null>;
+  iterableTemplateId: FormControl<bigint | null>;
+  iterableListId: FormControl<CampaignListResponse | null>;
+  iterableSupressionId: FormControl<bigint | null>;
 }
 
 export function createTemplateForm(
@@ -25,14 +27,10 @@ export function createTemplateForm(
     ),
     iterableListId: new FormControl(initialValues.iterableListId ?? null, {
       nonNullable: false,
-      validators: [Validators.required],
+      validators: [Validators.required, requireAutocompleteObject()],
     }),
     iterableSupressionId: new FormControl(
-      initialValues.iterableSupressionId ?? null,
-      {
-        nonNullable: false,
-        validators: [Validators.required],
-      }
+      initialValues.iterableSupressionId ?? null
     ),
   });
 }

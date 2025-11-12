@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
+import { Wizard } from '../../components/wizard/wizard';
 
 @Component({
   selector: 'app-add-blast',
-  imports: [],
+  imports: [Wizard],
   templateUrl: './add-blast.html',
-  styleUrl: './add-blast.scss'
+  styleUrl: './add-blast.scss',
 })
-export class AddBlast {
-
-}
+export class AddBlast {}
