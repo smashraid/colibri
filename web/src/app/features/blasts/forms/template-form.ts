@@ -14,23 +14,36 @@ export interface TemplateForm {
   iterableSupressionId: FormControl<bigint | null>;
 }
 
+export type TemplateFormControls = TemplateForm;
+
+export const TEMPLATE_INITIAL_VALUES: TemplateFormValue = {
+  iterableTemplateId: null,
+  iterableListId: null,
+  iterableSupressionId: null,
+};
+
 export function createTemplateForm(
   initialValues: Partial<TemplateFormValue> = {}
 ): FormGroup<TemplateForm> {
   return new FormGroup<TemplateForm>({
     iterableTemplateId: new FormControl(
-      initialValues.iterableTemplateId ?? null,
+      initialValues.iterableTemplateId ??
+        TEMPLATE_INITIAL_VALUES.iterableTemplateId,
       {
         nonNullable: false,
         validators: [Validators.required],
       }
     ),
-    iterableListId: new FormControl(initialValues.iterableListId ?? null, {
-      nonNullable: false,
-      validators: [Validators.required, requireAutocompleteObject()],
-    }),
+    iterableListId: new FormControl(
+      initialValues.iterableListId ?? TEMPLATE_INITIAL_VALUES.iterableListId,
+      {
+        nonNullable: false,
+        validators: [Validators.required, requireAutocompleteObject()],
+      }
+    ),
     iterableSupressionId: new FormControl(
-      initialValues.iterableSupressionId ?? null
+      initialValues.iterableSupressionId ??
+        TEMPLATE_INITIAL_VALUES.iterableSupressionId
     ),
   });
 }
@@ -44,9 +57,3 @@ export function resetTemplateForm(
     ...values,
   });
 }
-
-export const TEMPLATE_INITIAL_VALUES: TemplateFormValue = {
-  iterableTemplateId: null,
-  iterableListId: null,
-  iterableSupressionId: null,
-};

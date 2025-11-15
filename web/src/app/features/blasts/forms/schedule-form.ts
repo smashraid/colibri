@@ -5,33 +5,58 @@ export interface ScheduleFormValue {
   name: string;
   tags: string[] | null;
   intervalTime: number | null;
-  sendAt: moment.Moment | null;
+  sendAtDate: moment.Moment | null;
+  sendAtTime: moment.Moment | null;
 }
 
 export interface ScheduleForm {
   name: FormControl<string>;
   tags: FormControl<string[] | null>;
   intervalTime: FormControl<number | null>;
-  sendAt: FormControl<moment.Moment | null>;
+  sendAtDate: FormControl<moment.Moment | null>;
+  sendAtTime: FormControl<moment.Moment | null>;
 }
+
+export type ScheduleFormControls = ScheduleForm;
+
+export const SCHEDULE_INITIAL_VALUES: ScheduleFormValue = {
+  name: '',
+  tags: null,
+  intervalTime: null,
+  sendAtDate: null,
+  sendAtTime: null,
+};
 
 export function createScheduleForm(
   initialValues: Partial<ScheduleFormValue> = {}
 ): FormGroup<ScheduleForm> {
   return new FormGroup<ScheduleForm>({
-    name: new FormControl(initialValues.name ?? '', {
+    name: new FormControl(initialValues.name ?? SCHEDULE_INITIAL_VALUES.name, {
       nonNullable: true,
       validators: [Validators.required],
     }),
-    tags: new FormControl(initialValues.tags ?? null),
-    intervalTime: new FormControl(initialValues.intervalTime ?? null, {
-      nonNullable: false,
-      validators: [Validators.required],
-    }),
-    sendAt: new FormControl(initialValues.sendAt ?? null, {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
+    tags: new FormControl(initialValues.tags ?? SCHEDULE_INITIAL_VALUES.tags),
+    intervalTime: new FormControl(
+      initialValues.intervalTime ?? SCHEDULE_INITIAL_VALUES.intervalTime,
+      {
+        nonNullable: false,
+        validators: [Validators.required],
+      }
+    ),
+    sendAtDate: new FormControl(
+      initialValues.sendAtDate ?? SCHEDULE_INITIAL_VALUES.sendAtDate,
+      {
+        nonNullable: true,
+        validators: [Validators.required],
+      }
+    ),
+    sendAtTime: new FormControl(
+      initialValues.sendAtTime ?? SCHEDULE_INITIAL_VALUES.sendAtTime,
+      {
+        nonNullable: true,
+        validators: [Validators.required],
+      }
+    ),
   });
 }
 
@@ -44,10 +69,3 @@ export function resetScheduleForm(
     ...values,
   });
 }
-
-export const SCHEDULE_INITIAL_VALUES: ScheduleFormValue = {
-  name: '',
-  tags: null,
-  intervalTime: null,
-  sendAt: null,
-};
