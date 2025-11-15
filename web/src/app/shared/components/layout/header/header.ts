@@ -15,7 +15,6 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatToolbar } from '@angular/material/toolbar';
 
 import { Authentication } from '../authentication/authentication';
-import { ProjectList } from '../../../../features/projects/components/project-list/project-list';
 import { AppStore } from '../../../../app.store';
 import { ThemeService } from '../../../../core/services/theme.service';
 
@@ -36,7 +35,6 @@ import { ThemeService } from '../../../../core/services/theme.service';
     MatMenuModule,
     TitleCasePipe,
     RouterLink,
-    ProjectList,
     Authentication,
   ],
   templateUrl: './header.html',
@@ -46,4 +44,8 @@ export class Header {
   title = input<string>('');
   readonly store = inject(AppStore);
   protected themeService = inject(ThemeService);
+
+  onMenuClick() {
+    this.store.toggleSidenav();
+  }
 }

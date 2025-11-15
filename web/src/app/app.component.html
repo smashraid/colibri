@@ -1,4 +1,27 @@
 <app-header title="Colibri" />
 
-<router-outlet />
+<mat-sidenav-container class="global__sidebar">
+  <mat-sidenav
+    [opened]="store.isSidenavOpen()"
+    [mode]="store.isMobile() ? 'over' : 'side'"
+    fixedInViewport="true"
+    fixedTopGap="96"
+    autoFocus="false"
+  >
+    <app-project-list />
+    <app-navigation />
+  </mat-sidenav>
+  <mat-sidenav position="end">End</mat-sidenav>
 
+  @if (store.loading()) {
+  <div class="global__progress-bar">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+  }
+  <div
+    class="container"
+    (click)="store.isMobile() ? store.closeSidenav() : null"
+  >
+    <router-outlet />
+  </div>
+</mat-sidenav-container>

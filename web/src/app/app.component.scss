@@ -1,0 +1,44 @@
+@use "@angular/material" as mat;
+
+.global {
+  &__progress-bar {
+    //margin: 0.5rem auto;
+    margin-top: calc(var(--spacing) * 25);
+    @include mat.progress-bar-overrides(
+      (
+        active-indicator-color: orange,
+        track-color: red,
+      )
+    );
+  }
+
+  &__sidebar {
+    mat-sidenav {
+      padding: calc(var(--spacing) * 2);
+      width: calc(var(--spacing) * 64);
+    }
+
+    @include mat.sidenav-overrides(
+      (
+        container-background-color: var(--mat-sys-surface-container-high),
+        container-text-color: var(),
+      )
+    );
+  }
+}
+
+// mat-grid-tile {
+//   background: darkblue;
+// }
+
+// .container {
+//   margin-top: calc(var(--spacing) * 24);
+//   padding: calc(var(--spacing) * 8);
+// }
+
+// :host {
+//   --mat-sidenav-container-background-color: light-dark(
+//     var(--color-gray-50),
+//     var(--color-gray-800)
+//   );
+// }

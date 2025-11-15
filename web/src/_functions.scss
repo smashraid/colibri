@@ -1,0 +1,424 @@
+@use "sass:map";
+@use "sass:color";
+@use "sass:list";
+@use "sass:string";
+
+@use "./variables" as v;
+
+$color-palette: (
+  // Red Scale
+  "red-50": oklch(0.9705 0.0129 17.38),
+  "red-100": oklch(0.9356 0.0309 17.72),
+  "red-200": oklch(0.8845 0.0593 18.33),
+  "red-300": oklch(0.8077 0.1035 19.57),
+  "red-400": oklch(0.7106 0.1661 22.22),
+  "red-500": oklch(0.6368 0.2078 25.33),
+  "red-600": oklch(0.5771 0.2152 27.33),
+  "red-700": oklch(0.5054 0.1905 27.52),
+  "red-800": oklch(0.4437 0.1613 26.9),
+  "red-900": oklch(0.3958 0.1331 25.72),
+  "red-950": oklch(0.258 0.092 26.042),
+  //Orange Scale
+  "orange-50": oklch(0.9862 0.0142 84.58),
+  "orange-100": oklch(0.9465 0.0501 82.8),
+  "orange-200": oklch(0.8857 0.0986 80.9),
+  "orange-300": oklch(0.8012 0.1343 68.79),
+  "orange-400": oklch(0.7244 0.1534 56.07),
+  "orange-500": oklch(0.6533 0.1638 48.41),
+  "orange-600": oklch(0.5792 0.1504 43.81),
+  "orange-700": oklch(0.4937 0.1289 39.62),
+  "orange-800": oklch(0.4185 0.105 37.68),
+  "orange-900": oklch(0.3668 0.0889 37.78),
+  "orange-950": oklch(0.266 0.079 36.259),
+  //Amber Scale
+  "amber-50": oklch(0.987 0.022 95.277),
+  "amber-100": oklch(0.962 0.059 95.617),
+  "amber-200": oklch(0.924 0.12 95.746),
+  "amber-300": oklch(0.879 0.169 91.605),
+  "amber-400": oklch(0.828 0.189 84.429),
+  "amber-500": oklch(0.769 0.188 70.08),
+  "amber-600": oklch(0.666 0.179 58.318),
+  "amber-700": oklch(0.555 0.163 48.998),
+  "amber-800": oklch(0.473 0.137 46.201),
+  "amber-900": oklch(0.414 0.112 45.904),
+  "amber-950": oklch(0.279 0.077 45.635),
+  //Yellow Scale
+  "yellow-50": oklch(0.9869 0.0214 95.28),
+  "yellow-100": oklch(0.9619 0.058 95.62),
+  "yellow-200": oklch(0.9243 0.1151 95.75),
+  "yellow-300": oklch(0.879 0.1534 91.61),
+  "yellow-400": oklch(0.8369 0.1644 84.43),
+  "yellow-500": oklch(0.7686 0.1647 70.08),
+  "yellow-600": oklch(0.6658 0.1574 58.32),
+  "yellow-700": oklch(0.5553 0.1455 49),
+  "yellow-800": oklch(0.4732 0.1247 46.2),
+  "yellow-900": oklch(0.4137 0.1054 45.9),
+  "yellow-950": oklch(0.286 0.066 53.813),
+  //Lime Scale
+  "lime-50": oklch(0.986 0.031 120.757),
+  "lime-100": oklch(0.967 0.067 122.328),
+  "lime-200": oklch(0.938 0.127 124.321),
+  "lime-300": oklch(0.897 0.196 126.665),
+  "lime-400": oklch(0.841 0.238 128.85),
+  "lime-500": oklch(0.768 0.233 130.85),
+  "lime-600": oklch(0.648 0.2 131.684),
+  "lime-700": oklch(0.532 0.157 131.589),
+  "lime-800": oklch(0.453 0.124 130.933),
+  "lime-900": oklch(0.405 0.101 131.063),
+  "lime-950": oklch(0.274 0.072 132.109),
+  //Green Scale
+  "green-50": oklch(0.9793 0.0207 166.11),
+  "green-100": oklch(0.9505 0.0507 163.05),
+  "green-200": oklch(0.9049 0.0895 164.15),
+  "green-300": oklch(0.8452 0.1299 164.98),
+  "green-400": oklch(0.7729 0.1535 163.22),
+  "green-500": oklch(0.6959 0.1491 162.48),
+  "green-600": oklch(0.596 0.1274 163.23),
+  "green-700": oklch(0.5081 0.1049 165.61),
+  "green-800": oklch(0.4318 0.0865 166.91),
+  "green-900": oklch(0.378 0.073 168.94),
+  "green-950": oklch(0.266 0.065 152.934),
+  //Emerald Scale
+  "emerald-50": oklch(0.979 0.021 166.113),
+  "emerald-100": oklch(0.95 0.052 163.051),
+  "emerald-200": oklch(0.905 0.093 164.15),
+  "emerald-300": oklch(0.845 0.143 164.978),
+  "emerald-400": oklch(0.765 0.177 163.223),
+  "emerald-500": oklch(0.696 0.17 162.48),
+  "emerald-600": oklch(0.596 0.145 163.225),
+  "emerald-700": oklch(0.508 0.118 165.612),
+  "emerald-800": oklch(0.432 0.095 166.913),
+  "emerald-900": oklch(0.378 0.077 168.94),
+  "emerald-950": oklch(0.262 0.051 172.552),
+  //Teal Scale
+  "teal-50": oklch(0.9836 0.0142 180.72),
+  "teal-100": oklch(0.9527 0.0498 180.8),
+  "teal-200": oklch(0.91 0.0927 180.43),
+  "teal-300": oklch(0.8549 0.1251 181.07),
+  "teal-400": oklch(0.7845 0.1325 181.91),
+  "teal-500": oklch(0.7038 0.123 182.5),
+  "teal-600": oklch(0.6002 0.1038 184.7),
+  "teal-700": oklch(0.5109 0.0861 186.39),
+  "teal-800": oklch(0.437 0.0705 188.22),
+  "teal-900": oklch(0.3861 0.059 188.42),
+  "teal-950": oklch(0.277 0.046 192.524),
+  //Cyan Scale
+  "cyan-50": oklch(0.9841 0.0189 200.87),
+  "cyan-100": oklch(0.9563 0.0443 203.39),
+  "cyan-200": oklch(0.9167 0.0772 205.04),
+  "cyan-300": oklch(0.8651 0.1153 207.08),
+  "cyan-400": oklch(0.7971 0.1339 211.53),
+  "cyan-500": oklch(0.7148 0.1257 215.22),
+  "cyan-600": oklch(0.6089 0.1109 221.72),
+  "cyan-700": oklch(0.5198 0.0936 223.13),
+  "cyan-800": oklch(0.45 0.0771 224.28),
+  "cyan-900": oklch(0.3982 0.0664 227.39),
+  "cyan-950": oklch(0.302 0.056 229.695),
+  //Sky Scale
+  "sky-50": oklch(0.977 0.013 236.62),
+  "sky-100": oklch(0.951 0.026 236.824),
+  "sky-200": oklch(0.901 0.058 230.902),
+  "sky-300": oklch(0.828 0.111 230.318),
+  "sky-400": oklch(0.746 0.16 232.661),
+  "sky-500": oklch(0.685 0.169 237.323),
+  "sky-600": oklch(0.588 0.158 241.966),
+  "sky-700": oklch(0.5 0.134 242.749),
+  "sky-800": oklch(0.443 0.11 240.79),
+  "sky-900": oklch(0.391 0.09 240.876),
+  "sky-950": oklch(0.293 0.066 243.157),
+  //Blue Scale
+  "blue-50": oklch(0.9705 0.0142 254.6),
+  "blue-100": oklch(0.9319 0.0316 255.59),
+  "blue-200": oklch(0.8823 0.0571 254.13),
+  "blue-300": oklch(0.8091 0.0956 251.81),
+  "blue-400": oklch(0.7137 0.1434 254.62),
+  "blue-500": oklch(0.6231 0.188 259.81),
+  "blue-600": oklch(0.5461 0.2152 262.88),
+  "blue-700": oklch(0.4882 0.2172 264.38),
+  "blue-800": oklch(0.4244 0.1809 265.64),
+  "blue-900": oklch(0.3791 0.1378 265.52),
+  "blue-950": oklch(0.282 0.091 267.935),
+  //Indigo Scale
+  "indigo-50": oklch(0.9619 0.0179 272.31),
+  "indigo-100": oklch(0.9299 0.0334 272.79),
+  "indigo-200": oklch(0.8699 0.0622 274.04),
+  "indigo-300": oklch(0.7853 0.1041 274.71),
+  "indigo-400": oklch(0.6801 0.1583 276.93),
+  "indigo-500": oklch(0.5854 0.2041 277.12),
+  "indigo-600": oklch(0.5106 0.2301 276.97),
+  "indigo-700": oklch(0.4568 0.2146 277.02),
+  "indigo-800": oklch(0.3984 0.1773 277.37),
+  "indigo-900": oklch(0.3588 0.1354 278.7),
+  "indigo-950": oklch(0.257 0.09 281.288),
+  //Violet Scale
+  "violet-50": oklch(0.969 0.016 293.756),
+  "violet-100": oklch(0.943 0.029 294.588),
+  "violet-200": oklch(0.894 0.057 293.283),
+  "violet-300": oklch(0.811 0.111 293.571),
+  "violet-400": oklch(0.702 0.183 293.541),
+  "violet-500": oklch(0.606 0.25 292.717),
+  "violet-600": oklch(0.541 0.281 293.009),
+  "violet-700": oklch(0.491 0.27 292.581),
+  "violet-800": oklch(0.432 0.232 292.759),
+  "violet-900": oklch(0.38 0.189 293.745),
+  "violet-950": oklch(0.283 0.141 291.089),
+  //Purple Scale
+  "purple-50": oklch(0.9691 0.0161 293.76),
+  "purple-100": oklch(0.9433 0.0284 294.59),
+  "purple-200": oklch(0.8943 0.0549 293.28),
+  "purple-300": oklch(0.8112 0.1013 293.57),
+  "purple-400": oklch(0.709 0.1592 293.54),
+  "purple-500": oklch(0.6056 0.2189 292.72),
+  "purple-600": oklch(0.5413 0.2466 293.01),
+  "purple-700": oklch(0.4907 0.2412 292.58),
+  "purple-800": oklch(0.432 0.2106 292.76),
+  "purple-900": oklch(0.3796 0.1783 293.74),
+  "purple-950": oklch(0.291 0.149 302.717),
+  //Fuchsia Scale
+  "fuchsia-50": oklch(0.977 0.017 320.058),
+  "fuchsia-100": oklch(0.952 0.037 318.852),
+  "fuchsia-200": oklch(0.903 0.076 319.62),
+  "fuchsia-300": oklch(0.833 0.145 321.434),
+  "fuchsia-400": oklch(0.74 0.238 322.16),
+  "fuchsia-500": oklch(0.667 0.295 322.15),
+  "fuchsia-600": oklch(0.591 0.293 322.896),
+  "fuchsia-700": oklch(0.518 0.253 323.949),
+  "fuchsia-800": oklch(0.452 0.211 324.591),
+  "fuchsia-900": oklch(0.401 0.17 325.612),
+  "fuchsia-950": oklch(0.293 0.136 325.661),
+  //Pink Scale
+  "pink-50": oklch(0.9714 0.0141 343.2),
+  "pink-100": oklch(0.9482 0.0276 342.26),
+  "pink-200": oklch(0.8994 0.0589 343.23),
+  "pink-300": oklch(0.8228 0.1095 346.02),
+  "pink-400": oklch(0.7253 0.1752 349.76),
+  "pink-500": oklch(0.6559 0.2118 354.31),
+  "pink-600": oklch(0.5916 0.218 0.58),
+  "pink-700": oklch(0.5246 0.199 3.96),
+  "pink-800": oklch(0.4587 0.1697 3.82),
+  "pink-900": oklch(0.4078 0.1442 2.43),
+  "pink-950": oklch(0.284 0.109 3.907),
+  //Rose Scale
+  "rose-50": oklch(0.969 0.015 12.422),
+  "rose-100": oklch(0.941 0.03 12.58),
+  "rose-200": oklch(0.892 0.058 10.001),
+  "rose-300": oklch(0.81 0.117 11.638),
+  "rose-400": oklch(0.712 0.194 13.428),
+  "rose-500": oklch(0.645 0.246 16.439),
+  "rose-600": oklch(0.586 0.253 17.585),
+  "rose-700": oklch(0.514 0.222 16.935),
+  "rose-800": oklch(0.455 0.188 13.697),
+  "rose-900": oklch(0.41 0.159 10.272),
+  "rose-950": oklch(0.271 0.105 12.094),
+  //Slate Scale
+  "slate-50": oklch(0.984 0.003 247.858),
+  "slate-100": oklch(0.968 0.007 247.896),
+  "slate-200": oklch(0.929 0.013 255.508),
+  "slate-300": oklch(0.869 0.022 252.894),
+  "slate-400": oklch(0.704 0.04 256.788),
+  "slate-500": oklch(0.554 0.046 257.417),
+  "slate-600": oklch(0.446 0.043 257.281),
+  "slate-700": oklch(0.372 0.044 257.287),
+  "slate-800": oklch(0.279 0.041 260.031),
+  "slate-900": oklch(0.208 0.042 265.755),
+  "slate-950": oklch(0.129 0.042 264.695),
+  //Gray Scale
+  "gray-50": oklch(0.9846 0.0017 247.84),
+  "gray-100": oklch(0.967 0.0029 264.54),
+  "gray-200": oklch(0.9276 0.0058 264.53),
+  "gray-300": oklch(0.8717 0.0093 258.34),
+  "gray-400": oklch(0.7137 0.0192 261.32),
+  "gray-500": oklch(0.551 0.0234 264.36),
+  "gray-600": oklch(0.4461 0.0263 256.8),
+  "gray-700": oklch(0.3729 0.0306 259.73),
+  "gray-800": oklch(0.2781 0.0296 256.85),
+  "gray-900": oklch(0.2101 0.0318 264.66),
+  "gray-950": oklch(0.13 0.028 261.692),
+  //Zinc Scale
+  "zinc-50": oklch(0.985 0 0),
+  "zinc-100": oklch(0.967 0.001 286.375),
+  "zinc-200": oklch(0.92 0.004 286.32),
+  "zinc-300": oklch(0.871 0.006 286.286),
+  "zinc-400": oklch(0.705 0.015 286.067),
+  "zinc-500": oklch(0.552 0.016 285.938),
+  "zinc-600": oklch(0.442 0.017 285.786),
+  "zinc-700": oklch(0.37 0.013 285.805),
+  "zinc-800": oklch(0.274 0.006 286.033),
+  "zinc-900": oklch(0.21 0.006 285.885),
+  "zinc-950": oklch(0.141 0.005 285.823),
+  //Neutral Scale
+  "neutral-50": oklch(0.985 0 0),
+  "neutral-100": oklch(0.97 0 0),
+  "neutral-200": oklch(0.922 0 0),
+  "neutral-300": oklch(0.87 0 0),
+  "neutral-400": oklch(0.708 0 0),
+  "neutral-500": oklch(0.556 0 0),
+  "neutral-600": oklch(0.439 0 0),
+  "neutral-700": oklch(0.371 0 0),
+  "neutral-800": oklch(0.269 0 0),
+  "neutral-900": oklch(0.205 0 0),
+  "neutral-950": oklch(0.145 0 0),
+  //Stone Scale
+  "stone-50": oklch(0.985 0.001 106.423),
+  "stone-100": oklch(0.97 0.001 106.424),
+  "stone-200": oklch(0.923 0.003 48.717),
+  "stone-300": oklch(0.869 0.005 56.366),
+  "stone-400": oklch(0.709 0.01 56.259),
+  "stone-500": oklch(0.553 0.013 58.071),
+  "stone-600": oklch(0.444 0.011 73.639),
+  "stone-700": oklch(0.374 0.01 67.558),
+  "stone-800": oklch(0.268 0.007 34.298),
+  "stone-900": oklch(0.216 0.006 56.043),
+  "stone-950": oklch(0.147 0.004 49.25),
+  //
+  "black": oklch(0 0 0),
+  "white": oklch(1 0 0)
+);
+
+// Generate CSS variables for all colors
+@mixin generate-css-variables() {
+  @each $name, $color in $color-palette {
+    --color-#{$name}: #{$color};
+  }
+}
+
+// Get a color from the palette by name
+@function color($name) {
+  @if not map.has-key($color-palette, $name) {
+    @error "Color '#{$name}' not found in the color palette. Available colors: #{map.keys($color-palette)}";
+  }
+  @return map.get($color-palette, $name);
+}
+
+// Generate darker color variants using color.adjust (recommended by Sass)
+@function color-darker($key, $amount: 10%) {
+  $base-color: color($key);
+  @return color.adjust($base-color, $lightness: -$amount);
+}
+
+// Generate lighter color variants using color.adjust (recommended by Sass)
+@function color-lighter($key, $amount: 10%) {
+  $base-color: color($key);
+  @return color.adjust($base-color, $lightness: $amount);
+}
+
+// Generate color with adjusted saturation using color.adjust
+@function color-saturate($key, $amount: 10%) {
+  $base-color: color($key);
+  @return color.adjust($base-color, $saturation: $amount);
+}
+
+// Generate color with reduced saturation using color.adjust
+@function color-desaturate($key, $amount: 10%) {
+  $base-color: color($key);
+  @return color.adjust($base-color, $saturation: -$amount);
+}
+
+// Generate color with transparency
+@function color-alpha($key, $alpha: 0.5) {
+  $base-color: color($key);
+  @return color.change($base-color, $alpha: $alpha);
+}
+
+// Generate a complete color scale based on a base color
+@function generate-color-scale($base-color, $name) {
+  $scale: ();
+
+  // Generate 50-950 scale
+  $lightness-values: (
+    "50": 0.97,
+    "100": 0.94,
+    "200": 0.88,
+    "300": 0.8,
+    "400": 0.71,
+    "500": 0.64,
+    "600": 0.58,
+    "700": 0.51,
+    "800": 0.44,
+    "900": 0.4,
+    "950": 0.26,
+  );
+
+  @each $step, $lightness in $lightness-values {
+    $adjusted-color: color.adjust($base-color, $lightness: $lightness);
+    $scale: map.set($scale, "#{$name}-#{$step}", $adjusted-color);
+  }
+
+  @return $scale;
+}
+
+// Get complementary color
+@function color-complement($key) {
+  $base-color: color($key);
+  $h: color.hue($base-color) + 180;
+  @return color.adjust($base-color, $hue: $h);
+}
+
+// Generate color palette with variants for a specific color
+@mixin generate-color-palette($color-name) {
+  $base-color: color($color-name);
+
+  .color-#{$color-name} {
+    --color-base: #{$base-color};
+    --color-darker: #{color-darker($color-name)};
+    --color-lighter: #{color-lighter($color-name)};
+    --color-muted: #{color-desaturate($color-name, 30%)};
+    --color-alpha-10: #{color-alpha($color-name, 0.1)};
+    --color-alpha-50: #{color-alpha($color-name, 0.5)};
+  }
+}
+
+// Generate utility classes for all colors
+@mixin generate-color-utilities() {
+  @each $name, $value in $color-palette {
+    .bg-#{$name} {
+      background-color: var(--color-#{$name});
+    }
+
+    .text-#{$name} {
+      color: var(--color-#{$name});
+    }
+
+    .border-#{$name} {
+      border-color: var(--color-#{$name});
+    }
+  }
+}
+
+// Check color contrast for accessibility
+@function color-contrast($background-key, $text-key) {
+  $background: color($background-key);
+  $text: color($text-key);
+
+  // Simple luminance-based contrast calculation
+  $background-luminance: color.red($background) * 0.2126 +
+    color.green($background) * 0.7152 + color.blue($background) * 0.0722;
+
+  $text-luminance: color.red($text) * 0.2126 + color.green($text) * 0.7152 +
+    color.blue($text) * 0.0722;
+
+  $contrast: abs($background-luminance - $text-luminance);
+
+  @return $contrast;
+}
+
+// Semantic color functions
+@function primary() {
+  @return color("blue-500");
+}
+
+@function secondary() {
+  @return color("gray-500");
+}
+
+@function success() {
+  @return color("green-500");
+}
+
+@function warning() {
+  @return color("amber-500");
+}
+
+@function error() {
+  @return color("red-500");
+}

@@ -1,5 +1,6 @@
 import { computed, inject } from '@angular/core';
 import {
+  NavigationCancel,
   NavigationEnd,
   NavigationError,
   NavigationStart,
@@ -23,36 +24,75 @@ import { MsalService } from '@azure/msal-angular';
 import { AccountInfo } from '@azure/msal-browser';
 import { DatabaseService } from './core/services/database.service';
 import { ProjectResponse } from './features/projects/models/project';
+import {
+  BreakpointObserver,
+  Breakpoints,
+  BreakpointState,
+} from '@angular/cdk/layout';
 
 type AppState = {
+  isMobile: boolean;
+  isTablet: boolean;
+  isWeb: boolean;
   loading: boolean;
   projectId: number;
   username: string;
   useremail: string;
   projects: ProjectResponse[];
+  isSidenavOpen: boolean;
 };
 
 const initialState: AppState = {
+  isMobile: false,
+  isTablet: false,
+  isWeb: false,
   loading: false,
   projectId: 1,
   username: '',
   useremail: '',
   projects: [],
+  isSidenavOpen: false,
 };
 
 export const AppStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withProps(() => ({})),
-  withComputed(({ loading, projectId, username, useremail }) => ({
-    selectProjectId: computed(() => projectId()),
-  })),
+  withComputed(
+    ({
+      loading,
+      projectId,
+      username,
+      useremail,
+      isMobile,
+      isTablet,
+      isWeb,
+    }) => ({
+      selectProjectId: computed(() => projectId()),
+      isScreenSmall: computed(() => isMobile() || isTablet()),
+    })
+  ),
   withMethods(
     (
       store,
       databaseService = inject(DatabaseService),
       msalService = inject(MsalService)
     ) => ({
+      closeSidenav(): void {
+        patchState(store, { isSidenavOpen: false });
+      },
+      toggleSidenav(): void {
+        patchState(store, (state) => ({ isSidenavOpen: !state.isSidenavOpen }));
+      },
+      updateIsMobile(isMobile: boolean): void {
+        patchState(store, { isMobile });
+      },
+      updateIsTablet(isTablet: boolean): void {
+        patchState(store, { isTablet });
+      },
+      updateIsWeb(isWeb: boolean): void {
+        patchState(store, { isWeb });
+      },
       updateProject(id: number): void {
         patchState(store, (state) => ({ projectId: id }));
       },
@@ -73,8 +113,12 @@ export const AppStore = signalStore(
           tap((event) => {
             if (event instanceof NavigationStart) {
               patchState(store, { loading: true });
+              if (store.isMobile()) {
+                patchState(store, { isSidenavOpen: false });
+              }
             } else if (
               event instanceof NavigationEnd ||
+              event instanceof NavigationCancel ||
               event instanceof NavigationError
             ) {
               patchState(store, { loading: false });
@@ -116,11 +160,40 @@ export const AppStore = signalStore(
       },
     })
   ),
-  withHooks((store, router = inject(Router)) => ({
-    onInit() {
-      store.loaderOnNavigation(router.events);
-      store.loadProjects();
-      store.loadUsername();
-    },
-  }))
+  withHooks(
+    (
+      store,
+      router = inject(Router),
+      breakpointObserver = inject(BreakpointObserver)
+    ) => ({
+      onInit() {
+        store.loaderOnNavigation(router.events);
+        store.loadProjects();
+        store.loadUsername();
+
+        breakpointObserver
+          .observe([
+            Breakpoints.XSmall,
+            Breakpoints.Small,
+            Breakpoints.Medium,
+            Breakpoints.Large,
+            Breakpoints.XLarge,
+          ])
+          .subscribe({
+            next: (state: BreakpointState) => {
+              console.log('BreakpointState', state);
+              // Update the state directly using patchState from the store
+              patchState(store, {
+                isMobile: state.breakpoints[Breakpoints.XSmall],
+                isTablet: state.breakpoints[Breakpoints.Small],
+                isWeb:
+                  state.breakpoints[Breakpoints.Medium] ||
+                  state.breakpoints[Breakpoints.Large] ||
+                  state.breakpoints[Breakpoints.XLarge],
+              });
+            },
+          });
+      },
+    })
+  )
 );

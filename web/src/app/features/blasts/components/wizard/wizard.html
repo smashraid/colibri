@@ -1,16 +1,16 @@
-<div class="wizard stepper-container">
-  <p class="step-indicator">
+<div class="wizard">
+  <p class="wizard__step-indicator">
     Step {{ currentStepNumber }} of {{ steps.length }} : {{ currentStepTitle }}
   </p>
   <!-- Progress Bar -->
   <mat-progress-bar
     mode="determinate"
     [value]="progressValue"
-    class="progress-bar"
+    class="wizard__progress-bar"
   >
   </mat-progress-bar>
 
-  <div class="">
+  <div class="wizard__stepper">
     <!-- Stepper -->
     <mat-stepper
       labelPosition="bottom"
@@ -26,23 +26,24 @@
       >
         <ng-template matStepLabel>
           <p
-            class="wizard__title"
-            [class.wizard__title--complete]="steps[0].completed"
+            class="wizard__label"
+            [class.wizard__label--complete]="steps[0].completed"
           >
             {{steps[0].label}}
           </p>
         </ng-template>
 
-        <div class="step-content">
+        <div>
           <form
             id="templateForm"
             name="templateForm"
             [formGroup]="templateForm"
             (ngSubmit)="getTemplateListInfo()"
           >
-            <h2 class="title">{{steps[0].label}}</h2>
-            <div class="form">
-              <div>
+            <p class="wizard__title">{{steps[0].label}}</p>
+            <p class="wizard__subtitle">Validate your template information.</p>
+            <div class="row">
+              <div class="col col-sm-5">
                 <div class="form-group">
                   <mat-form-field>
                     <mat-label class="form-label">Template Id</mat-label>
@@ -92,6 +93,18 @@
                   </mat-form-field>
                 </div>
                 <div class="form-group">
+                  <mat-form-field>
+                    <mat-label class="form-label">Supression List</mat-label>
+                    <input
+                      id="iterableSupressionId"
+                      name="iterableSupressionId"
+                      matInput
+                      placeholder="Supression Id"
+                      formControlName="iterableSupressionId"
+                    />
+                  </mat-form-field>
+                </div>
+                <div class="form-group">
                   <button
                     mat-fab
                     extended
@@ -107,50 +120,66 @@
 
               @let templateInfo = templateListInfo$ | async;
 
-              <div class="valid-content">
+              <div class="col col-sm-7 valid-content">
                 @if (templateInfo) {
-                <mat-card appearance="raised" class="template">
-                  <mat-card-header>
-                    <mat-card-title> Template Information </mat-card-title>
+                <mat-card appearance="raised" class="wizard__card--template">
+                  <mat-card-header class="col">
+                    <mat-card-title> Details </mat-card-title>
                     <mat-card-subtitle>
-                      <div class="template__subtitle">
-                        <div class="template__emails mr-16">
-                          <mat-icon
-                            aria-hidden="false"
-                            aria-label="check icon"
-                            fontIcon="email"
-                            class="mr-8"
-                          ></mat-icon>
-                          {{ templateInfo.size }} emails
+                      <div class="row template__subtitle">
+                        <div class="col">
+                          <div class="row template__emails">
+                            <mat-icon
+                              aria-hidden="false"
+                              aria-label="check icon"
+                              fontIcon="email"
+                              class="template__icon"
+                            ></mat-icon>
+
+                            <span>{{ templateInfo.size }} emails</span>
+                          </div>
                         </div>
-                        <a
-                          mat-button="elevated"
-                          aria-label="preview"
-                          [href]="previewUrl()"
-                          target="_blank"
-                          class="template__preview"
-                        >
-                          <mat-icon>visibility</mat-icon>
-                          Preview
-                        </a>
+                        <div class="col">
+                          <a
+                            mat-button="elevated"
+                            aria-label="preview"
+                            [href]="previewUrl()"
+                            target="_blank"
+                            class="template__preview"
+                          >
+                            <mat-icon>visibility</mat-icon>
+                            Preview
+                          </a>
+                        </div>
                       </div>
                     </mat-card-subtitle>
                   </mat-card-header>
                   <mat-card-content>
                     <div class="template__description">
-                      <p><span>Name:</span> {{ templateInfo.template.name }}</p>
-                      <p>
-                        <span>Subject:</span> {{ templateInfo.template.subject
-                        }}
-                      </p>
-                      <p>
-                        <span>From Name:</span> {{
-                        templateInfo.template.fromName }}
-                      </p>
-                      <p>
-                        <span>From Email:</span> {{
-                        templateInfo.template.fromEmail }}
-                      </p>
+                      <div class="row template__detail">
+                        <span class="template__name">Name</span>
+                        <span class="template__value">
+                          {{ templateInfo.template.name }}
+                        </span>
+                      </div>
+                      <div class="row template__detail">
+                        <span class="template__name">Subject</span>
+                        <span class="template__value">
+                          {{ templateInfo.template.subject }}
+                        </span>
+                      </div>
+                      <div class="row template__detail">
+                        <span class="template__name">From Name</span>
+                        <span class="template__value">
+                          {{ templateInfo.template.fromName }}
+                        </span>
+                      </div>
+                      <div class="row template__detail">
+                        <span class="template__name">From Email</span>
+                        <span class="template__value">
+                          {{ templateInfo.template.fromEmail }}
+                        </span>
+                      </div>
                     </div>
                   </mat-card-content>
                 </mat-card>
@@ -182,8 +211,8 @@
       >
         <ng-template matStepLabel>
           <p
-            class="wizard__title"
-            [class.wizard__title--complete]="steps[1].completed"
+            class="wizard__label"
+            [class.wizard__label--complete]="steps[1].completed"
           >
             Address
           </p>
@@ -253,8 +282,8 @@
       >
         <ng-template matStepLabel>
           <p
-            class="wizard__title"
-            [class.wizard__title--complete]="steps[2].completed"
+            class="wizard__label"
+            [class.wizard__label--complete]="steps[2].completed"
           >
             Professional Information
           </p>
@@ -319,8 +348,8 @@
       <mat-step [completed]="steps[3].completed" class="wizard__step">
         <ng-template matStepLabel>
           <p
-            class="wizard__title"
-            [class.wizard__title--complete]="steps[3].completed"
+            class="wizard__label"
+            [class.wizard__label--complete]="steps[3].completed"
           >
             Review & Submit
           </p>
@@ -386,8 +415,8 @@
       <mat-step [completed]="steps[4].completed" class="wizard__step">
         <ng-template matStepLabel>
           <p
-            class="wizard__title"
-            [class.wizard__title--complete]="steps[4].completed"
+            class="wizard__label"
+            [class.wizard__label--complete]="steps[4].completed"
           >
             Confirmation
           </p>
@@ -413,6 +442,42 @@
 </div>
 
 <div style="display: flex; flex-flow: row wrap">
+  <span
+    style="
+      color: #000000;
+      display: block;
+      background-color: var(--mat-sys-background);
+      height: 2rem;
+      padding: 0.5rem;
+      text-align: center;
+      width: 20rem;
+    "
+    >--mat-sys-background</span
+  >
+  <span
+    style="
+      color: #000000;
+      display: block;
+      background-color: var(--mat-sys-on-background);
+      height: 2rem;
+      padding: 0.5rem;
+      text-align: center;
+      width: 20rem;
+    "
+    >--mat-sys-on-background</span
+  >
+  <span
+    style="
+      color: #000000;
+      display: block;
+      background-color: var(--mat-sys-on-surface-variant);
+      height: 2rem;
+      padding: 0.5rem;
+      text-align: center;
+      width: 20rem;
+    "
+    >--mat-sys-on-surface-variant</span
+  >
   <span
     style="
       color: #000000;
@@ -657,6 +722,18 @@
     style="
       color: #000000;
       display: block;
+      background-color: var(--mat-sys-surface-variant);
+      height: 2rem;
+      padding: 0.5rem;
+      text-align: center;
+      width: 20rem;
+    "
+    >--mat-sys-surface-variant</span
+  >
+  <span
+    style="
+      color: #000000;
+      display: block;
       background-color: var(--mat-sys-surface-dim);
       height: 2rem;
       padding: 0.5rem;
@@ -760,6 +837,18 @@
       width: 20rem;
     "
     >--mat-sys-on-primary-fixed</span
+  >
+  <span
+    style="
+      color: #ffffff;
+      display: block;
+      background-color: var(--mat-sys-on-primary-fixed-variant);
+      height: 2rem;
+      padding: 0.5rem;
+      text-align: center;
+      width: 20rem;
+    "
+    >--mat-sys-on-primary-fixed-variant</span
   >
   <span
     style="

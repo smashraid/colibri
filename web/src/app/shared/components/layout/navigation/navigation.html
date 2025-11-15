@@ -1,1 +1,51 @@
-<p>navigation works!</p>
+<div class="global__navbar">
+  <mat-nav-list>
+    @for (link of links(); track link.name) { @if (link.children.length) {
+    <mat-accordion class="global__navbar-item dropdown" multi>
+      <mat-expansion-panel
+        class="dropdown__container"
+        [expanded]="isParentRouteActive(link.path)"
+      >
+        <mat-expansion-panel-header class="dropdown__header">
+          <mat-panel-title>
+            <div class="dropdown__title">
+              <mat-icon>{{ link.icon }}</mat-icon>
+              <span>{{ link.name }}</span>
+            </div>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <mat-nav-list class="dropdown__content">
+          @for (subLink of link.children; track $index) {
+          <mat-list-item
+            class="dropdown__item"
+            [activated]="isRouteActive(subLink.path, true, link.path)"
+            [routerLink]="[link.path, subLink.path]"
+            (click)="onSubMenuClick()"
+          >
+            <mat-icon matListItemIcon fontSet="material-symbols-outlined">
+              {{ subLink.icon }}
+            </mat-icon>
+            <span MatListItemTitle class="navbar-link">
+              {{ subLink.name }}
+            </span>
+          </mat-list-item>
+          }
+        </mat-nav-list>
+      </mat-expansion-panel>
+    </mat-accordion>
+    } @else {
+    <mat-list-item
+      class="global__navbar-item"
+      [activated]="isRouteActive(link.path, false)"
+      [routerLink]="link.path"
+      (click)="onMenuClick()"
+    >
+      <mat-icon matListItemIcon fontSet="material-symbols-outlined"
+        >{{ link.icon }}</mat-icon
+      >
+      <span MatListItemTitle class="global__navbar-link">{{ link.name }}</span>
+    </mat-list-item>
+    } }
+  </mat-nav-list>
+</div>

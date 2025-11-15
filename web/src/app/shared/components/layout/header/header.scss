@@ -1,9 +1,15 @@
 @use "@angular/material" as mat;
+@use "../../../../../breakpoints" as bp;
 
-.mat-toolbar {
-  display: flex;
-  align-items: center;
+.global__toolbar {
   height: 6rem;
+  position: fixed;
+  z-index: 2;
+
+  // @include bp.sm {
+  //   position: initial;
+  //   z-index: auto;
+  // }
 
   @include mat.toolbar-overrides(
     (
@@ -50,16 +56,14 @@
     display: flex;
     gap: 2rem;
     list-style: none;
-
   }
   .nav {
     &-item {
-
     }
 
     &-link {
       text-decoration: underline;
-      text-underline-offset: .5rem;
+      text-underline-offset: 0.5rem;
       color: var(--mat-sys-on-primary);
     }
   }

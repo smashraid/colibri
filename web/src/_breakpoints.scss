@@ -1,0 +1,81 @@
+// Import the core Sass module for map manipulation
+@use "sass:map";
+
+// -----------------------------------------------------------------------------
+// 1. CONFIGURATION: Breakpoints, Gutters, and Variables
+// -----------------------------------------------------------------------------
+
+// Define the breakpoint sizes (keys are used for mixin names and class prefixes)
+$breakpoints: (
+  sm: 40rem,
+  // 640px
+  md: 48rem,
+  // 768px
+  lg: 64rem,
+  // 1024px
+  xl: 80rem,
+  // 1280px
+  xxl: 96rem // 1536px,,,,
+);
+
+// Define the grid system constants
+$grid-columns: 12;
+$grid-gutter-width: 1rem; // Total width for margin on both sides of a column
+
+// Generic mixin to handle any breakpoint name
+@mixin breakpoint($name) {
+  @if map.has-key($breakpoints, $name) {
+    // Use Sass interpolation for the media query condition
+    @media (min-width: #{map.get($breakpoints, $name)}) {
+      @content;
+    }
+  } @else {
+    @error "Breakpoint '#{$name}' not found in $breakpoints map.";
+  }
+}
+
+// Convenience mixins (manually defined for static Sass compilation)
+@mixin sm {
+  @include breakpoint(sm) {
+    @content;
+  }
+}
+@mixin md {
+  @include breakpoint(md) {
+    @content;
+  }
+}
+@mixin lg {
+  @include breakpoint(lg) {
+    @content;
+  }
+}
+@mixin xl {
+  @include breakpoint(xl) {
+    @content;
+  }
+}
+@mixin xxl {
+  @include breakpoint(xxl) {
+    @content;
+  }
+}
+
+@mixin container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+
+  // Use the CSS variable for padding based on the gutter
+  padding-left: calc(var(--grid-gutter, #{$grid-gutter-width}) / 2);
+  padding-right: calc(var(--grid-gutter, #{$grid-gutter-width}) / 2);
+
+  // Apply max-width responsively using a loop over all breakpoints
+  @each $name, $value in $breakpoints {
+    // FIX: Use the generic 'breakpoint' mixin and pass the name dynamically.
+    @include breakpoint($name) {
+      // Use the CSS variable for the max-width (dynamic sizing)
+      max-width: var(--breakpoint-#{$name});
+    }
+  }
+}

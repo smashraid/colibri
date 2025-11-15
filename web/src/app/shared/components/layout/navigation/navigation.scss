@@ -1,0 +1,81 @@
+@use "@angular/material" as mat;
+@use "../../../../../breakpoints" as bp;
+
+.global__navbar {
+  @include mat.expansion-overrides(
+    (
+      container-background-color: var(--mat-sys-surface-container-high),
+    )
+  );
+
+  @include mat.list-overrides(
+    (
+      //list-item-label-text-color: orange,
+      //list-item-container-color: red,
+      //active-indicator-color: green,
+      //list-item-hover-label-text-color: pink,
+      active-indicator-shape: calc(var(--spacing) * 2),
+      list-item-leading-icon-start-space: calc(var(--spacing) * 4),
+      list-item-leading-icon-end-space: calc(var(--spacing) * 1),
+      //list-item-leading-icon-color: green
+    )
+  );
+
+  margin-top: calc(var(--spacing) * 3);
+
+  .mat-mdc-nav-list {
+    flex-flow: column nowrap;
+    gap: calc(var(--spacing) * 8);
+  }
+
+  &-item {
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+
+  &-link {
+    color: var(--mat-sys-on-surface);
+    display: block;
+    text-decoration: underline;
+    text-underline-offset: calc(var(--spacing) * 2);
+    width: calc(100% + calc(var(--spacing) * 4));
+
+    &-sm {
+      color: var(--mat-sys-on-primary);
+    }
+  }
+
+  &-sm {
+    flex-flow: row nowrap;
+  }
+}
+
+.dropdown {
+  &__container {
+    box-shadow: var(--mat-sys-level0) !important;
+  }
+
+  &__header {
+    padding: 0 calc(var(--spacing) * 4);
+  }
+
+  &__title {
+    display: flex;
+    width: 100%;
+
+    .mat-icon {
+      //margin-inline-start: 1rem;
+      margin-inline-end: calc(var(--spacing) * 1);
+    }
+  }
+
+  &__content {
+  }
+
+  &__item {
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+
+  :host ::ng-deep .mat-expansion-panel-body {
+    padding-bottom: 0;
+  }
+}

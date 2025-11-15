@@ -1,6 +1,10 @@
 @use "@angular/material" as mat;
 
 .wizard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+
   @include mat.stepper-overrides(
     (
       container-color: light-dark(#ffffff, #1a1d1a),
@@ -22,33 +26,107 @@
 
   &__card {
     //box-shadow: (var(--mat-sys-level4));
-
-    @include mat.card-overrides(
-      (
-        elevated-container-shape: 1rem,
-        filled-container-shape: 1rem,
-        outlined-container-shape: 1rem,
-        outlined-outline-width: 1rem,
-        elevated-container-color:
-          light-dark(var(--color-gray-50), var(--color-gray-800)),
-        elevated-container-elevation: 0px 8px 16px rgba(234, 109, 13, 0.7),
-        filled-container-color: purple,
-        filled-container-elevation: magenta,
-        outlined-container-color: blue,
-        outlined-container-elevation: rgb(34, 190, 228),
-        outlined-outline-color: rgb(19, 224, 149),
-        subtitle-text-color: rgb(241, 118, 224),
-      )
-    );
+    &--template {
+      @include mat.card-overrides(
+        (
+          elevated-container-shape: 1rem,
+          filled-container-shape: 1rem,
+          outlined-container-shape: 1rem,
+          outlined-outline-width: 1rem,
+          elevated-container-color: var(--mat-sys-surface-variant),
+          elevated-container-elevation: 0px 8px 16px
+            light-dark(#ffffff, #1a1d1a),
+          filled-container-color: purple,
+          filled-container-elevation: magenta,
+          outlined-container-color: blue,
+          outlined-container-elevation: rgb(34, 190, 228),
+          outlined-outline-color: rgb(19, 224, 149),
+          subtitle-text-color: var(--mat-sys-on-surface),
+          title-text-size: var(--text-lg),
+          title-text-weight: var(--font-weight-bold),
+        )
+      );
+    }
   }
 
-  &__title {
+  .template {
+    box-shadow: var(--mat-sys-level5);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+
+    &__subtitle {
+      align-items: center;
+      gap: calc(var(--spacing) * 5);
+      justify-self: end;
+      margin-bottom: calc(var(--spacing) * 2);
+      margin-left: calc(var(--spacing) * 0.5);
+    }
+
+    &__detail {
+      flex-flow: column;
+      margin-bottom: calc(var(--spacing) * 2);
+      margin-left: calc(var(--spacing) * 1);
+    }
+
+    &__name {
+      font-weight: var(--font-weight-light);
+    }
+
+    &__value {
+      font-weight: var(--font-weight-medium);
+    }
+
+    &__emails {
+      align-items: center;
+      justify-content: center;
+    }
+
+    &__icon {
+      margin-right: calc(var(--spacing) * 1);
+    }
+
+    &__preview {
+      .mat-icon {
+        height: 2rem;
+        font-size: 2rem;
+        width: 2rem;
+      }
+    }
+    &__description {
+    }
+  }
+
+  &__label {
     margin: 0;
 
     &--complete {
       color: var(--mat-sys-primary);
       font-weight: 500;
     }
+  }
+
+  &__title {
+    //font-size: var(--text-2xl);
+    font: var(--mat-sys-display-small);
+    line-height: var(--tw-leading, var(--text-2xl--line-height));
+    margin: 0;
+  }
+
+  &__subtitle {
+    //font-size: var(--text-sm);
+    font: var(--mat-sys-body-medium);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+
+  &__step-indicator {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface);
+    margin-bottom: 16px;
+  }
+
+  &__progress-bar {
+    margin-bottom: 30px;
   }
 
   ::ng-deep {
@@ -90,23 +168,6 @@
 //     }
 //   }
 // }
-
-.stepper-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.step-indicator {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface);
-  margin-bottom: 16px;
-}
-
-.progress-bar {
-  margin-bottom: 30px;
-}
 
 .review-card {
   margin-bottom: 24px;
@@ -158,233 +219,6 @@
     max-width: 400px;
     line-height: 1.5;
   }
-}
-
-// Responsive Design
-@media (max-width: 768px) {
-  .stepper-container {
-    padding: 10px;
-  }
-
-  .breadcrumb-link {
-    padding: 6px 8px;
-
-    .step-label {
-      font-size: 12px;
-    }
-  }
-
-  .breadcrumb-separator {
-    font-size: 14px;
-  }
-
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .half-width {
-    width: 100%;
-  }
-
-  .step-actions {
-    flex-direction: column;
-    gap: 8px;
-
-    button {
-      width: 100%;
-    }
-  }
-}
-
-.breadcrumb-container {
-  margin-bottom: 30px;
-}
-
-.breadcrumb {
-  .breadcrumb-links {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px; // space-x-4 equivalent
-  }
-}
-
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-  flex: 1;
-
-  &:last-child {
-    flex: 0;
-  }
-}
-
-.breadcrumb-link {
-  display: flex;
-  align-items: center;
-  gap: 8px; // gap-2 equivalent
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  // Default state (inactive/disabled)
-  color: #9ca3af; // text-gray-400
-  pointer-events: none;
-
-  .step-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px; // h-8
-    height: 32px; // w-8
-    border-radius: 50%;
-    transition: all 0.3s ease;
-
-    // Default step icon (inactive)
-    border: 2px solid #d1d5db; // border-gray-300
-    background-color: transparent;
-
-    .step-number {
-      font-size: 14px;
-      font-weight: 500;
-      color: #9ca3af; // text-gray-400
-    }
-
-    .check-icon {
-      font-size: 16px;
-      color: white;
-    }
-  }
-
-  .step-label {
-    font-size: 14px; // text-sm
-    font-weight: 500; // font-medium
-    line-height: 1.25; // leading-normal
-    transition: all 0.3s ease;
-
-    // Hide on small screens by default, show on sm and above
-    display: none;
-
-    @media (min-width: 640px) {
-      // sm breakpoint
-      display: block;
-    }
-  }
-
-  // Completed state
-  &.completed {
-    color: #3b82f6; // text-primary
-    pointer-events: auto;
-
-    .step-icon {
-      background-color: #3b82f6; // bg-primary
-      border-color: #3b82f6;
-    }
-
-    &:hover {
-      color: #1d4ed8; // darker primary
-
-      .step-icon {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
-      }
-    }
-  }
-
-  // Active state (current step)
-  &.active {
-    color: #3b82f6; // text-primary
-    pointer-events: auto;
-
-    .step-icon {
-      border: 2px solid #3b82f6; // border-primary
-      background-color: rgba(59, 130, 246, 0.1); // bg-primary/10
-
-      .step-number {
-        color: #3b82f6; // text-primary
-        font-weight: 600; // font-bold for active state
-      }
-    }
-
-    .step-label {
-      font-weight: 600; // font-bold for active state
-    }
-
-    &:hover {
-      color: #1d4ed8;
-
-      .step-icon {
-        border-color: #1d4ed8;
-        background-color: rgba(29, 78, 216, 0.1);
-
-        .step-number {
-          color: #1d4ed8;
-        }
-      }
-    }
-  }
-
-  // Disabled state (future steps)
-  &.disabled {
-    color: #9ca3af; // text-gray-400
-    pointer-events: none;
-
-    .step-icon {
-      border: 2px solid #d1d5db; // border-gray-300
-      background-color: transparent;
-
-      .step-number {
-        color: #9ca3af; // text-gray-400
-      }
-    }
-  }
-}
-
-.breadcrumb-connector {
-  height: 2px; // h-0.5
-  border-radius: 9999px; // rounded-full
-  flex: 1;
-  margin-left: 16px; // space between step and connector
-  transition: all 0.3s ease;
-
-  // Default inactive state
-  background-color: #e5e7eb; // bg-gray-200
-
-  // Active state (when previous step is completed)
-  &.active {
-    background-color: #3b82f6; // bg-primary
-  }
-
-  // Inactive state
-  &.inactive {
-    background-color: #e5e7eb; // bg-gray-200
-  }
-}
-
-// Rest of your existing styles remain the same...
-.step-content {
-  padding: 24px;
-  min-height: 400px;
-
-  h2 {
-    margin-bottom: 24px;
-    color: #3f51b5;
-  }
-}
-
-.full-width {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.half-width {
-  width: calc(50% - 8px);
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
 }
 
 .step-actions {
