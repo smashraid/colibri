@@ -375,10 +375,17 @@
                     [matDatepicker]="datepicker"
                     formControlName="sendAtDate"
                   />
+                  <mat-hint>MM/DD/YYYY</mat-hint>
                   <mat-datepicker #datepicker />
                   <mat-datepicker-toggle [for]="datepicker" matSuffix />
                 </mat-form-field>
 
+                @if (scheduleFormControls.sendAtDate.invalid &&
+                scheduleFormControls.sendAtDate.touched) {
+                <mat-error>Send Date is required</mat-error>
+                }
+              </div>
+              <div class="form-group">
                 <mat-form-field>
                   <mat-label>Start Time (UTC)</mat-label>
                   <input
@@ -386,14 +393,11 @@
                     [matTimepicker]="timepicker"
                     formControlName="sendAtTime"
                   />
+                  <mat-hint>HH:MM AM/PM</mat-hint>
                   <mat-timepicker #timepicker />
                   <mat-timepicker-toggle [for]="timepicker" matSuffix />
                 </mat-form-field>
-
-                @if (scheduleFormControls.sendAtDate.invalid &&
-                scheduleFormControls.sendAtDate.touched) {
-                <mat-error>Send Date is required</mat-error>
-                } @if (scheduleFormControls.sendAtTime.invalid &&
+                @if (scheduleFormControls.sendAtTime.invalid &&
                 scheduleFormControls.sendAtTime.touched) {
                 <mat-error>Send Time is required</mat-error>
                 }
@@ -470,12 +474,13 @@
                 <strong>List:</strong>
                 {{ templateFormControls.iterableListId.value?.id }}
               </p>
+              <p>
+                <strong>List Size:</strong>
+                {{templateInfo && templateInfo.size ? templateInfo.size : 0 }}
+                emails
+              </p>
               <!-- Batch Scaling Info -->
               <h3>Batch Scaling</h3>
-              <p>
-                <strong>Initial List Size:</strong>
-                {{ batchScalingFormControls.initialListSize.value }}
-              </p>
               <p>
                 <strong>Batch Type:</strong>
                 {{ batchScalingFormControls.batchType.value === 1 ? 'Fixed Size'
@@ -487,6 +492,10 @@
                 {{ batchScalingFormControls.batchSize.value }}
               </p>
               } @else if (batchScalingFormControls.batchType.value === 2) {
+              <p>
+                <strong>Initial List Size:</strong>
+                {{ batchScalingFormControls.initialListSize.value }}
+              </p>
               <p>
                 <strong>Growth Percentage:</strong>
                 {{ batchScalingFormControls.growthPercentage.value }}%
@@ -505,12 +514,12 @@
               </p>
               <p>
                 <strong>Interval:</strong>
-                {{ scheduleFormControls.intervalTime.value }} minutes
+                {{ scheduleFormControls.intervalTime.value }}
               </p>
               <p>
                 <strong>Send At:</strong>
-                {{ scheduleFormControls.sendAtDate.value }} {{
-                scheduleFormControls.sendAtTime.value }}
+                {{ scheduleFormControls.sendAtDate.value | date: 'yyyy-MM-dd'}}
+                {{ scheduleFormControls.sendAtTime.value | date: 'h:mm a'}}
               </p>
             </mat-card-content>
           </mat-card>
@@ -521,7 +530,8 @@
               mat-raised-button
               color="primary"
               matStepperNext
-              type="submit"
+              type="button"
+              (click)="submitForm()"
             >
               Submit
             </button>

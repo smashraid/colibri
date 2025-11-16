@@ -12,7 +12,7 @@ import {
   ViewChild,
   WritableSignal,
 } from '@angular/core';
-import { AsyncPipe, JsonPipe } from '@angular/common';
+import { AsyncPipe, DatePipe, JsonPipe } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
@@ -103,6 +103,7 @@ interface Step {
     MatProgressSpinnerModule,
     AsyncPipe,
     JsonPipe,
+    DatePipe,
     TimeFormatDirective,
   ],
   providers: [
@@ -228,53 +229,46 @@ export class Wizard implements OnInit, AfterViewInit {
     const templateData = this.templateForm.getRawValue();
     const batchData = this.batchScalingForm.getRawValue();
     const scheduleData = this.scheduleForm.getRawValue();
+    const sendAtDateTimeString = this.combinedSendAtDateTime();
 
     // Basic validation check
-    if (
-      !templateData ||
-      !batchData ||
-      !scheduleData ||
-      scheduleData.sendAtDate ||
-      scheduleData.sendAtTime
-    ) {
+    if (!templateData || !batchData || !scheduleData || !sendAtDateTimeString) {
       console.error('Cannot submit: Missing form data or template/list IDs.');
       return;
     }
 
-    if (scheduleData.sendAtDate && scheduleData.sendAtTime) {
-      const hours = getHours(scheduleData.sendAtTime);
-      const minutes = getMinutes(scheduleData.sendAtTime);
-      let combinedDate = setHours(scheduleData.sendAtDate, hours);
-      combinedDate = setMinutes(combinedDate, minutes);
-      combinedDate = setSeconds(combinedDate, 0);
+    // Combine date and time to create the ISO 8601 string for 'sendAt'
 
-      const sendAtISOString = formatISO(combinedDate);
+    const payload: CreateBlastRequest = {
+      projectId: this.store.projectId(), // Placeholder value
+      name: scheduleData.name,
+      tags: scheduleData.tags,
+      batchSize: batchData.batchSize,
+      initialListSize: batchData.initialListSize,
+      growthPercentage: batchData.growthPercentage,
+      batchType: batchData.batchType!,
+      intervalTime: scheduleData.intervalTime!,
+      listNameFormat: `${scheduleData.name} Blast List {0}`,
+      listDescriptionFormat: `Blast List {0}`,
+      iterableListId: templateData.iterableListId?.id ?? BigInt(0),
+      iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
+      iterableSupressionId: templateData.iterableSupressionId,
+      sendAt: sendAtDateTimeString,
+      status: 0, // Placeholder value
+      createdBy: 'User', // Placeholder value
+      createdDate: new Date().toISOString(),
+    };
 
-      // Combine date and time to create the ISO 8601 string for 'sendAt'
+    console.log('Final Payload:', payload);
+    this.store.startLoading();
 
-      const payload: CreateBlastRequest = {
-        projectId: 1, // Placeholder value
-        name: scheduleData.name,
-        tags: scheduleData.tags,
-        batchSize: batchData.batchSize,
-        initialListSize: batchData.initialListSize,
-        growthPercentage: batchData.growthPercentage,
-        batchType: batchData.batchType!,
-        intervalTime: scheduleData.intervalTime!,
-        listNameFormat: `${scheduleData.name} Blast List {0}`,
-        listDescriptionFormat: `Blast List {0}`,
-        iterableListId: templateData.iterableListId?.id ?? BigInt(0),
-        iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
-        iterableSupressionId: templateData.iterableSupressionId,
-        sendAt: sendAtISOString,
-        status: 0, // Placeholder value
-        createdBy: 'User', // Placeholder value
-        createdDate: '', //scheduleData.sendAtDate + scheduleData.sendAtTime,
-      };
+    this.stepper()?.next();
+    this.steps.update((steps) => {
+      steps[3].completed = true;
+      steps[4].completed = true;
+      return steps;
+    });
 
-      console.log('Final Payload:', payload);
-      this.store.startLoading();
-    }
     // Call the service to create the blast
     // this.iterableService
     //   .createBlast(payload)
@@ -480,6 +474,34 @@ export class Wizard implements OnInit, AfterViewInit {
         .sort()
     );
   }
+
+  /**
+   * Combines the separate sendAtDate and sendAtTime Date objects into a single
+   * ISO 8601 datetime string with offset, suitable for API submission.
+   * This signal automatically updates whenever either date or time changes.
+   */
+  readonly combinedSendAtDateTime = computed<string | null>(() => {
+    const sendAtDate = this.scheduleFormControls.sendAtDate.value;
+    const sendAtTime = this.scheduleFormControls.sendAtTime.value;
+
+    if (sendAtDate instanceof Date && sendAtTime instanceof Date) {
+      // 1. Get time components from the time object
+      const hours = getHours(sendAtTime);
+      const minutes = getMinutes(sendAtTime);
+
+      // 2. Start with the date part and apply the hours/minutes
+      // date-fns set functions return a new Date object.
+      let combinedDate = setHours(sendAtDate, hours);
+      combinedDate = setMinutes(combinedDate, minutes);
+      combinedDate = setSeconds(combinedDate, 0); // Zero out seconds for cleanliness
+
+      // 3. Return the result in ISO 8601 format with offset.
+      // 'extended' format produces the full datetime string with timezone offset.
+      return formatISO(combinedDate, { format: 'extended' });
+    }
+
+    return null;
+  });
 
   ngOnInit(): void {
     this.databaseService
