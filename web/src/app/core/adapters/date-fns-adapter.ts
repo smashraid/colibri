@@ -1,17 +1,27 @@
 import { DateFnsAdapter } from '@angular/material-date-fns-adapter';
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable, Optional } from '@angular/core';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { enUS } from 'date-fns/locale';
 import {
   compareAsc,
   isSameDay,
-  isSameMonth,
-  isSameYear,
-  parse,
-  format,
+  // Ensure you only import what you are overriding or explicitly using
 } from 'date-fns';
 
+/**
+ * Custom DateFnsAdapter to ensure all required methods are implemented and
+ * utilize date-fns for robust date manipulation and comparison.
+ */
 @Injectable()
 export class CustomDateFnsAdapter extends DateFnsAdapter {
-  // ... (All required override methods from the previous answer) ...
+  // CRITICAL: Inject the locale and pass it to the super constructor to resolve
+  // the 'preprocessor' error and ensure date-fns is initialized correctly.
+  constructor(@Optional() @Inject(MAT_DATE_LOCALE) matDateLocale: string) {
+    // The base adapter needs the locale value (string or object) passed to it.
+    super(matDateLocale);
+  }
+
+  // --- Date Comparison & Utility Methods (Keeping only necessary overrides) ---
 
   override compareDate(first: Date, second: Date): number {
     return compareAsc(first, second);
@@ -21,43 +31,49 @@ export class CustomDateFnsAdapter extends DateFnsAdapter {
     return isSameDay(first, second);
   }
 
-  // --- Localization Methods (Required for DateAdapter) ---
-  // If you are extending DateFnsAdapter, many of these methods might
-  // be inherited, but it is safer to implement the abstract ones explicitly
-  // or confirm they are handled by the base class.
-
   override getMonthNames(style: 'long' | 'short' | 'narrow'): string[] {
-    // Implementation logic...
-    return []; // Placeholder
+    if (style === 'long') {
+      return [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+    }
+    return super.getMonthNames(style);
   }
 
   override getDateNames(): string[] {
-    // Implementation logic...
-    return []; // Placeholder
+    return Array(31)
+      .fill(0)
+      .map((_, i) => String(i + 1));
   }
 
   override getDayOfWeekNames(style: 'long' | 'short' | 'narrow'): string[] {
-    // Implementation logic...
-    return []; // Placeholder
+    if (style === 'long') {
+      return [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
+    }
+    return super.getDayOfWeekNames(style);
   }
 
   override getFirstDayOfWeek(): number {
-    return 1;
-  }
-
-  override toIso8601(date: Date): string {
-    return format(date, "yyyy-MM-dd'T'HH:mm:ssXXX");
-  }
-
-  override format(date: Date, displayFormat: any): string {
-    return format(date, displayFormat);
-  }
-
-  override parse(value: any, parseFormat: any): Date | null {
-    if (typeof value === 'string') {
-      const date = parse(value, parseFormat, new Date());
-      return isNaN(date.getTime()) ? null : date;
-    }
-    return value ? new Date(value) : null;
+    // Default to Sunday (0) for US locale
+    return 0;
   }
 }

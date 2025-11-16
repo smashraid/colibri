@@ -75,6 +75,7 @@ import {
   setMinutes,
   setSeconds,
 } from 'date-fns';
+import { TimeFormatDirective } from '../../../../shared/directives/time-format.directive';
 
 interface Step {
   label: string;
@@ -102,6 +103,7 @@ interface Step {
     MatProgressSpinnerModule,
     AsyncPipe,
     JsonPipe,
+    TimeFormatDirective,
   ],
   providers: [
     {
@@ -355,6 +357,10 @@ export class Wizard implements OnInit, AfterViewInit {
           this.previewHtml.set(this.sanitizedHtml(template.html));
           this.previewUrl.set(this.sanitizedUrl(template.html));
 
+          this.scheduleForm.patchValue({
+            name: template.name,
+          });
+
           // B. Patch the form with data from both results
           // this.templateForm.patchValue({
           //   campaignName: template.name, // From the template result
@@ -492,9 +498,9 @@ export class Wizard implements OnInit, AfterViewInit {
         this.filteredTags.set(tags);
       });
 
-    this.scheduleForm.valueChanges.subscribe((value) => {
-      this.formDataJson = JSON.stringify(value, null, 2); // null, 2 for pretty printing
-    });
+    // this.scheduleForm.valueChanges.subscribe((value) => {
+    //   this.formDataJson = JSON.stringify(value, null, 2); // null, 2 for pretty printing
+    // });
   }
 
   ngAfterViewInit(): void {

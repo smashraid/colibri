@@ -451,50 +451,68 @@
         </ng-template>
 
         <div class="step-content">
-          <h2>Review Your Information</h2>
+          <p class="wizard__title">{{steps()[3].label}}</p>
+          <p class="wizard__subtitle">Review all the configured values.</p>
 
-          <mat-card class="review-card wizard__card">
+          <mat-card class="review-card">
             <mat-card-header>
-              <mat-card-title>Summary</mat-card-title>
-              <mat-card-subtitle>Sub</mat-card-subtitle>
+              <mat-card-title>Configuration Summary</mat-card-title>
+              <mat-card-subtitle>Blast Details</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <!-- <div class="review-section">
-                <h3>Personal Information</h3>
-                <p>
-                  <strong>Name:</strong> {{ personalInfoForm.value.fullName }}
-                </p>
-                <p>
-                  <strong>Email:</strong> {{ personalInfoForm.value.email }}
-                </p>
-              </div>
+              <!-- Template Info -->
+              <h3>Template and List</h3>
+              <p>
+                <strong>Template:</strong>
+                {{ templateFormControls.iterableTemplateId.value }}
+              </p>
+              <p>
+                <strong>List:</strong>
+                {{ templateFormControls.iterableListId.value?.id }}
+              </p>
+              <!-- Batch Scaling Info -->
+              <h3>Batch Scaling</h3>
+              <p>
+                <strong>Initial List Size:</strong>
+                {{ batchScalingFormControls.initialListSize.value }}
+              </p>
+              <p>
+                <strong>Batch Type:</strong>
+                {{ batchScalingFormControls.batchType.value === 1 ? 'Fixed Size'
+                : 'Growth Percentage' }}
+              </p>
+              @if (batchScalingFormControls.batchType.value === 1) {
+              <p>
+                <strong>Batch Size:</strong>
+                {{ batchScalingFormControls.batchSize.value }}
+              </p>
+              } @else if (batchScalingFormControls.batchType.value === 2) {
+              <p>
+                <strong>Growth Percentage:</strong>
+                {{ batchScalingFormControls.growthPercentage.value }}%
+              </p>
+              }
 
-              <div class="review-section">
-                <h3>Address Details</h3>
-                <p><strong>Street:</strong> {{ addressForm.value.street }}</p>
-                <p><strong>City:</strong> {{ addressForm.value.city }}</p>
-                <p>
-                  <strong>Zip Code:</strong> {{ addressForm.value.zipCode }}
-                </p>
-              </div>
-
-              <div class="review-section">
-                <h3>Professional Information</h3>
-                <p>
-                  <strong>Job Title:</strong>
-                  {{ professionalForm.value.jobTitle }}
-                </p>
-                <p>
-                  <strong>Company:</strong> {{ professionalForm.value.company }}
-                </p>
-                <p>
-                  <strong>Experience:</strong>
-                  {{ professionalForm.value.experience }} years
-                </p>
-              </div> -->
+              <!-- Schedule Info -->
+              <h3>Schedule</h3>
+              <p>
+                <strong>Name:</strong>
+                {{ scheduleFormControls.name.value }}
+              </p>
+              <p>
+                <strong>Tags:</strong>
+                {{ (scheduleFormControls.tags.value || []).join(', ') }}
+              </p>
+              <p>
+                <strong>Interval:</strong>
+                {{ scheduleFormControls.intervalTime.value }} minutes
+              </p>
+              <p>
+                <strong>Send At:</strong>
+                {{ scheduleFormControls.sendAtDate.value }} {{
+                scheduleFormControls.sendAtTime.value }}
+              </p>
             </mat-card-content>
-            <mat-card-actions> Test Actions </mat-card-actions>
-            <mat-card-footer> Test Footer </mat-card-footer>
           </mat-card>
 
           <div class="step-actions">
