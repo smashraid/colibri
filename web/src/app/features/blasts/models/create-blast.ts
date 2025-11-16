@@ -6,7 +6,7 @@ export interface CreateBlastRequest {
   initialListSize: number | null;
   growthPercentage: number | null;
   batchType: number;
-  intervalTime: number;
+  intervalTime: number | null;
   listNameFormat: string;
   listDescriptionFormat: string;
   iterableListId: bigint;

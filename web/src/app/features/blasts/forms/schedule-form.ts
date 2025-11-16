@@ -3,7 +3,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 export interface ScheduleFormValue {
   name: string;
   tags: string[] | null;
-  intervalTime: number | null;
+  intervalTime: string | null;
   sendAtDate: Date | null;
   sendAtTime: Date | null;
 }
@@ -11,7 +11,7 @@ export interface ScheduleFormValue {
 export interface ScheduleForm {
   name: FormControl<string>;
   tags: FormControl<string[] | null>;
-  intervalTime: FormControl<number | null>;
+  intervalTime: FormControl<string | null>;
   sendAtDate: FormControl<Date | null>;
   sendAtTime: FormControl<Date | null>;
 }

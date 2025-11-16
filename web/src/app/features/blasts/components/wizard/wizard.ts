@@ -76,6 +76,7 @@ import {
   setSeconds,
 } from 'date-fns';
 import { TimeFormatDirective } from '../../../../shared/directives/time-format.directive';
+import { timeFormatToMinutes } from '../../../../shared/validators/timeFormat';
 
 interface Step {
   label: string;
@@ -139,6 +140,7 @@ export class Wizard implements OnInit, AfterViewInit {
     { label: 'Batch Scaling', completed: false, form: 'batchScalingForm' },
     { label: 'Schedule', completed: false, form: 'scheduleForm' },
     { label: 'Review', completed: false, form: 'review' },
+    { label: 'Complete', completed: false, form: 'completedFlow' },
   ]);
 
   readonly batchOptions = [
@@ -247,7 +249,7 @@ export class Wizard implements OnInit, AfterViewInit {
       initialListSize: batchData.initialListSize,
       growthPercentage: batchData.growthPercentage,
       batchType: batchData.batchType!,
-      intervalTime: scheduleData.intervalTime!,
+      intervalTime: timeFormatToMinutes(scheduleData.intervalTime!),
       listNameFormat: `${scheduleData.name} Blast List {0}`,
       listDescriptionFormat: `Blast List {0}`,
       iterableListId: templateData.iterableListId?.id ?? BigInt(0),
