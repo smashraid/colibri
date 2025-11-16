@@ -1,15 +1,21 @@
 import {
+  AfterViewInit,
   Component,
   computed,
+  DestroyRef,
+  ElementRef,
   inject,
   OnInit,
   Signal,
   signal,
+  viewChild,
   ViewChild,
+  WritableSignal,
 } from '@angular/core';
 import { AsyncPipe, JsonPipe } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,14 +30,17 @@ import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
 import {
   createTemplateForm,
   resetTemplateForm,
+  TemplateFormControls,
 } from '../../forms/template-form';
 import {
   createBatchScalingForm,
   resetBatchScalingForm,
+  updateBatchScalingValidation,
 } from '../../forms/batch-scaling-form';
 import {
   createScheduleForm,
   resetScheduleForm,
+  ScheduleFormControls,
 } from '../../forms/schedule-form';
 import { IterableService } from '../../../../core/services/iterable.service';
 import { DatabaseService } from '../../../../core/services/database.service';
@@ -40,14 +49,16 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { forkJoin, map, Observable, startWith, tap } from 'rxjs';
 import { TemplateDetailResponse } from '../../../../core/models/api/response/template';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CampaignListResponse } from '../../../../core/models/api/response/campaign-list';
+import { AppStore } from '../../../../app.store';
+import { MatChipGrid } from '@angular/material/chips';
+import { CreateBlastRequest } from '../../models/create-blast';
 
 interface Step {
   label: string;
   completed: boolean;
-  optional?: boolean;
-  icon: string;
+  form: any;
 }
 
 @Component({
@@ -59,11 +70,13 @@ interface Step {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
+    MatRadioModule,
     MatAutocompleteModule,
     MatProgressBarModule,
     MatIconModule,
     MatCardModule,
     AsyncPipe,
+    JsonPipe,
   ],
   providers: [
     {
@@ -74,30 +87,58 @@ interface Step {
   templateUrl: './wizard.html',
   styleUrl: './wizard.scss',
 })
-export class Wizard implements OnInit {
-  @ViewChild('stepper') stepper!: MatStepper;
+export class Wizard implements OnInit, AfterViewInit {
+  // @ViewChild() stepper!: MatStepper;
+  // @ViewChild() chipGrid!: MatChipGrid;
+  stepper = viewChild<MatStepper>('stepper');
+  chipGrid = viewChild<MatChipGrid>('chipGrid');
 
   private iterableService = inject(IterableService);
   private databaseService = inject(DatabaseService);
   private spinnerService = inject(SpinnerService);
   private sanitizer = inject(DomSanitizer);
   private announcer = inject(LiveAnnouncer);
+  private destroyRef = inject(DestroyRef);
+  readonly store = inject(AppStore);
 
   isLinear = true;
+  currentStep = signal(0);
 
   // Steps configuration
-  steps: Step[] = [
-    { label: 'Template Info', completed: false, icon: 'counter_1' },
-    { label: 'Batch Scaling', completed: false, icon: 'counter_2' },
-    { label: 'Schedule', completed: false, icon: 'counter_3' },
-    { label: 'Review', completed: false, icon: 'counter_4' },
-    { label: 'Confirmation', completed: false, icon: 'counter_5' },
+  steps: WritableSignal<Step[]> = signal([
+    { label: 'Template Information', completed: false, form: 'templateForm' },
+    { label: 'Batch Scaling', completed: false, form: 'batchScalingForm' },
+    { label: 'Schedule', completed: false, form: 'scheduleForm' },
+    { label: 'Review', completed: false, form: 'review' },
+  ]);
+
+  readonly batchOptions = [
+    {
+      name: 'Fixed Batch Size',
+      value: 1,
+    },
+    {
+      name: 'Growth Percentage',
+      value: 2,
+    },
   ];
+
+  currentStepTitle = computed(() => this.steps()[this.currentStep()].label);
+  currentStepNumber = computed(() => this.currentStep() + 1);
+  progressValue = computed(
+    () => (this.currentStep() / (this.steps().length - 1)) * 100
+  );
 
   // Form groups
   templateForm = createTemplateForm();
   batchScalingForm = createBatchScalingForm();
   scheduleForm = createScheduleForm();
+
+  readonly templateFormControls: TemplateFormControls =
+    this.templateForm.controls;
+  readonly batchScalingFormControls = this.batchScalingForm.controls;
+  readonly scheduleFormControls: ScheduleFormControls =
+    this.scheduleForm.controls;
 
   templateListInfo$:
     | Observable<{ template: TemplateDetailResponse; size: bigint }>
@@ -150,72 +191,102 @@ export class Wizard implements OnInit {
     return list && list.name ? list.name : '';
   }
 
-  get templateFormControls() {
-    return this.templateForm.controls;
-  }
-
-  get currentStepIndex(): number {
-    return this.stepper?.selectedIndex || 0;
-  }
-
-  get currentStepNumber(): number {
-    return this.currentStepIndex + 1;
-  }
-
-  get currentStepTitle(): string {
-    return this.steps[this.currentStepIndex]?.label || '';
-  }
-
-  get progressValue(): number {
-    const totalSteps = this.steps.length;
-    const completedSteps = this.steps.filter((step) => step.completed).length;
-    return (completedSteps / totalSteps) * 100;
-  }
-
-  nextStep(): void {
-    // Mark current step as completed
-    if (this.currentStepIndex < this.steps.length) {
-      this.steps[this.currentStepIndex].completed = true;
-    }
-
-    this.stepper.next();
-  }
-
-  previousStep(): void {
-    this.stepper.previous();
-  }
-
-  goToStep(index: number): void {
-    // Only allow navigation to completed steps or the next logical step
-    if (index <= this.currentStepIndex || this.steps[index - 1]?.completed) {
-      this.stepper.selectedIndex = index;
-    }
-  }
-
   submitForm(): void {
-    // Mark review step as completed
-    this.steps[3].completed = true;
+    const templateData = this.templateForm.getRawValue();
+    const batchData = this.batchScalingForm.getRawValue();
+    const scheduleData = this.scheduleForm.getRawValue();
 
-    // Simulate form submission
+    // Basic validation check
+    if (!templateData || !batchData || !scheduleData) {
+      console.error('Cannot submit: Missing form data or template/list IDs.');
+      return;
+    }
 
-    // Mark confirmation step as completed
-    setTimeout(() => {
-      // Move to confirmation step
-      this.steps[4].completed = true;
-      this.nextStep();
-    }, 500);
+    // Combine date and time to create the ISO 8601 string for 'sendAt'
+    let sendAtString: string;
+    if (scheduleData.sendAtDate && scheduleData.sendAtTime) {
+      const combinedDateTime = scheduleData.sendAtDate
+        .clone()
+        .hour(scheduleData.sendAtTime.hour())
+        .minute(scheduleData.sendAtTime.minute())
+        .second(0)
+        .format();
+      sendAtString = combinedDateTime;
+    } else {
+      console.error('Cannot submit: Send Date or Time is missing.');
+      return;
+    }
+
+    const payload: CreateBlastRequest = {
+      projectId: 1, // Placeholder value
+      name: scheduleData.name,
+      tags: scheduleData.tags,
+      batchSize: batchData.batchSize,
+      initialListSize: batchData.initialListSize,
+      growthPercentage: batchData.growthPercentage,
+      batchType: batchData.batchType!,
+      intervalTime: scheduleData.intervalTime!,
+      listNameFormat: `${scheduleData.name} Blast List {0}`,
+      listDescriptionFormat: `Blast List {0}`,
+      iterableListId: templateData.iterableListId?.id ?? BigInt(0),
+      iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
+      iterableSupressionId: templateData.iterableSupressionId,
+      sendAt: sendAtString,
+      status: 0, // Placeholder value
+      createdBy: 'User', // Placeholder value
+      createdDate: '', //scheduleData.sendAtDate + scheduleData.sendAtTime,
+    };
+
+    console.log('Final Payload:', payload);
+    this.store.startLoading();
+
+    // Call the service to create the blast
+    // this.iterableService
+    //   .createBlast(payload)
+    //   .pipe(
+    //     tapResponse({
+    //       next: (response) => {
+    //         console.log('Blast created successfully:', response);
+    //         this.lastSubmitError.set(null);
+    //         this.steps.update((steps) =>
+    //           steps.map((step, index) => ({
+    //             ...step,
+    //             completed:
+    //               index === this.stepper.selectedIndex ? true : step.completed,
+    //           }))
+    //         );
+    //         this.stepper.next(); // Go to Confirmation step
+    //       },
+    //       error: (error) => {
+    //         console.error('Blast creation failed:', error);
+    //         this.lastSubmitError.set(
+    //           'Failed to create blast. Please check the console for details.'
+    //         );
+    //       },
+    //     }),
+    //     take(1),
+    //     finalize(() => this.isLoading.set(false)),
+    //     takeUntilDestroyed(this.destroyRef)
+    //   )
+    //   .subscribe();
   }
 
   resetStepper(): void {
-    this.stepper.reset();
-
-    // Reset all steps
-    this.steps.forEach((step) => (step.completed = false));
-
-    // Reset forms
+    this.stepper()?.reset();
     resetTemplateForm(this.templateForm);
     resetBatchScalingForm(this.batchScalingForm);
     resetScheduleForm(this.scheduleForm);
+    this.steps.update((prev) =>
+      prev.map((step) => {
+        return {
+          ...step,
+          completed: !step.completed,
+        };
+      })
+    );
+    //this.templateListInfo$.set(null);
+    this.previewHtml.set('');
+    this.previewUrl.set('');
   }
 
   sanitizedHtml(htmlString: string): SafeHtml {
@@ -280,4 +351,26 @@ export class Wizard implements OnInit {
   }
 
   ngOnInit(): void {}
+
+  ngAfterViewInit(): void {
+    // 1. Initial setup based on the default value (which is now 1 in the form file)
+    updateBatchScalingValidation(this.batchScalingForm); // <-- INITIAL CALL
+
+    // 2. Subscribe to changes and use takeUntilDestroyed()
+    this.batchScalingFormControls.batchType.valueChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        startWith(this.batchScalingFormControls.batchType.value)
+      )
+      .subscribe(() => {
+        updateBatchScalingValidation(this.batchScalingForm);
+      });
+
+    // 3. Listen to stepper selection change
+    this.stepper()
+      ?.selectionChange.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        this.currentStep.set(event.selectedIndex);
+      });
+  }
 }

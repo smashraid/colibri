@@ -9,9 +9,9 @@ export interface CreateBlastRequest {
   intervalTime: number;
   listNameFormat: string;
   listDescriptionFormat: string;
-  iterableListId: number;
-  iterableTemplateId: number;
-  iterableSupressionId: number | null;
+  iterableListId: bigint;
+  iterableTemplateId: bigint;
+  iterableSupressionId: bigint | null;
   sendAt: string;
   status: number;
   createdBy: string;
