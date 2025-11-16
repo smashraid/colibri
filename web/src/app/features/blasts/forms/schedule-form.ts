@@ -1,20 +1,19 @@
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import moment from 'moment';
 
 export interface ScheduleFormValue {
   name: string;
   tags: string[] | null;
   intervalTime: number | null;
-  sendAtDate: moment.Moment | null;
-  sendAtTime: moment.Moment | null;
+  sendAtDate: Date | null;
+  sendAtTime: Date | null;
 }
 
 export interface ScheduleForm {
   name: FormControl<string>;
   tags: FormControl<string[] | null>;
   intervalTime: FormControl<number | null>;
-  sendAtDate: FormControl<moment.Moment | null>;
-  sendAtTime: FormControl<moment.Moment | null>;
+  sendAtDate: FormControl<Date | null>;
+  sendAtTime: FormControl<Date | null>;
 }
 
 export type ScheduleFormControls = ScheduleForm;

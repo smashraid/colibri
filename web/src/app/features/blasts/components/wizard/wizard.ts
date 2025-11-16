@@ -19,14 +19,19 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatTimepickerModule } from '@angular/material/timepicker';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import {
   MatAutocompleteModule,
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
 import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import {
   createTemplateForm,
   resetTemplateForm,
@@ -47,13 +52,29 @@ import { DatabaseService } from '../../../../core/services/database.service';
 import { SpinnerService } from '../../../../core/services/spinner.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { forkJoin, map, Observable, startWith, tap } from 'rxjs';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  forkJoin,
+  map,
+  Observable,
+  startWith,
+  tap,
+} from 'rxjs';
 import { TemplateDetailResponse } from '../../../../core/models/api/response/template';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CampaignListResponse } from '../../../../core/models/api/response/campaign-list';
 import { AppStore } from '../../../../app.store';
 import { MatChipGrid } from '@angular/material/chips';
 import { CreateBlastRequest } from '../../models/create-blast';
+import {
+  formatISO,
+  getHours,
+  getMinutes,
+  setHours,
+  setMinutes,
+  setSeconds,
+} from 'date-fns';
 
 interface Step {
   label: string;
@@ -75,6 +96,10 @@ interface Step {
     MatProgressBarModule,
     MatIconModule,
     MatCardModule,
+    MatChipsModule,
+    MatTimepickerModule,
+    MatDatepickerModule,
+    MatProgressSpinnerModule,
     AsyncPipe,
     JsonPipe,
   ],
@@ -103,6 +128,7 @@ export class Wizard implements OnInit, AfterViewInit {
 
   isLinear = true;
   currentStep = signal(0);
+  formDataJson: string = '';
 
   // Steps configuration
   steps: WritableSignal<Step[]> = signal([
@@ -139,6 +165,11 @@ export class Wizard implements OnInit, AfterViewInit {
   readonly batchScalingFormControls = this.batchScalingForm.controls;
   readonly scheduleFormControls: ScheduleFormControls =
     this.scheduleForm.controls;
+
+  readonly allTags: WritableSignal<string[]> = signal([]);
+  readonly filteredTags: WritableSignal<string[]> = signal([]);
+  tagKeywords: WritableSignal<string[]> = signal([]);
+  readonly separatorKeysCodes: number[] = [ENTER];
 
   templateListInfo$:
     | Observable<{ template: TemplateDetailResponse; size: bigint }>
@@ -197,49 +228,51 @@ export class Wizard implements OnInit, AfterViewInit {
     const scheduleData = this.scheduleForm.getRawValue();
 
     // Basic validation check
-    if (!templateData || !batchData || !scheduleData) {
+    if (
+      !templateData ||
+      !batchData ||
+      !scheduleData ||
+      scheduleData.sendAtDate ||
+      scheduleData.sendAtTime
+    ) {
       console.error('Cannot submit: Missing form data or template/list IDs.');
       return;
     }
 
-    // Combine date and time to create the ISO 8601 string for 'sendAt'
-    let sendAtString: string;
     if (scheduleData.sendAtDate && scheduleData.sendAtTime) {
-      const combinedDateTime = scheduleData.sendAtDate
-        .clone()
-        .hour(scheduleData.sendAtTime.hour())
-        .minute(scheduleData.sendAtTime.minute())
-        .second(0)
-        .format();
-      sendAtString = combinedDateTime;
-    } else {
-      console.error('Cannot submit: Send Date or Time is missing.');
-      return;
+      const hours = getHours(scheduleData.sendAtTime);
+      const minutes = getMinutes(scheduleData.sendAtTime);
+      let combinedDate = setHours(scheduleData.sendAtDate, hours);
+      combinedDate = setMinutes(combinedDate, minutes);
+      combinedDate = setSeconds(combinedDate, 0);
+
+      const sendAtISOString = formatISO(combinedDate);
+
+      // Combine date and time to create the ISO 8601 string for 'sendAt'
+
+      const payload: CreateBlastRequest = {
+        projectId: 1, // Placeholder value
+        name: scheduleData.name,
+        tags: scheduleData.tags,
+        batchSize: batchData.batchSize,
+        initialListSize: batchData.initialListSize,
+        growthPercentage: batchData.growthPercentage,
+        batchType: batchData.batchType!,
+        intervalTime: scheduleData.intervalTime!,
+        listNameFormat: `${scheduleData.name} Blast List {0}`,
+        listDescriptionFormat: `Blast List {0}`,
+        iterableListId: templateData.iterableListId?.id ?? BigInt(0),
+        iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
+        iterableSupressionId: templateData.iterableSupressionId,
+        sendAt: sendAtISOString,
+        status: 0, // Placeholder value
+        createdBy: 'User', // Placeholder value
+        createdDate: '', //scheduleData.sendAtDate + scheduleData.sendAtTime,
+      };
+
+      console.log('Final Payload:', payload);
+      this.store.startLoading();
     }
-
-    const payload: CreateBlastRequest = {
-      projectId: 1, // Placeholder value
-      name: scheduleData.name,
-      tags: scheduleData.tags,
-      batchSize: batchData.batchSize,
-      initialListSize: batchData.initialListSize,
-      growthPercentage: batchData.growthPercentage,
-      batchType: batchData.batchType!,
-      intervalTime: scheduleData.intervalTime!,
-      listNameFormat: `${scheduleData.name} Blast List {0}`,
-      listDescriptionFormat: `Blast List {0}`,
-      iterableListId: templateData.iterableListId?.id ?? BigInt(0),
-      iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
-      iterableSupressionId: templateData.iterableSupressionId,
-      sendAt: sendAtString,
-      status: 0, // Placeholder value
-      createdBy: 'User', // Placeholder value
-      createdDate: '', //scheduleData.sendAtDate + scheduleData.sendAtTime,
-    };
-
-    console.log('Final Payload:', payload);
-    this.store.startLoading();
-
     // Call the service to create the blast
     // this.iterableService
     //   .createBlast(payload)
@@ -350,7 +383,119 @@ export class Wizard implements OnInit, AfterViewInit {
     }
   }
 
-  ngOnInit(): void {}
+  removeTag(keyword: string) {
+    // 1. Remove the tag from the form control and the local chip display list
+    this.tagKeywords.update((keywords) => {
+      const index = keywords.indexOf(keyword);
+      if (index < 0) {
+        return keywords;
+      }
+      keywords.splice(index, 1);
+      this.announcer.announce(`removed ${keyword} from reactive form`);
+      // Update the form control manually since we are using signals for the chips
+      this.scheduleFormControls.tags.setValue([...keywords]);
+      return [...keywords];
+    });
+
+    // 2. Restore the tag to the filteredTags list (if it is an existing, non-deleted tag)
+    if (this.allTags().includes(keyword)) {
+      this.filteredTags.update((prev) => [...prev, keyword].sort());
+    }
+  }
+
+  // When ENTER or COMMA is pressed
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim().toUpperCase();
+
+    if (value) {
+      const currentTags = this.tagKeywords();
+
+      if (!currentTags.includes(value)) {
+        // 1. If the tag is NOT in the database (this.allTags()), add it to allTags
+        // This simulates adding a new tag to the database before adding it to the form
+        if (!this.allTags().includes(value)) {
+          this.allTags.update((prev) => [...prev, value].sort());
+          // IMPORTANT: Re-filter immediately after adding a new tag to allTags
+          this.filterTags(this.scheduleFormControls.tags.value || []);
+          console.log(
+            `New Tag Added: ${value}. Total unique tags: ${
+              this.allTags().length
+            }`
+          );
+        }
+
+        // 2. Add the tag to the selected chips (tagKeywords)
+        this.tagKeywords.update((keywords) => [...keywords, value]);
+        this.announcer.announce(`added ${value} to reactive form`);
+
+        // 3. Update the form control
+        this.scheduleFormControls.tags.setValue(this.tagKeywords());
+
+        // 4. Remove the added tag from the autocomplete list (filteredTags)
+        this.filteredTags.update((prev) => prev.filter((tag) => tag !== value));
+      }
+    }
+
+    // Clear the input value
+    event.chipInput!.clear();
+  }
+
+  // When an option is selected from the autocomplete dropdown
+  onSelectedTag(event: MatAutocompleteSelectedEvent): void {
+    const value = event.option.viewValue.toUpperCase();
+    const currentTags = this.tagKeywords();
+
+    if (value && !currentTags.includes(value)) {
+      // 1. Add the selected tag to the chips list (tagKeywords)
+      this.tagKeywords.update((keywords) => [...keywords, value]);
+      this.announcer.announce(`added ${value} to reactive form`);
+
+      // 2. Update the form control
+      this.scheduleFormControls.tags.setValue(this.tagKeywords());
+
+      // 3. Remove the selected tag from the autocomplete list (filteredTags)
+      this.filteredTags.update((prev) => prev.filter((tag) => tag !== value));
+    }
+    // Clear the input value is handled in the template: currentTag.value = ''
+  }
+
+  // Filtering function for the autocomplete input
+  filterTags(value: string | string[]): void {
+    const filterValue = (typeof value === 'string' ? value : '').toLowerCase();
+    const selectedTags = this.scheduleFormControls.tags.value || [];
+
+    this.filteredTags.set(
+      this.allTags()
+        .filter(
+          (tag) =>
+            tag.toLowerCase().includes(filterValue) &&
+            !selectedTags.includes(tag.toUpperCase()) // Exclude already selected tags
+        )
+        .sort()
+    );
+  }
+
+  ngOnInit(): void {
+    this.databaseService
+      .getTags()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tags) => {
+        this.allTags.set(tags);
+        this.filteredTags.set(tags);
+      });
+
+    this.databaseService
+      .getTags()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((tags) => {
+        this.allTags.set(tags);
+        this.filteredTags.set(tags);
+      });
+
+    this.scheduleForm.valueChanges.subscribe((value) => {
+      this.formDataJson = JSON.stringify(value, null, 2); // null, 2 for pretty printing
+    });
+  }
 
   ngAfterViewInit(): void {
     // 1. Initial setup based on the default value (which is now 1 in the form file)

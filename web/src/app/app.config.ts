@@ -50,6 +50,9 @@ import {
   ERROR_LOGGING_CONFIG,
   ErrorLoggingConfig,
 } from './core/interceptors/error-logging.config';
+import { DATE_FNS_PROVIDERS } from './core/providers/date-fns-provider';
+import { DateAdapter, MAT_DATE_LOCALE } from '@angular/material/core';
+import { CustomDateFnsAdapter } from './core/adapters/date-fns-adapter';
 
 export function loggerCallback(logLevel: LogLevel, message: string) {
   if (!environment.production) {
@@ -112,8 +115,9 @@ export const appConfig: ApplicationConfig = {
         paramsInheritanceStrategy: 'always',
       })
     ),
-    provideMomentDateAdapter(),
+    //provideMomentDateAdapter(),
     //provideNoopAnimations(),
+    ...DATE_FNS_PROVIDERS,
     provideHttpClient(
       withInterceptorsFromDi(),
       withInterceptors([errorLoggingInterceptor]),

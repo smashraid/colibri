@@ -230,7 +230,7 @@
                 </mat-radio-group>
                 @if (batchScalingFormControls.batchType.invalid) {
                 <mat-error>Batch Type is required</mat-error>
-                } {{ batchScalingFormControls.batchType.value| json}}
+                }
               </div>
 
               @if (batchScalingFormControls.batchType.value === 1) {
@@ -296,22 +296,146 @@
             class="wizard__label"
             [class.wizard__label--complete]="steps()[2].completed"
           >
-            Professional Information
+            {{steps()[2].label}}
           </p>
         </ng-template>
 
         <div class="step-content">
-          <div class="step-actions">
-            <button mat-button matStepperPrevious type="button">Back</button>
-            <button
-              mat-raised-button
-              color="primary"
-              matStepperNext
-              type="button"
-            >
-              Next
-            </button>
-          </div>
+          <form
+            id="scheduleForm"
+            name="scheduleForm"
+            [formGroup]="scheduleForm"
+          >
+            <p class="wizard__title">{{steps()[2].label}}</p>
+            <p class="wizard__subtitle">
+              Set the scheduling and tags for the blast.
+            </p>
+
+            <div class="form__container">
+              <div class="form-group">
+                <mat-form-field>
+                  <mat-label class="form-label">Campaign Name</mat-label>
+                  <input
+                    id="name"
+                    name="name"
+                    matInput
+                    placeholder="Name"
+                    formControlName="name"
+                    readonly
+                  />
+                </mat-form-field>
+              </div>
+
+              <div class="form-group">
+                <mat-form-field>
+                  <mat-label>Tags</mat-label>
+                  <mat-chip-grid
+                    #chipGrid
+                    aria-label="Enter tags"
+                    formControlName="tags"
+                  >
+                    @for (tag of tagKeywords(); track tag) {
+                    <mat-chip-row (removed)="removeTag(tag)">
+                      {{ tag }}
+                      <button
+                        matChipRemove
+                        [attr.aria-label]="'remove tag' + tag"
+                      >
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    </mat-chip-row>
+                    }
+                  </mat-chip-grid>
+                  <input
+                    id="currentTag"
+                    name="currentTag"
+                    #currentTag
+                    placeholder="Add a new tag..."
+                    [matChipInputFor]="chipGrid"
+                    [matAutocomplete]="autoTags"
+                    [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                    (matChipInputTokenEnd)="addTag($event)"
+                  />
+                  <mat-autocomplete
+                    #autoTags="matAutocomplete"
+                    (optionSelected)="onSelectedTag($event); currentTag.value = ''"
+                  >
+                    @for (tag of filteredTags(); track tag) {
+                    <mat-option [value]="tag">{{ tag }}</mat-option>
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group">
+                <mat-form-field>
+                  <mat-label>Start Date</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="datepicker"
+                    formControlName="sendAtDate"
+                  />
+                  <mat-datepicker #datepicker />
+                  <mat-datepicker-toggle [for]="datepicker" matSuffix />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label>Start Time (UTC)</mat-label>
+                  <input
+                    matInput
+                    [matTimepicker]="timepicker"
+                    formControlName="sendAtTime"
+                  />
+                  <mat-timepicker #timepicker />
+                  <mat-timepicker-toggle [for]="timepicker" matSuffix />
+                </mat-form-field>
+
+                @if (scheduleFormControls.sendAtDate.invalid &&
+                scheduleFormControls.sendAtDate.touched) {
+                <mat-error>Send Date is required</mat-error>
+                } @if (scheduleFormControls.sendAtTime.invalid &&
+                scheduleFormControls.sendAtTime.touched) {
+                <mat-error>Send Time is required</mat-error>
+                }
+              </div>
+
+              <div class="form-group">
+                <mat-form-field>
+                  <mat-label class="form-label">Interval</mat-label>
+                  <input
+                    id="intervalTime"
+                    name="intervalTime"
+                    matInput
+                    placeholder="Size"
+                    formControlName="intervalTime"
+                    required
+                    appTimeFormat
+                  />
+                  @if (scheduleFormControls.intervalTime.invalid &&
+                  scheduleFormControls.intervalTime.touched) {
+                  <mat-error>Interval is required</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+              <div>
+                <h3>Form Data as JSON:</h3>
+                <pre><code>{{ formDataJson }}</code></pre>
+              </div>
+              <div class="step-actions">
+                <button mat-button matStepperPrevious type="button">
+                  Back
+                </button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  matStepperNext
+                  type="button"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </mat-step>
 
