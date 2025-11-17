@@ -17,7 +17,7 @@ $breakpoints: (
   // 1024px
   xl: 80rem,
   // 1280px
-  xxl: 96rem // 1536px (Renamed from 2xl),,
+  xxl: 96rem // 1536px (Renamed from 2xl),
 );
 
 // Define the container sizes (keys correspond to CSS variable suffixes)
@@ -34,7 +34,7 @@ $container-sizes: (
   6xl: var(--container-6xl),
   7xl: var(--container-7xl),
   8xl: var(--container-8xl),
-  full: 100% // Add a full width utility,,
+  full: 100% // Add a full width utility,
 );
 
 // Define the grid system constants
@@ -177,11 +177,11 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
         // Calculate width using math.div()
         $width: math.div($i, $grid-columns) * 100%;
 
-        // *** FIX: Added flex-grow: 0 and flex-shrink: 0 ***
+        // Fix: Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
+        // overriding the default .col's flex-grow: 1 when the breakpoint is hit.
+        // Source order will ensure this wins over the generic .col class.
         .#{$bp-name}\:col-#{$i} {
-          flex-grow: 0;
-          flex-shrink: 0;
-          flex-basis: $width;
+          flex: 0 0 $width;
           max-width: $width;
         }
       }
@@ -190,24 +190,10 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 }
 
 // -----------------------------------------------------------------------------
-// 5. BASE GRID CLASSES
+// 5. BASE GRID CLASSES (ORDER IS CRUCIAL FOR SPECIFICITY)
 // -----------------------------------------------------------------------------
 
-// Add non-responsive base column classes (for fixed col-X widths)
-@for $i from 1 through $grid-columns {
-  // Calculate width using math.div()
-  $width: math.div($i, $grid-columns) * 100%;
-
-  // *** FIX: Added flex-grow: 0 and flex-shrink: 0 ***
-  .col-#{$i} {
-    flex-grow: 0;
-    flex-shrink: 0;
-    flex-basis: $width;
-    max-width: $width;
-  }
-}
-
-// Essential base classes for the grid system
+// 5.1 Generic Row and Column Definitions (Must be defined first)
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -216,16 +202,15 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
   margin-left: -0.5rem;
 }
 
-// Default .col class: Equal width, non-shrinking column.
+// Default .col class: Equal width, non-shrinking column. (Mobile Default - flex-grow: 1)
 .col {
   flex: 1 0 0;
 }
 
 // You need a class to apply padding to the columns for the gutter effect
-// This applies half the gutter width to the left and right of the column
 .col-padding {
-  padding-right: 0.5rem; // half of $grid-gutter-width (1rem)
-  padding-left: 0.5rem; // half of $grid-gutter-width (1rem)
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
 }
 
 // Utility to set flex-direction to column for stacking rows on mobile
@@ -237,5 +222,18 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 @include sm {
   .sm\:flex-row {
     flex-direction: row;
+  }
+}
+
+// 5.2 Fixed Width Column Definitions (Must be defined after .col to win the tie)
+@for $i from 1 through $grid-columns {
+  // Calculate width using math.div()
+  $width: math.div($i, $grid-columns) * 100%;
+
+  // Fix: Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
+  // overriding the default .col's flex-grow: 1.
+  .col-#{$i} {
+    flex: 0 0 $width;
+    max-width: $width;
   }
 }
