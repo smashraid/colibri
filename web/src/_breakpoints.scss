@@ -17,29 +17,42 @@ $breakpoints: (
   // 1024px
   xl: 80rem,
   // 1280px
-  xxl: 96rem // 1536px (Renamed from 2xl),
+  xxl: 96rem // 1536px,,
 );
 
-// Define the container sizes (keys correspond to CSS variable suffixes)
+// Define detailed max-width values for general utility generation (3xs to 7xl)
 $container-sizes: (
-  xs: var(--container-xs),
-  sm: var(--container-sm),
-  md: var(--container-md),
-  lg: var(--container-lg),
-  xl: var(--container-xl),
-  2xl: var(--container-2xl),
-  3xl: var(--container-3xl),
-  4xl: var(--container-4xl),
-  5xl: var(--container-5xl),
-  6xl: var(--container-6xl),
-  7xl: var(--container-7xl),
-  8xl: var(--container-8xl),
-  full: 100% // Add a full width utility,
+  3xs: 16rem,
+  // 256px
+  2xs: 20rem,
+  // 320px
+  xs: 24rem,
+  // 384px
+  sm: 28rem,
+  // 448px
+  md: 32rem,
+  // 512px
+  lg: 36rem,
+  // 576px
+  xl: 42rem,
+  // 672px
+  2xl: 48rem,
+  // 768px
+  3xl: 56rem,
+  // 896px
+  4xl: 64rem,
+  // 1024px
+  5xl: 72rem,
+  // 1152px
+  6xl: 80rem,
+  // 1280px
+  7xl: 90rem // 1440px,,
 );
 
 // Define the grid system constants
 $grid-columns: 12;
-$grid-gutter-width: 1rem; // Total width for margin on both sides of a column
+// Used for the default .container's max-width calculation and general column padding
+$grid-gutter-width: 1rem;
 
 // -----------------------------------------------------------------------------
 // 2. CORE MIXINS
@@ -57,7 +70,7 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
   }
 }
 
-// Convenience mixins (manually defined for static Sass compilation)
+// Convenience mixins
 @mixin sm {
   @include breakpoint(sm) {
     @content;
@@ -91,6 +104,7 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 /**
  * @mixin container-class-styles
  * Generates the structural .container class and its responsive max-width rules.
+ * Max-width is calculated as: Breakpoint Width - $grid-gutter-width.
  */
 @mixin container-class-styles {
   .container {
@@ -103,30 +117,15 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
     padding-left: 1rem;
 
     // --- Responsive Max-Widths ---
+    @each $bp-name, $bp-value in $breakpoints {
+      // Calculate max-width as the breakpoint value minus the gutter.
+      $calculated-max-width: math.div($bp-value, 1rem) *
+        1rem -
+        $grid-gutter-width;
 
-    // Small screens and up
-    @include sm {
-      max-width: var(--container-md);
-    }
-
-    // Medium screens and up
-    @include md {
-      max-width: var(--container-lg);
-    }
-
-    // Large screens and up
-    @include lg {
-      max-width: var(--container-5xl);
-    }
-
-    // X-Large screens and up
-    @include xl {
-      max-width: var(--container-6xl);
-    }
-
-    // 2X-Large screens and up
-    @include xxl {
-      max-width: var(--container-7xl);
+      @include breakpoint($bp-name) {
+        max-width: $calculated-max-width;
+      }
     }
   }
 }
@@ -135,10 +134,13 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 // 4. UTILITY GENERATION MIXINS
 // -----------------------------------------------------------------------------
 
-// Generates utility classes like: .max-w-md
+/**
+ * @mixin generate-max-width-utilities
+ * Generates ALL non-responsive max-w utility classes based on $container-sizes.
+ */
 @mixin generate-max-width-utilities() {
+  // Loop through ALL defined container sizes (3xs through 7xl)
   @each $name, $value in $container-sizes {
-    // Generates a helper class based on the container size, e.g., .max-w-md
     .max-w-#{$name} {
       max-width: $value;
     }
@@ -147,7 +149,8 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 
 /**
  * @mixin generate-responsive-max-width-utilities
- * Generates utility classes like: .sm\:max-w-md, .lg\:max-w-xl
+ * Generates utility classes like: .sm\:max-w-md, .lg\:max-w-xl, etc.
+ * This is where your requested 'md:max-w-lg' class is created.
  */
 @mixin generate-responsive-max-width-utilities() {
   // Loop through all defined breakpoints (sm, md, lg, xl, xxl)
@@ -165,7 +168,6 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 
 /**
  * @mixin generate-grid-utilities
- *
  * Generates responsive grid column classes (e.g., .sm\:col-4, .lg\:col-9).
  */
 @mixin generate-grid-utilities() {
@@ -179,7 +181,6 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 
         // Fix: Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
         // overriding the default .col's flex-grow: 1 when the breakpoint is hit.
-        // Source order will ensure this wins over the generic .col class.
         .#{$bp-name}\:col-#{$i} {
           flex: 0 0 $width;
           max-width: $width;
@@ -203,6 +204,7 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
 }
 
 // Default .col class: Equal width, non-shrinking column. (Mobile Default - flex-grow: 1)
+// This rule is defined first.
 .col {
   flex: 1 0 0;
 }
@@ -225,13 +227,12 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
   }
 }
 
-// 5.2 Fixed Width Column Definitions (Must be defined after .col to win the tie)
+// 5.2 Fixed Width Column Definitions (Must be defined after .col to win the tie without !important)
 @for $i from 1 through $grid-columns {
   // Calculate width using math.div()
   $width: math.div($i, $grid-columns) * 100%;
 
-  // Fix: Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
-  // overriding the default .col's flex-grow: 1.
+  // This rule is defined later, and sets flex-grow to 0, overriding the generic .col's flex-grow: 1.
   .col-#{$i} {
     flex: 0 0 $width;
     max-width: $width;
