@@ -17,7 +17,7 @@ $breakpoints: (
   // 1024px
   xl: 80rem,
   // 1280px
-  xxl: 96rem // 1536px,,
+  xxl: 96rem // 1536px,
 );
 
 // Define detailed max-width values for general utility generation (3xs to 7xl)
@@ -46,7 +46,7 @@ $container-sizes: (
   // 1152px
   6xl: 80rem,
   // 1280px
-  7xl: 90rem // 1440px,,
+  7xl: 90rem // 1440px,
 );
 
 // Define the grid system constants
@@ -167,10 +167,8 @@ $grid-gutter-width: 1rem;
 /**
  * @mixin generate-generic-column-classes
  * Generates the structural .row and generic .col classes.
- * This should be placed at the start of the final output block.
  */
 @mixin generate-generic-column-classes() {
-  // 5.1 Generic Row and Column Definitions (Must be defined first)
   .row {
     display: flex;
     flex-wrap: wrap;
@@ -192,6 +190,25 @@ $grid-gutter-width: 1rem;
 }
 
 /**
+ * @mixin generate-flex-direction-utilities
+ * Generates the base flex-col and responsive flex-row utilities.
+ */
+@mixin generate-flex-direction-utilities() {
+  // Default for Mobile (non-responsive)
+  .flex-col {
+    flex-direction: column;
+  }
+
+  // Responsive utility to switch to row at the 'sm' breakpoint and up
+  @include sm {
+    // Escaping the colon for the final CSS class name: .sm\:flex-row
+    .sm\:flex-row {
+      flex-direction: row;
+    }
+  }
+}
+
+/**
  * @mixin generate-grid-utilities
  * Generates responsive grid column classes (e.g., .sm\:col-4, .lg\:col-9).
  */
@@ -204,7 +221,7 @@ $grid-gutter-width: 1rem;
         // Calculate width using math.div()
         $width: math.div($i, $grid-columns) * 100%;
 
-        // Fix: Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
+        // Use flex shorthand (flex: 0 0 width) to explicitly set flex-grow to 0,
         // overriding the default .col's flex-grow: 1 when the breakpoint is hit.
         .#{$bp-name}\:col-#{$i} {
           flex: 0 0 $width;
@@ -215,30 +232,19 @@ $grid-gutter-width: 1rem;
   }
 }
 
-// -----------------------------------------------------------------------------
-// 5. BASE GRID AND UTILITY IMPLEMENTATION
-// -----------------------------------------------------------------------------
+/**
+ * @mixin generate-fixed-column-classes
+ * Generates the non-responsive fixed width columns (.col-1 to .col-12).
+ * These must be defined AFTER the generic .col class to ensure specificity.
+ */
+@mixin generate-fixed-column-classes() {
+  @for $i from 1 through $grid-columns {
+    // Calculate width using math.div()
+    $width: math.div($i, $grid-columns) * 100%;
 
-// 5.1 Generic Flex Utilities
-.flex-col {
-  flex-direction: column;
-}
-
-// Responsive utility to switch to row at a breakpoint
-@include sm {
-  .sm\:flex-row {
-    flex-direction: row;
-  }
-}
-
-// 5.2 Fixed Width Column Definitions (These must appear AFTER .col in the final CSS)
-@for $i from 1 through $grid-columns {
-  // Calculate width using math.div()
-  $width: math.div($i, $grid-columns) * 100%;
-
-  // This rule is defined later, and sets flex-grow to 0, overriding the generic .col's flex-grow: 1.
-  .col-#{$i} {
-    flex: 0 0 $width;
-    max-width: $width;
+    .col-#{$i} {
+      flex: 0 0 $width;
+      max-width: $width;
+    }
   }
 }

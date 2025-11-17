@@ -1,4 +1,4 @@
-<div class="wizard">
+<div class="wizard lg:max-w-2xl">
   <p class="wizard__step-indicator">
     Step {{ currentStepNumber() }} of {{ steps().length }} : {{
     currentStepTitle() }}
@@ -43,11 +43,11 @@
           >
             <p class="wizard__title">{{steps()[0].label}}</p>
             <p class="wizard__subtitle">Validate your template information.</p>
-            <div class="row">
+            <div class="row flex-col sm:flex-row">
               <div class="col sm:col-5">
-                <div class="form-group">
-                  <mat-form-field>
-                    <mat-label class="form-label">Template Id</mat-label>
+                <div class="form__group">
+                  <mat-form-field class="form__control">
+                    <mat-label class="form__label">Template Id</mat-label>
                     <input
                       id="iterableTemplateId"
                       name="iterableTemplateId"
@@ -61,9 +61,9 @@
                     }
                   </mat-form-field>
                 </div>
-                <div class="form-group">
-                  <mat-form-field>
-                    <mat-label class="form-label">Email List</mat-label>
+                <div class="form__group">
+                  <mat-form-field class="form__control">
+                    <mat-label class="form__label">Email List</mat-label>
                     <input
                       type="text"
                       matInput
@@ -93,9 +93,9 @@
                     }
                   </mat-form-field>
                 </div>
-                <div class="form-group">
-                  <mat-form-field>
-                    <mat-label class="form-label">Supression List</mat-label>
+                <div class="form__group">
+                  <mat-form-field class="form__control">
+                    <mat-label class="form__label">Supression List</mat-label>
                     <input
                       id="iterableSupressionId"
                       name="iterableSupressionId"
@@ -105,7 +105,7 @@
                     />
                   </mat-form-field>
                 </div>
-                <div class="form-group">
+                <div class="form__group">
                   <button
                     mat-fab
                     extended
@@ -121,7 +121,7 @@
 
               @let templateInfo = templateListInfo$ | async;
 
-              <div class="col sm:col-7 wizard__template">
+              <div class="col sm:col-7">
                 @if (templateInfo) {
                 <mat-card appearance="raised" class="wizard__card--template">
                   <mat-card-header class="col">
@@ -229,10 +229,16 @@
             <div class="form__container">
               <!-- batch-scaling-form content -->
               <div class="form__control">
-                <label class="form-label">Batch Type</label>
-                <mat-radio-group formControlName="batchType" required>
+                <label class="form__label" for="batchType">Batch Type</label>
+                <mat-radio-group
+                  id="batchType"
+                  name="batchType"
+                  formControlName="batchType"
+                  class="form__radio row"
+                  required
+                >
                   @for (batch of batchOptions; track batch.value) {
-                  <mat-radio-button [value]="batch.value"
+                  <mat-radio-button [value]="batch.value" class="col"
                     >{{batch.name}}</mat-radio-button
                   >
                   }
@@ -244,7 +250,7 @@
 
               @if (batchScalingFormControls.batchType.value === 1) {
               <mat-form-field class="form__control">
-                <mat-label class="form-label">Batch Size</mat-label>
+                <mat-label class="form__label">Batch Size</mat-label>
                 <input
                   matInput
                   type="number"
@@ -257,7 +263,7 @@
               </mat-form-field>
               } @if (batchScalingFormControls.batchType.value === 2) {
               <mat-form-field class="form__control">
-                <mat-label class="form-label">Initial List Size</mat-label>
+                <mat-label class="form__label">Initial List Size</mat-label>
                 <input
                   matInput
                   type="number"
@@ -269,7 +275,7 @@
                 }
               </mat-form-field>
               <mat-form-field class="form__control">
-                <mat-label class="form-label">Growth Percentage</mat-label>
+                <mat-label class="form__label">Growth Percentage</mat-label>
                 <input
                   matInput
                   type="number"
@@ -321,9 +327,9 @@
             </p>
 
             <div class="form__container">
-              <div class="form-group">
-                <mat-form-field>
-                  <mat-label class="form-label">Campaign Name</mat-label>
+              <div class="form__group">
+                <mat-form-field class="form__control">
+                  <mat-label class="form__label">Campaign Name</mat-label>
                   <input
                     id="name"
                     name="name"
@@ -335,8 +341,8 @@
                 </mat-form-field>
               </div>
 
-              <div class="form-group">
-                <mat-form-field>
+              <div class="form__group">
+                <mat-form-field class="form__control">
                   <mat-label>Tags</mat-label>
                   <mat-chip-grid
                     #chipGrid
@@ -376,8 +382,8 @@
                 </mat-form-field>
               </div>
 
-              <div class="form-group">
-                <mat-form-field>
+              <div class="form__group">
+                <mat-form-field class="form__control">
                   <mat-label>Start Date</mat-label>
                   <input
                     matInput
@@ -394,8 +400,8 @@
                 <mat-error>Send Date is required</mat-error>
                 }
               </div>
-              <div class="form-group">
-                <mat-form-field>
+              <div class="form__group">
+                <mat-form-field class="form__control">
                   <mat-label>Start Time (UTC)</mat-label>
                   <input
                     matInput
@@ -412,9 +418,9 @@
                 }
               </div>
 
-              <div class="form-group">
-                <mat-form-field>
-                  <mat-label class="form-label">Interval</mat-label>
+              <div class="form__group">
+                <mat-form-field class="form__control">
+                  <mat-label class="form__label">Interval</mat-label>
                   <input
                     id="intervalTime"
                     name="intervalTime"

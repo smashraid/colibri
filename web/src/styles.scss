@@ -88,10 +88,12 @@ body {
   }
 }
 
-@include bp.generate-generic-column-classes();
 @include bp.container-class-styles;
+@include bp.generate-generic-column-classes();
+@include bp.generate-flex-direction-utilities();
 @include bp.generate-max-width-utilities();
 @include bp.generate-responsive-max-width-utilities();
+@include bp.generate-fixed-column-classes();
 @include bp.generate-grid-utilities();
 
 .container {

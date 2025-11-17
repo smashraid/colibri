@@ -1,5 +1,6 @@
 @use "@angular/material" as mat;
 @use "../../../../../breakpoints" as bp;
+@use "../../../../../form" as f;
 
 .wizard {
   margin: 0 auto;
@@ -23,17 +24,17 @@
     )
   );
 
-  &__template {
-    padding-top: calc(var(--spacing) * 4);
-
-    @include bp.md {
-      padding-top: 0;
-    }
-  }
+  @include f.form-base-styles();
 
   &__card {
     //box-shadow: (var(--mat-sys-level4));
     &--template {
+      padding-top: calc(var(--spacing) * 4);
+
+      @include bp.md {
+        padding-top: 0;
+      }
+
       @include mat.card-overrides(
         (
           elevated-container-shape: 1rem,
