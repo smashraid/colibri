@@ -6,6 +6,10 @@
 @use "breakpoints" as bp;
 @use "grid" as g;
 
+@forward "variables";
+@forward "functions";
+@forward "breakpoints";
+
 html {
   color-scheme: light dark;
   @include mat.theme(
@@ -84,17 +88,19 @@ body {
   }
 }
 
+@include bp.container-class-styles;
+@include bp.generate-grid-utilities();
+@include bp.generate-max-width-utilities();
+@include bp.generate-responsive-max-width-utilities();
+
 .container {
-  margin-top: calc(var(--spacing) * 24);
-  @include bp.container;
+  margin-top: calc(var(--spacing) * 30);
 }
 
 .container-fluid {
   width: 100%;
   padding-inline: calc(var(--spacing) * 4);
 }
-
-@include g.generate-grid;
 
 .mr-8 {
   margin-right: 0.5rem;

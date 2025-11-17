@@ -30,14 +30,19 @@ import {
   MatAutocompleteModule,
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
-import { STEPPER_GLOBAL_OPTIONS } from '@angular/cdk/stepper';
+import {
+  STEPPER_GLOBAL_OPTIONS,
+  StepperSelectionEvent,
+} from '@angular/cdk/stepper';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import {
   createTemplateForm,
   resetTemplateForm,
   TemplateFormControls,
+  TemplateFormValue,
 } from '../../forms/template-form';
 import {
+  BatchScalingFormValue,
   createBatchScalingForm,
   resetBatchScalingForm,
   updateBatchScalingValidation,
@@ -46,6 +51,7 @@ import {
   createScheduleForm,
   resetScheduleForm,
   ScheduleFormControls,
+  ScheduleFormValue,
 } from '../../forms/schedule-form';
 import { IterableService } from '../../../../core/services/iterable.service';
 import { DatabaseService } from '../../../../core/services/database.service';
@@ -71,6 +77,7 @@ import {
   formatISO,
   getHours,
   getMinutes,
+  getSeconds,
   setHours,
   setMinutes,
   setSeconds,
@@ -78,10 +85,10 @@ import {
 import { TimeFormatDirective } from '../../../../shared/directives/time-format.directive';
 import { timeFormatToMinutes } from '../../../../shared/validators/timeFormat';
 
-interface Step {
+interface WizardStep {
   label: string;
+  stepName: string; // Used for currentStepTitle()
   completed: boolean;
-  form: any;
 }
 
 @Component({
@@ -117,10 +124,8 @@ interface Step {
   styleUrl: './wizard.scss',
 })
 export class Wizard implements OnInit, AfterViewInit {
-  // @ViewChild() stepper!: MatStepper;
-  // @ViewChild() chipGrid!: MatChipGrid;
-  stepper = viewChild<MatStepper>('stepper');
-  chipGrid = viewChild<MatChipGrid>('chipGrid');
+  stepper = viewChild.required<MatStepper>('stepper');
+  chipGrid = viewChild.required<MatChipGrid>('chipGrid');
 
   private iterableService = inject(IterableService);
   private databaseService = inject(DatabaseService);
@@ -132,15 +137,13 @@ export class Wizard implements OnInit, AfterViewInit {
 
   isLinear = true;
   currentStep = signal(0);
-  formDataJson: string = '';
 
-  // Steps configuration
-  steps: WritableSignal<Step[]> = signal([
-    { label: 'Template Information', completed: false, form: 'templateForm' },
-    { label: 'Batch Scaling', completed: false, form: 'batchScalingForm' },
-    { label: 'Schedule', completed: false, form: 'scheduleForm' },
-    { label: 'Review', completed: false, form: 'review' },
-    { label: 'Complete', completed: false, form: 'completedFlow' },
+  readonly steps: WritableSignal<WizardStep[]> = signal([
+    { label: 'Template', stepName: 'Template & List', completed: false },
+    { label: 'Batch Scaling', stepName: 'Batch Scaling', completed: false },
+    { label: 'Schedule', stepName: 'Schedule', completed: false },
+    { label: 'Review', stepName: 'Review', completed: false },
+    { label: 'Confirmation', stepName: 'Confirmation', completed: false },
   ]);
 
   readonly batchOptions = [
@@ -154,10 +157,19 @@ export class Wizard implements OnInit, AfterViewInit {
     },
   ];
 
-  currentStepTitle = computed(() => this.steps()[this.currentStep()].label);
-  currentStepNumber = computed(() => this.currentStep() + 1);
-  progressValue = computed(
-    () => (this.currentStep() / (this.steps().length - 1)) * 100
+  progressValue: WritableSignal<number> = signal(0);
+
+  // Current step index from stepper (used for display)
+  currentStepIndex: WritableSignal<number> = signal(0);
+
+  // Computed property for the step display (1-based)
+  currentStepNumber: Signal<number> = computed(
+    () => this.currentStepIndex() + 1
+  );
+
+  // Computed property for the title display
+  currentStepTitle: Signal<string> = computed(
+    () => this.steps()[this.currentStepIndex()].stepName
   );
 
   // Form groups
@@ -176,6 +188,8 @@ export class Wizard implements OnInit, AfterViewInit {
   tagKeywords: WritableSignal<string[]> = signal([]);
   readonly separatorKeysCodes: number[] = [ENTER];
 
+  templateInfoValidated: WritableSignal<boolean> = signal(false);
+
   templateListInfo$:
     | Observable<{ template: TemplateDetailResponse; size: bigint }>
     | undefined;
@@ -187,10 +201,24 @@ export class Wizard implements OnInit, AfterViewInit {
     { initialValue: [] }
   );
 
+  readonly sendAt: Signal<string | null> = computed(() => {
+    const date = this.scheduleFormControls.sendAtDate.value;
+    const time = this.scheduleFormControls.sendAtTime.value;
+
+    if (date && time) {
+      let combinedDate = new Date(date);
+      combinedDate = setHours(combinedDate, getHours(time));
+      combinedDate = setMinutes(combinedDate, getMinutes(time));
+      combinedDate = setSeconds(combinedDate, getSeconds(time));
+      return combinedDate.toISOString();
+    }
+
+    return null;
+  });
+
   private iterableListIdValueChanges = toSignal(
     this.templateFormControls.iterableListId.valueChanges.pipe(
       startWith(this.templateFormControls.iterableListId.value),
-      // 💡 Map the value to the string name for filtering, or keep it as null/object
       map((value) => {
         if (typeof value === 'string') return value;
         if (value && typeof value === 'object') return value.name;
@@ -215,109 +243,81 @@ export class Wizard implements OnInit, AfterViewInit {
 
   onListOptionSelected(event: MatAutocompleteSelectedEvent): void {
     const selectedList = event.option.value as CampaignListResponse;
-
-    // 🟢 Set the value to the full OBJECT. The form control now holds the correct object type.
     this.templateFormControls.iterableListId.setValue(selectedList, {
       emitEvent: true,
     });
   }
 
-  // Your existing displayFn, which works for the object:
   displayIterableCampaignListFn(list: CampaignListResponse | null): string {
     return list && list.name ? list.name : '';
   }
 
   submitForm(): void {
-    const templateData = this.templateForm.getRawValue();
-    const batchData = this.batchScalingForm.getRawValue();
-    const scheduleData = this.scheduleForm.getRawValue();
-    const sendAtDateTimeString = this.combinedSendAtDateTime();
+    const sendAtDateTimeString = this.sendAt();
 
-    // Basic validation check
-    if (!templateData || !batchData || !scheduleData || !sendAtDateTimeString) {
+    if (
+      this.templateForm.invalid ||
+      this.batchScalingForm.invalid ||
+      this.scheduleForm.invalid ||
+      !sendAtDateTimeString
+    ) {
       console.error('Cannot submit: Missing form data or template/list IDs.');
       return;
     }
 
-    // Combine date and time to create the ISO 8601 string for 'sendAt'
+    const templateValues: TemplateFormValue = this.templateForm.getRawValue();
+    const batchScalingValues: BatchScalingFormValue =
+      this.batchScalingForm.getRawValue();
+    const scheduleValues: ScheduleFormValue = this.scheduleForm.getRawValue();
 
-    const payload: CreateBlastRequest = {
-      projectId: this.store.projectId(), // Placeholder value
-      name: scheduleData.name,
-      tags: scheduleData.tags,
-      batchSize: batchData.batchSize,
-      initialListSize: batchData.initialListSize,
-      growthPercentage: batchData.growthPercentage,
-      batchType: batchData.batchType!,
-      intervalTime: timeFormatToMinutes(scheduleData.intervalTime!),
-      listNameFormat: `${scheduleData.name} Blast List {0}`,
+    const request: CreateBlastRequest = {
+      projectId: this.store.projectId(),
+      name: scheduleValues.name,
+      tags: scheduleValues.tags,
+      batchSize: batchScalingValues.batchSize,
+      initialListSize: batchScalingValues.initialListSize,
+      growthPercentage: batchScalingValues.growthPercentage,
+      batchType: batchScalingValues.batchType!,
+      intervalTime: timeFormatToMinutes(scheduleValues.intervalTime!),
+      listNameFormat: `${scheduleValues.name} Blast List {0}`,
       listDescriptionFormat: `Blast List {0}`,
-      iterableListId: templateData.iterableListId?.id ?? BigInt(0),
-      iterableTemplateId: templateData.iterableTemplateId ?? BigInt(0),
-      iterableSupressionId: templateData.iterableSupressionId,
+      iterableListId: templateValues.iterableListId?.id ?? BigInt(0),
+      iterableTemplateId: templateValues.iterableTemplateId ?? BigInt(0),
+      iterableSupressionId: templateValues.iterableSupressionId,
       sendAt: sendAtDateTimeString,
-      status: 0, // Placeholder value
-      createdBy: 'User', // Placeholder value
+      status: 0,
+      createdBy: this.store.useremail(),
       createdDate: new Date().toISOString(),
     };
 
-    console.log('Final Payload:', payload);
+    console.log('Final Payload:', request);
+
+    this.stepper().next();
     this.store.startLoading();
 
-    this.stepper()?.next();
-    this.steps.update((steps) => {
-      steps[3].completed = true;
-      steps[4].completed = true;
-      return steps;
-    });
-
-    // Call the service to create the blast
-    // this.iterableService
-    //   .createBlast(payload)
-    //   .pipe(
-    //     tapResponse({
-    //       next: (response) => {
-    //         console.log('Blast created successfully:', response);
-    //         this.lastSubmitError.set(null);
-    //         this.steps.update((steps) =>
-    //           steps.map((step, index) => ({
-    //             ...step,
-    //             completed:
-    //               index === this.stepper.selectedIndex ? true : step.completed,
-    //           }))
-    //         );
-    //         this.stepper.next(); // Go to Confirmation step
-    //       },
-    //       error: (error) => {
-    //         console.error('Blast creation failed:', error);
-    //         this.lastSubmitError.set(
-    //           'Failed to create blast. Please check the console for details.'
-    //         );
-    //       },
-    //     }),
-    //     take(1),
-    //     finalize(() => this.isLoading.set(false)),
-    //     takeUntilDestroyed(this.destroyRef)
-    //   )
-    //   .subscribe();
+    this.databaseService
+      .postBlast(request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (id) => {
+          console.log('postBlast', id);
+          this.stepper().next();
+        },
+        error: (err) => {
+          this.store.stopLoading();
+        },
+        complete: () => this.store.stopLoading(),
+      });
   }
 
-  resetStepper(): void {
-    this.stepper()?.reset();
+  resetStepper() {
+    this.stepper().reset();
     resetTemplateForm(this.templateForm);
     resetBatchScalingForm(this.batchScalingForm);
     resetScheduleForm(this.scheduleForm);
-    this.steps.update((prev) =>
-      prev.map((step) => {
-        return {
-          ...step,
-          completed: !step.completed,
-        };
-      })
-    );
-    //this.templateListInfo$.set(null);
-    this.previewHtml.set('');
-    this.previewUrl.set('');
+    this.templateInfoValidated.set(false);
+    this.progressValue.set(0);
+    this.steps.set(this.steps().map((s) => ({ ...s, completed: false })));
   }
 
   sanitizedHtml(htmlString: string): SafeHtml {
@@ -328,28 +328,18 @@ export class Wizard implements OnInit, AfterViewInit {
     return URL.createObjectURL(new Blob([htmlString], { type: 'text/html' }));
   }
 
-  private getNumericListId(value: CampaignListResponse | null): bigint | null {
-    // If the control holds a valid object, return its ID
-    return value && typeof value === 'object' ? BigInt(value.id) : null;
-  }
-
   getTemplateListInfo(): void {
     const templateId = this.templateFormControls.iterableTemplateId.value;
-    const listObject = this.templateFormControls.iterableListId.value;
-    const listId = this.getNumericListId(listObject);
+    const listId = this.templateFormControls.iterableListId.value;
 
     if (templateId && listId) {
-      // 1. Combine the two API calls with forkJoin
       const requests = forkJoin({
         template: this.iterableService.getTemplateById(templateId),
-        size: this.iterableService.getListSize(listId),
+        size: this.iterableService.getListSize(listId.id),
       });
 
-      // 2. Subscribe to the combined result and perform all side effects in a single stream
       this.templateListInfo$ = requests.pipe(
-        // Using 'tap' is cleaner for side effects like updating state/form
         tap(({ template, size }) => {
-          // A. Update the local signal/state for the preview
           this.previewHtml.set(this.sanitizedHtml(template.html));
           this.previewUrl.set(this.sanitizedUrl(template.html));
 
@@ -357,36 +347,20 @@ export class Wizard implements OnInit, AfterViewInit {
             name: template.name,
           });
 
-          // B. Patch the form with data from both results
-          // this.templateForm.patchValue({
-          //   campaignName: template.name, // From the template result
-          //   totalCount: size, // From the list size result
-          // });
+          this.templateInfoValidated.set(true);
+
+          //this.stepper().next();
         })
-        // 3. (Optional) If you need to map or return the result for further chaining
-        // map(({ template, size }) => ({ template, size }))
       );
-
-      // 4. (Required if you only used forkJoin to update state and need to kick off the subscription)
-      // If you need to actually subscribe and fetch the data immediately, you need to subscribe.
-      // If you bind 'this.templateListInfo$' in the template with the 'async' pipe,
-      // you don't need the explicit subscribe().
-      // If you subscribe, remember to manage the subscription to prevent memory leaks.
-
-      /* Example if you need an immediate subscription:
-    this.templateListInfo$.subscribe({
-      next: (data) => console.log('Info fetched:', data),
-      error: (err) => console.error('Fetch failed', err)
-    });
-    */
     } else {
-      // Optional: handle the case where IDs are missing, e.g., clear state/form values
-      // this.preview.set('');
+      this.previewUrl.set('');
+      this.previewHtml.set('');
+      console.error('Template or List ID is missing or invalid.');
+      this.templateInfoValidated.set(false);
     }
   }
 
   removeTag(keyword: string) {
-    // 1. Remove the tag from the form control and the local chip display list
     this.tagKeywords.update((keywords) => {
       const index = keywords.indexOf(keyword);
       if (index < 0) {
@@ -394,18 +368,15 @@ export class Wizard implements OnInit, AfterViewInit {
       }
       keywords.splice(index, 1);
       this.announcer.announce(`removed ${keyword} from reactive form`);
-      // Update the form control manually since we are using signals for the chips
       this.scheduleFormControls.tags.setValue([...keywords]);
       return [...keywords];
     });
 
-    // 2. Restore the tag to the filteredTags list (if it is an existing, non-deleted tag)
     if (this.allTags().includes(keyword)) {
       this.filteredTags.update((prev) => [...prev, keyword].sort());
     }
   }
 
-  // When ENTER or COMMA is pressed
   addTag(event: MatChipInputEvent): void {
     const value = (event.value || '').trim().toUpperCase();
 
@@ -442,23 +413,16 @@ export class Wizard implements OnInit, AfterViewInit {
     event.chipInput!.clear();
   }
 
-  // When an option is selected from the autocomplete dropdown
   onSelectedTag(event: MatAutocompleteSelectedEvent): void {
     const value = event.option.viewValue.toUpperCase();
     const currentTags = this.tagKeywords();
 
     if (value && !currentTags.includes(value)) {
-      // 1. Add the selected tag to the chips list (tagKeywords)
       this.tagKeywords.update((keywords) => [...keywords, value]);
       this.announcer.announce(`added ${value} to reactive form`);
-
-      // 2. Update the form control
       this.scheduleFormControls.tags.setValue(this.tagKeywords());
-
-      // 3. Remove the selected tag from the autocomplete list (filteredTags)
       this.filteredTags.update((prev) => prev.filter((tag) => tag !== value));
     }
-    // Clear the input value is handled in the template: currentTag.value = ''
   }
 
   // Filtering function for the autocomplete input
@@ -476,34 +440,6 @@ export class Wizard implements OnInit, AfterViewInit {
         .sort()
     );
   }
-
-  /**
-   * Combines the separate sendAtDate and sendAtTime Date objects into a single
-   * ISO 8601 datetime string with offset, suitable for API submission.
-   * This signal automatically updates whenever either date or time changes.
-   */
-  readonly combinedSendAtDateTime = computed<string | null>(() => {
-    const sendAtDate = this.scheduleFormControls.sendAtDate.value;
-    const sendAtTime = this.scheduleFormControls.sendAtTime.value;
-
-    if (sendAtDate instanceof Date && sendAtTime instanceof Date) {
-      // 1. Get time components from the time object
-      const hours = getHours(sendAtTime);
-      const minutes = getMinutes(sendAtTime);
-
-      // 2. Start with the date part and apply the hours/minutes
-      // date-fns set functions return a new Date object.
-      let combinedDate = setHours(sendAtDate, hours);
-      combinedDate = setMinutes(combinedDate, minutes);
-      combinedDate = setSeconds(combinedDate, 0); // Zero out seconds for cleanliness
-
-      // 3. Return the result in ISO 8601 format with offset.
-      // 'extended' format produces the full datetime string with timezone offset.
-      return formatISO(combinedDate, { format: 'extended' });
-    }
-
-    return null;
-  });
 
   ngOnInit(): void {
     this.databaseService
@@ -541,11 +477,22 @@ export class Wizard implements OnInit, AfterViewInit {
         updateBatchScalingValidation(this.batchScalingForm);
       });
 
-    // 3. Listen to stepper selection change
     this.stepper()
-      ?.selectionChange.pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((event) => {
-        this.currentStep.set(event.selectedIndex);
+      .selectionChange.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event: StepperSelectionEvent) => {
+        this.currentStepIndex.set(event.selectedIndex);
+
+        const primaryStepsCount = this.steps().length;
+        const progressStepIndex = event.selectedIndex + 1;
+
+        let newProgress = 0;
+        if (progressStepIndex <= primaryStepsCount) {
+          newProgress = (progressStepIndex / primaryStepsCount) * 100;
+        } else {
+          newProgress = 100;
+        }
+
+        this.progressValue.set(newProgress);
       });
   }
 }

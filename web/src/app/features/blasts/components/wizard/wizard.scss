@@ -1,9 +1,8 @@
 @use "@angular/material" as mat;
+@use "../../../../../breakpoints" as bp;
 
 .wizard {
-  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
 
   @include mat.stepper-overrides(
     (
@@ -23,6 +22,14 @@
       header-height: 64px,
     )
   );
+
+  &__template {
+    padding-top: calc(var(--spacing) * 4);
+
+    @include bp.md {
+      padding-top: 0;
+    }
+  }
 
   &__card {
     //box-shadow: (var(--mat-sys-level4));

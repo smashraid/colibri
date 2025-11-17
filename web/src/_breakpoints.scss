@@ -1,8 +1,10 @@
 // Import the core Sass module for map manipulation
 @use "sass:map";
+@use "sass:list";
+@use "sass:math";
 
 // -----------------------------------------------------------------------------
-// 1. CONFIGURATION: Breakpoints, Gutters, and Variables
+// 1. CONFIGURATION: Breakpoints and Utility Maps
 // -----------------------------------------------------------------------------
 
 // Define the breakpoint sizes (keys are used for mixin names and class prefixes)
@@ -15,12 +17,33 @@ $breakpoints: (
   // 1024px
   xl: 80rem,
   // 1280px
-  xxl: 96rem // 1536px,,,,
+  xxl: 96rem // 1536px (Renamed from 2xl),,
+);
+
+// Define the container sizes (keys correspond to CSS variable suffixes)
+$container-sizes: (
+  xs: var(--container-xs),
+  sm: var(--container-sm),
+  md: var(--container-md),
+  lg: var(--container-lg),
+  xl: var(--container-xl),
+  2xl: var(--container-2xl),
+  3xl: var(--container-3xl),
+  4xl: var(--container-4xl),
+  5xl: var(--container-5xl),
+  6xl: var(--container-6xl),
+  7xl: var(--container-7xl),
+  8xl: var(--container-8xl),
+  full: 100% // Add a full width utility,,
 );
 
 // Define the grid system constants
 $grid-columns: 12;
 $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
+
+// -----------------------------------------------------------------------------
+// 2. CORE MIXINS
+// -----------------------------------------------------------------------------
 
 // Generic mixin to handle any breakpoint name
 @mixin breakpoint($name) {
@@ -30,7 +53,7 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
       @content;
     }
   } @else {
-    @error "Breakpoint '#{$name}' not found in $breakpoints map.";
+    @error "Breakpoint '#{$name}' not found in $breakpoints map. Please check the keys in the $breakpoints map.";
   }
 }
 
@@ -61,21 +84,158 @@ $grid-gutter-width: 1rem; // Total width for margin on both sides of a column
   }
 }
 
-@mixin container {
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
+// -----------------------------------------------------------------------------
+// 3. CONTAINER CLASS DEFINITION
+// -----------------------------------------------------------------------------
 
-  // Use the CSS variable for padding based on the gutter
-  padding-left: calc(var(--grid-gutter, #{$grid-gutter-width}) / 2);
-  padding-right: calc(var(--grid-gutter, #{$grid-gutter-width}) / 2);
+/**
+ * @mixin container-class-styles
+ * Generates the structural .container class and its responsive max-width rules.
+ */
+@mixin container-class-styles {
+  .container {
+    // Base styles (full width, centered, padding)
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    // Using a default padding of 1rem for left/right
+    padding-right: 1rem;
+    padding-left: 1rem;
 
-  // Apply max-width responsively using a loop over all breakpoints
-  @each $name, $value in $breakpoints {
-    // FIX: Use the generic 'breakpoint' mixin and pass the name dynamically.
-    @include breakpoint($name) {
-      // Use the CSS variable for the max-width (dynamic sizing)
-      max-width: var(--breakpoint-#{$name});
+    // --- Responsive Max-Widths ---
+
+    // Small screens and up
+    @include sm {
+      max-width: var(--container-md);
     }
+
+    // Medium screens and up
+    @include md {
+      max-width: var(--container-lg);
+    }
+
+    // Large screens and up
+    @include lg {
+      max-width: var(--container-5xl);
+    }
+
+    // X-Large screens and up
+    @include xl {
+      max-width: var(--container-6xl);
+    }
+
+    // 2X-Large screens and up
+    @include xxl {
+      max-width: var(--container-7xl);
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 4. UTILITY GENERATION MIXINS
+// -----------------------------------------------------------------------------
+
+// Generates utility classes like: .max-w-md
+@mixin generate-max-width-utilities() {
+  @each $name, $value in $container-sizes {
+    // Generates a helper class based on the container size, e.g., .max-w-md
+    .max-w-#{$name} {
+      max-width: $value;
+    }
+  }
+}
+
+/**
+ * @mixin generate-responsive-max-width-utilities
+ * Generates utility classes like: .sm\:max-w-md, .lg\:max-w-xl
+ */
+@mixin generate-responsive-max-width-utilities() {
+  // Loop through all defined breakpoints (sm, md, lg, xl, xxl)
+  @each $bp-name, $bp-value in $breakpoints {
+    @include breakpoint($bp-name) {
+      @each $size-name, $size-value in $container-sizes {
+        // Using single backslash (\) to correctly escape the colon
+        .#{$bp-name}\:max-w-#{$size-name} {
+          max-width: $size-value;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @mixin generate-grid-utilities
+ *
+ * Generates responsive grid column classes (e.g., .sm\:col-4, .lg\:col-9).
+ */
+@mixin generate-grid-utilities() {
+  // Loop through all defined breakpoints (sm, md, lg, xl, xxl)
+  @each $bp-name, $bp-value in $breakpoints {
+    @include breakpoint($bp-name) {
+      // Loop from 1 to 12 columns
+      @for $i from 1 through $grid-columns {
+        // Calculate width using math.div()
+        $width: math.div($i, $grid-columns) * 100%;
+
+        // *** FIX: Added flex-grow: 0 and flex-shrink: 0 ***
+        .#{$bp-name}\:col-#{$i} {
+          flex-grow: 0;
+          flex-shrink: 0;
+          flex-basis: $width;
+          max-width: $width;
+        }
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 5. BASE GRID CLASSES
+// -----------------------------------------------------------------------------
+
+// Add non-responsive base column classes (for fixed col-X widths)
+@for $i from 1 through $grid-columns {
+  // Calculate width using math.div()
+  $width: math.div($i, $grid-columns) * 100%;
+
+  // *** FIX: Added flex-grow: 0 and flex-shrink: 0 ***
+  .col-#{$i} {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: $width;
+    max-width: $width;
+  }
+}
+
+// Essential base classes for the grid system
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  // Negative margin compensates for the column padding/gutter inside
+  margin-right: -0.5rem;
+  margin-left: -0.5rem;
+}
+
+// Default .col class: Equal width, non-shrinking column.
+.col {
+  flex: 1 0 0;
+}
+
+// You need a class to apply padding to the columns for the gutter effect
+// This applies half the gutter width to the left and right of the column
+.col-padding {
+  padding-right: 0.5rem; // half of $grid-gutter-width (1rem)
+  padding-left: 0.5rem; // half of $grid-gutter-width (1rem)
+}
+
+// Utility to set flex-direction to column for stacking rows on mobile
+.flex-col {
+  flex-direction: column;
+}
+
+// Responsive utility to switch to row at a breakpoint
+@include sm {
+  .sm\:flex-row {
+    flex-direction: row;
   }
 }

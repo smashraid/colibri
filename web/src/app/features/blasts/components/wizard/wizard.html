@@ -6,7 +6,7 @@
   <!-- Progress Bar -->
   <mat-progress-bar
     mode="determinate"
-    [value]="progressValue"
+    [value]="progressValue()"
     class="wizard__progress-bar"
   >
   </mat-progress-bar>
@@ -15,12 +15,16 @@
     <!-- Stepper -->
     <mat-stepper
       labelPosition="bottom"
-      orientation="horizontal"
+      [orientation]="store.isMobile() ? 'vertical' : 'horizontal'"
       [linear]="isLinear"
       #stepper
     >
       <!-- Step 1: Personal Information -->
-      <mat-step [stepControl]="templateForm" class="wizard__step">
+      <mat-step
+        [stepControl]="templateForm"
+        [completed]="templateInfoValidated()"
+        class="wizard__step"
+      >
         <ng-template matStepLabel>
           <p
             class="wizard__label"
@@ -40,7 +44,7 @@
             <p class="wizard__title">{{steps()[0].label}}</p>
             <p class="wizard__subtitle">Validate your template information.</p>
             <div class="row">
-              <div class="col col-sm-5">
+              <div class="col sm:col-5">
                 <div class="form-group">
                   <mat-form-field>
                     <mat-label class="form-label">Template Id</mat-label>
@@ -117,7 +121,7 @@
 
               @let templateInfo = templateListInfo$ | async;
 
-              <div class="col col-sm-7 valid-content">
+              <div class="col sm:col-7 wizard__template">
                 @if (templateInfo) {
                 <mat-card appearance="raised" class="wizard__card--template">
                   <mat-card-header class="col">
@@ -187,7 +191,12 @@
               <button matButton="outlined" (click)="stepper.reset()">
                 Reset
               </button>
-              <button matButton="filled" matStepperNext type="button">
+              <button
+                matButton="filled"
+                matStepperNext
+                type="button"
+                [disabled]="!templateInfoValidated()"
+              >
                 Next
               </button>
             </div>
@@ -421,10 +430,6 @@
                   }
                 </mat-form-field>
               </div>
-              <div>
-                <h3>Form Data as JSON:</h3>
-                <pre><code>{{ formDataJson }}</code></pre>
-              </div>
               <div class="step-actions">
                 <button mat-button matStepperPrevious type="button">
                   Back
@@ -460,61 +465,73 @@
 
           <mat-card class="review-card">
             <mat-card-header>
-              <mat-card-title>Configuration Summary</mat-card-title>
-              <mat-card-subtitle>Blast Details</mat-card-subtitle>
+              <mat-card-title>Template & List</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <!-- Template Info -->
-              <h3>Template and List</h3>
               <p>
-                <strong>Template:</strong>
-                {{ templateFormControls.iterableTemplateId.value }}
+                <strong>Iterable Template ID:</strong> {{
+                templateFormControls.iterableTemplateId.value }}
               </p>
               <p>
-                <strong>List:</strong>
-                {{ templateFormControls.iterableListId.value?.id }}
+                <strong>Iterable List ID:</strong> {{
+                templateFormControls.iterableListId.value }}
               </p>
               <p>
                 <strong>List Size:</strong>
                 {{templateInfo && templateInfo.size ? templateInfo.size : 0 }}
                 emails
               </p>
-              <!-- Batch Scaling Info -->
-              <h3>Batch Scaling</h3>
+              <p>
+                <strong>Suppression List:</strong> {{
+                templateFormControls.iterableSupressionId.value ?? 'N/A' }}
+              </p>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="review-card">
+            <mat-card-header>
+              <mat-card-title>Batch Scaling</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
               <p>
                 <strong>Batch Type:</strong>
-                {{ batchScalingFormControls.batchType.value === 1 ? 'Fixed Size'
-                : 'Growth Percentage' }}
+                {{ batchScalingFormControls.batchType.value === 1 ? 'Fixed Batch
+                Size' : 'Percentage Growth' }}
               </p>
               @if (batchScalingFormControls.batchType.value === 1) {
               <p>
-                <strong>Batch Size:</strong>
-                {{ batchScalingFormControls.batchSize.value }}
+                <strong>Batch Size:</strong> {{
+                batchScalingFormControls.batchSize.value }}
               </p>
-              } @else if (batchScalingFormControls.batchType.value === 2) {
+              } @else {
               <p>
-                <strong>Initial List Size:</strong>
-                {{ batchScalingFormControls.initialListSize.value }}
+                <strong>Initial List Size:</strong> {{
+                batchScalingFormControls.initialListSize.value }}
               </p>
               <p>
-                <strong>Growth Percentage:</strong>
-                {{ batchScalingFormControls.growthPercentage.value }}%
+                <strong>Growth Percentage:</strong> {{
+                batchScalingFormControls.growthPercentage.value }}%
               </p>
               }
+            </mat-card-content>
+          </mat-card>
 
-              <!-- Schedule Info -->
-              <h3>Schedule</h3>
+          <mat-card class="review-card">
+            <mat-card-header>
+              <mat-card-title>Schedule</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
               <p>
-                <strong>Name:</strong>
-                {{ scheduleFormControls.name.value }}
+                <strong>Schedule Name:</strong> {{
+                scheduleFormControls.name.value }}
               </p>
               <p>
-                <strong>Tags:</strong>
-                {{ (scheduleFormControls.tags.value || []).join(', ') }}
+                <strong>Interval Time:</strong> {{
+                scheduleFormControls.intervalTime.value }} minutes
               </p>
               <p>
-                <strong>Interval:</strong>
-                {{ scheduleFormControls.intervalTime.value }}
+                <strong>Tags:</strong> {{ (scheduleFormControls.tags.value ||
+                []).join(', ') }}
               </p>
               <p>
                 <strong>Send At:</strong>
@@ -540,7 +557,7 @@
       </mat-step>
 
       <!-- Step 5: Confirmation -->
-      <mat-step class="wizard__step">
+      <mat-step [completed]="steps()[4].completed" class="wizard__step">
         <ng-template matStepLabel>
           <p
             class="wizard__label"
