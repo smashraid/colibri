@@ -104,7 +104,6 @@ $grid-gutter-width: 1rem;
 /**
  * @mixin container-class-styles
  * Generates the structural .container class and its responsive max-width rules.
- * Max-width is calculated as: Breakpoint Width - $grid-gutter-width.
  */
 @mixin container-class-styles {
   .container {
@@ -150,7 +149,6 @@ $grid-gutter-width: 1rem;
 /**
  * @mixin generate-responsive-max-width-utilities
  * Generates utility classes like: .sm\:max-w-md, .lg\:max-w-xl, etc.
- * This is where your requested 'md:max-w-lg' class is created.
  */
 @mixin generate-responsive-max-width-utilities() {
   // Loop through all defined breakpoints (sm, md, lg, xl, xxl)
@@ -163,6 +161,33 @@ $grid-gutter-width: 1rem;
         }
       }
     }
+  }
+}
+
+/**
+ * @mixin generate-generic-column-classes
+ * Generates the structural .row and generic .col classes.
+ * This should be placed at the start of the final output block.
+ */
+@mixin generate-generic-column-classes() {
+  // 5.1 Generic Row and Column Definitions (Must be defined first)
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    // Negative margin compensates for the column padding/gutter inside
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+  }
+
+  // Default .col class: Equal width, non-shrinking column. (Mobile Default - flex-grow: 1)
+  .col {
+    flex: 1 0 0;
+  }
+
+  // You need a class to apply padding to the columns for the gutter effect
+  .col-padding {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
   }
 }
 
@@ -191,31 +216,10 @@ $grid-gutter-width: 1rem;
 }
 
 // -----------------------------------------------------------------------------
-// 5. BASE GRID CLASSES (ORDER IS CRUCIAL FOR SPECIFICITY)
+// 5. BASE GRID AND UTILITY IMPLEMENTATION
 // -----------------------------------------------------------------------------
 
-// 5.1 Generic Row and Column Definitions (Must be defined first)
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  // Negative margin compensates for the column padding/gutter inside
-  margin-right: -0.5rem;
-  margin-left: -0.5rem;
-}
-
-// Default .col class: Equal width, non-shrinking column. (Mobile Default - flex-grow: 1)
-// This rule is defined first.
-.col {
-  flex: 1 0 0;
-}
-
-// You need a class to apply padding to the columns for the gutter effect
-.col-padding {
-  padding-right: 0.5rem;
-  padding-left: 0.5rem;
-}
-
-// Utility to set flex-direction to column for stacking rows on mobile
+// 5.1 Generic Flex Utilities
 .flex-col {
   flex-direction: column;
 }
@@ -227,7 +231,7 @@ $grid-gutter-width: 1rem;
   }
 }
 
-// 5.2 Fixed Width Column Definitions (Must be defined after .col to win the tie without !important)
+// 5.2 Fixed Width Column Definitions (These must appear AFTER .col in the final CSS)
 @for $i from 1 through $grid-columns {
   // Calculate width using math.div()
   $width: math.div($i, $grid-columns) * 100%;

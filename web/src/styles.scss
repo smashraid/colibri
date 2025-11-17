@@ -88,10 +88,11 @@ body {
   }
 }
 
+@include bp.generate-generic-column-classes();
 @include bp.container-class-styles;
-@include bp.generate-grid-utilities();
 @include bp.generate-max-width-utilities();
 @include bp.generate-responsive-max-width-utilities();
+@include bp.generate-grid-utilities();
 
 .container {
   margin-top: calc(var(--spacing) * 30);
