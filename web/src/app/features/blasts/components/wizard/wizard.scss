@@ -26,15 +26,17 @@
 
   @include f.form-base-styles();
 
+  &__template {
+    padding-top: calc(var(--spacing) * 4);
+
+    @include bp.md {
+      padding-top: 0;
+    }
+  }
+
   &__card {
     //box-shadow: (var(--mat-sys-level4));
     &--template {
-      padding-top: calc(var(--spacing) * 4);
-
-      @include bp.md {
-        padding-top: 0;
-      }
-
       @include mat.card-overrides(
         (
           elevated-container-shape: 1rem,
@@ -178,6 +180,7 @@
 // }
 
 .review-card {
+  background-color: color-mix(in oklab, var(--color-blue-500) 75%, transparent);
   margin-bottom: 24px;
 
   .review-section {

@@ -191,19 +191,28 @@ $grid-gutter-width: 1rem;
 
 /**
  * @mixin generate-flex-direction-utilities
- * Generates the base flex-col and responsive flex-row utilities.
+ * Generates the base flex-col/flex-row and responsive flex-row/flex-col utilities for all breakpoints.
  */
 @mixin generate-flex-direction-utilities() {
-  // Default for Mobile (non-responsive)
+  // Non-responsive defaults (Mobile First)
   .flex-col {
     flex-direction: column;
   }
+  .flex-row {
+    flex-direction: row;
+  }
 
-  // Responsive utility to switch to row at the 'sm' breakpoint and up
-  @include sm {
-    // Escaping the colon for the final CSS class name: .sm\:flex-row
-    .sm\:flex-row {
-      flex-direction: row;
+  // Generate responsive utilities for all breakpoints (sm, md, lg, etc.)
+  @each $bp-name, $bp-value in $breakpoints {
+    @include breakpoint($bp-name) {
+      // .sm\:flex-row, .md\:flex-row, .lg\:flex-row, etc.
+      .#{$bp-name}\:flex-row {
+        flex-direction: row;
+      }
+      // .sm\:flex-col, .md\:flex-col, .lg\:flex-col, etc. (for switching back)
+      .#{$bp-name}\:flex-col {
+        flex-direction: column;
+      }
     }
   }
 }

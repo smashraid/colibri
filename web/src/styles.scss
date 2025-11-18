@@ -4,11 +4,9 @@
 @use "variables" as v;
 @use "functions" as fn;
 @use "breakpoints" as bp;
-//@use "grid" as g;
 
 @forward "variables";
 @forward "functions";
-@forward "breakpoints";
 
 html {
   color-scheme: light dark;
@@ -88,11 +86,15 @@ body {
   }
 }
 
-@include bp.container-class-styles;
-@include bp.generate-generic-column-classes();
+//CORE
+@include fn.generate-all-utilities();
+//LAYOUT
 @include bp.generate-flex-direction-utilities();
 @include bp.generate-max-width-utilities();
 @include bp.generate-responsive-max-width-utilities();
+//GRID
+@include bp.container-class-styles;
+@include bp.generate-generic-column-classes();
 @include bp.generate-fixed-column-classes();
 @include bp.generate-grid-utilities();
 

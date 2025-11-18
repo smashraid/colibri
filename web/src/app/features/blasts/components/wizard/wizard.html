@@ -121,7 +121,7 @@
 
               @let templateInfo = templateListInfo$ | async;
 
-              <div class="col sm:col-7">
+              <div class="col sm:col-7 wizard__template">
                 @if (templateInfo) {
                 <mat-card appearance="raised" class="wizard__card--template">
                   <mat-card-header class="col">
@@ -480,7 +480,7 @@
               </p>
               <p>
                 <strong>Iterable List ID:</strong> {{
-                templateFormControls.iterableListId.value }}
+                templateFormControls.iterableListId.value?.id }}
               </p>
               <p>
                 <strong>List Size:</strong>
