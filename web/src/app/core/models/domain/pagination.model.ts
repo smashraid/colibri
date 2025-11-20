@@ -7,3 +7,15 @@ export interface PagedMetadata {
   hasPrevious: boolean;
   pageSizeOptions: number[];
 }
+
+export interface PagedQuery {
+  pageNumber: number;
+  pageSize: number;
+  sortBy?: string;
+  sortDirection: 'asc' | 'desc';
+}
+
+export interface BlastPagedQuery extends PagedQuery {
+  name?: string;
+  projectId: number;
+}

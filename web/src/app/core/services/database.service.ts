@@ -1,10 +1,13 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { shareReplay } from 'rxjs/internal/operators/shareReplay';
 
 import { environment } from '../../../environments/environment';
 
-import { PagedMetadata } from '../models/domain/pagination.model';
+import {
+  BlastPagedQuery,
+  PagedMetadata,
+} from '../models/domain/pagination.model';
 import { BlastsResponse } from '../../features/blasts/models/blasts';
 import { CreateBlastRequest } from '../../features/blasts/models/create-blast';
 import { ProjectResponse } from '../../features/projects/models/project';
@@ -43,6 +46,44 @@ export class DatabaseService {
             'X-Correlation-ID': this.correlationId,
           },
           observe: 'response',
+        }
+      )
+      .pipe(shareReplay());
+  }
+
+  getBlastsByProjectFilter(query: BlastPagedQuery) {
+    let params = new HttpParams();
+    params = params.set('projectId', query.projectId);
+
+    if (query.pageNumber) {
+      params = params.set('pageNumber', query.pageNumber.toString());
+    }
+    if (query.pageSize) {
+      params = params.set('pageSize', query.pageSize.toString());
+    }
+    if (query.sortBy) {
+      params = params.set('sortBy', query.sortBy);
+    }
+    if (query.sortDirection) {
+      params = params.set('sortDirection', query.sortDirection);
+    }
+    if (query.name) {
+      // This handles the search term
+      params = params.set('name', query.name);
+    }
+
+    // 3. Use the params object in the GET request
+    return this.httpClient
+      .get<BlastsResponse[]>(
+        `${this.baseUrl}getBlastsByProjectFilter`, // Clean URL, no query string needed
+        {
+          responseType: 'json',
+          headers: {
+            AuthorizationToken: this.authorizationToken,
+            'X-Correlation-ID': this.correlationId,
+          },
+          observe: 'response', // Keep observe: 'response' to read headers for pagination
+          params: params, // <<< --- THIS IS THE CRITICAL CHANGE
         }
       )
       .pipe(shareReplay());

@@ -1,0 +1,79 @@
+<div class="event-panel">
+  <!-- Header -->
+  <div class="panel-header">
+    <h2 class="panel-title">
+      {{ date | date:'fullDate' }}
+      <span class="events-count">({{ events.length }} events)</span>
+    </h2>
+    <button
+      mat-icon-button
+      (click)="onClose()"
+      class="close-button"
+      aria-label="Close event panel"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Filter Dropdown -->
+  <div class="filter-section">
+    <mat-form-field appearance="outline" class="status-filter">
+      <mat-label>Filter by Status</mat-label>
+      <mat-select
+        [value]="selectedStatus()"
+        (valueChange)="onStatusChange($event)"
+        aria-label="Select event status filter"
+      >
+        @for (option of statusOptions(); track option.value) {
+        <mat-option
+          [value]="option.value"
+          [disabled]="isOptionDisabled(option.count)"
+        >
+          <div class="option-content">
+            <span class="option-label">{{ option.label }}</span>
+            <span
+              class="option-count"
+              [class.disabled]="isOptionDisabled(option.count)"
+            >
+              ({{ option.count }})
+            </span>
+          </div>
+        </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Events List -->
+  <div class="events-list">
+    @for (event of filteredEvents(); track event.id) {
+    <div
+      class="event-item"
+      [style.border-left-color]="getStatusColor(event.status)"
+      role="listitem"
+    >
+      <div class="event-time">{{ event.sendAt | date:'shortTime' }}</div>
+      <div class="event-content">
+        <h3 class="event-name">{{ event.name }}</h3>
+        <div class="event-meta">
+          <span
+            class="event-status-badge"
+            [style.background-color]="getStatusColor(event.status)"
+          >
+            {{ event.status }}
+          </span>
+        </div>
+        @if (event.description) {
+        <p class="event-description">{{ event.description }}</p>
+        }
+      </div>
+    </div>
+    } @empty {
+    <div class="no-events">
+      <mat-icon class="no-events-icon">event_busy</mat-icon>
+      <p>No events found for selected status</p>
+      <p class="no-events-hint">Try selecting a different status filter</p>
+    </div>
+    }
+  </div>
+</div>

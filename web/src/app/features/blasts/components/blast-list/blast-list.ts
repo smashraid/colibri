@@ -2,9 +2,15 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MsalModule } from '@azure/msal-angular';
 import { forkJoin, of } from 'rxjs';
-import { delay, mergeMap, switchMap } from 'rxjs/operators';
+import {
+  debounceTime,
+  delay,
+  distinctUntilChanged,
+  mergeMap,
+  switchMap,
+} from 'rxjs/operators';
 
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DatePipe, JsonPipe, UpperCasePipe } from '@angular/common';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -24,7 +30,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
-import { PagedMetadata } from '../../../../core/models/domain/pagination.model';
+import { Sort, MatSortModule } from '@angular/material/sort';
+import {
+  BlastPagedQuery,
+  PagedMetadata,
+} from '../../../../core/models/domain/pagination.model';
 import { AppStore } from '../../../../app.store';
 import { IterableService } from '../../../../core/services/iterable.service';
 import { DatabaseService } from '../../../../core/services/database.service';
@@ -52,6 +62,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     MatMenuModule,
     MatPaginatorModule,
     MatChipsModule,
+    MatSortModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -64,6 +75,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   styleUrl: './blast-list.scss',
 })
 export class BlastList implements OnInit {
+  readonly store = inject(AppStore);
+  private destroyRef = inject(DestroyRef);
+
+  searchControl = new FormControl<string>('', { nonNullable: true });
   campaigns = signal<BlastsResponse[]>([]);
   columnsToDisplay = [
     'name',
@@ -80,43 +95,65 @@ export class BlastList implements OnInit {
     ...this.columnsOptions,
   ];
   expandedElement: BlastsResponse | null = null;
-
-  pagedList = signal<PagedMetadata>({
-    totalCount: 0,
+  queryParameters = signal<BlastPagedQuery>({
+    pageNumber: 1,
     pageSize: 10,
-    currentPage: 1,
-    pageSizeOptions: [5, 10, 25],
-    hasNext: false,
-    hasPrevious: false,
-    totalPages: 0,
+    projectId: this.store.projectId(),
+    sortDirection: 'asc',
+    name: undefined,
   });
-
-  loading = signal(false);
-  readonly store = inject(AppStore);
-  private destroyRef = inject(DestroyRef);
+  pagedList = signal<PagedMetadata>({
+    currentPage: 0,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasPrevious: false,
+    hasNext: false,
+    pageSizeOptions: [5, 10, 25],
+  });
 
   constructor(
     private iterableService: IterableService,
     private databaseService: DatabaseService,
     private snackBar: MatSnackBar
-  ) {}
+  ) {
+    this.sync();
+  }
 
   ngOnInit(): void {
-    this.sync();
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (searchTerm) => {
+          this.queryParameters.update((prev) => ({
+            ...prev,
+            name: searchTerm.trim() || undefined, // Send undefined if empty
+            pageNumber: 1, // Always reset to page 1 on new search
+          }));
+          this.sync();
+        },
+      });
   }
 
   isExpanded(element: BlastsResponse) {
     return this.expandedElement === element;
   }
 
-  toggle(element: BlastsResponse) {
-    this.expandedElement = this.isExpanded(element) ? null : element;
+  toggleExpand(element: BlastsResponse) {
+    this.expandedElement = this.expandedElement === element ? null : element;
   }
 
   sync() {
     this.store.startLoading();
+
+    const query = this.queryParameters();
+
     this.databaseService
-      .getBlastsByProject(this.store.projectId(), this.pagedList())
+      .getBlastsByProjectFilter(this.queryParameters())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -133,10 +170,22 @@ export class BlastList implements OnInit {
   }
 
   onPageChange(e: PageEvent) {
-    this.pagedList.update((prev) => ({
+    this.queryParameters.update((prev) => ({
       ...prev,
-      currentPage: e.pageIndex,
+      pageNumber: e.pageIndex + 1,
       pageSize: e.pageSize,
+    }));
+    this.sync();
+  }
+
+  sortData(sort: Sort) {
+    this.queryParameters.update((prev) => ({
+      ...prev,
+      // If sort direction is empty (''), clear SortBy, otherwise use the active column name
+      sortBy: sort.direction ? sort.active : undefined,
+      // Use the direction or default to 'asc' if sorting is cleared
+      sortDirection: sort.direction || 'asc',
+      pageNumber: 1, // Always reset to page 1 on new sort
     }));
     this.sync();
   }

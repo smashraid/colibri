@@ -34,4 +34,11 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/blasts/blasts.routes').then((m) => m.BLASTS_ROUTES),
   },
+  {
+    path: 'calendar',
+    loadChildren: () =>
+      import('./features/calendar/calendar.routes').then(
+        (m) => m.CALENDAR_ROUTES
+      ),
+  },
 ];

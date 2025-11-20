@@ -60,15 +60,14 @@ export class Navigation implements OnInit {
       path: '/blasts',
       icon: 'article_person',
       isActive: false,
-      children: [
-        {
-          name: 'Add Blast',
-          path: 'add-blast',
-          icon: 'person_add',
-          isActive: false,
-          children: [],
-        },
-      ],
+      children: [],
+    },
+    {
+      name: 'Calendar',
+      path: '/calendar',
+      icon: 'calendar_month',
+      isActive: false,
+      children: [],
     },
   ]);
 
