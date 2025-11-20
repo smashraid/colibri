@@ -20,19 +20,19 @@
     &__button {
       align-self: start;
     }
+  }
 
-    @include bp.md {
-      .form {
-        padding: calc(var(--spacing) * 8);
+  @include bp.sm {
+    .form {
+      padding: calc(var(--spacing) * 8);
 
-        &__group {
-          flex-flow: row wrap;
-          gap: calc(var(--spacing) * 6);
-        }
+      &__group {
+        flex-flow: row wrap;
+        gap: calc(var(--spacing) * 6);
+      }
 
-        &__control {
-          width: calc(var(--spacing) * 60);
-        }
+      &__control {
+        width: calc(var(--spacing) * 60);
       }
     }
   }

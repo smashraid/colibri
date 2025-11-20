@@ -124,13 +124,31 @@ body {
 }
 
 .sr-only {
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
   border-width: 0;
-  width: 1px;
+  clip: rect(0, 0, 0, 0);
   height: 1px;
   margin: -1px;
+  overflow: hidden;
   padding: 0;
   position: absolute;
-  overflow: hidden;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.mat-no-label-space {
+  // Target the wrapper that reserves vertical space for the floating label
+  .mat-mdc-form-field-flex .mat-mdc-form-field-label-wrapper {
+    // Setting height to 0 and overflow hidden ensures no vertical space is reserved
+    height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  // Target the notch element inside the outline, which is the visible gap
+  .mdc-notched-outline__notch {
+    // Make the notch invisible and remove its width so it doesn't break the border line
+    visibility: hidden !important;
+    width: 0 !important;
+    padding: 0 !important;
+  }
 }

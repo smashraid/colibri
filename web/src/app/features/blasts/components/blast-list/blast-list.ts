@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MsalModule } from '@azure/msal-angular';
 import { forkJoin, of } from 'rxjs';
@@ -24,12 +24,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
-import { BlastReadViewModel } from '../../models/blasts';
 import { PagedMetadata } from '../../../../core/models/domain/pagination.model';
 import { AppStore } from '../../../../app.store';
 import { IterableService } from '../../../../core/services/iterable.service';
 import { DatabaseService } from '../../../../core/services/database.service';
 import { SnackbarMessageComponent } from '../../../../shared/components/ui/snackbar-message/snackbar-message.component';
+import { BlastsResponse } from '../../models/blasts';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-blast-list',
@@ -63,12 +64,12 @@ import { SnackbarMessageComponent } from '../../../../shared/components/ui/snack
   styleUrl: './blast-list.scss',
 })
 export class BlastList implements OnInit {
-  campaigns = signal<BlastReadViewModel[]>([]);
+  campaigns = signal<BlastsResponse[]>([]);
   columnsToDisplay = [
     'name',
-    'campaignCount',
+    'batchType',
     'createdBy',
-    'createdDate',
+    'sendAt',
     'projectWebsite',
     'status',
     'tags',
@@ -78,7 +79,7 @@ export class BlastList implements OnInit {
     ...this.columnsToDisplay,
     ...this.columnsOptions,
   ];
-  expandedElement: BlastReadViewModel | null = null;
+  expandedElement: BlastsResponse | null = null;
 
   pagedList = signal<PagedMetadata>({
     totalCount: 0,
@@ -92,6 +93,7 @@ export class BlastList implements OnInit {
 
   loading = signal(false);
   readonly store = inject(AppStore);
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private iterableService: IterableService,
@@ -103,24 +105,30 @@ export class BlastList implements OnInit {
     this.sync();
   }
 
-  isExpanded(element: BlastReadViewModel) {
+  isExpanded(element: BlastsResponse) {
     return this.expandedElement === element;
   }
 
-  toggle(element: BlastReadViewModel) {
+  toggle(element: BlastsResponse) {
     this.expandedElement = this.isExpanded(element) ? null : element;
   }
 
   sync() {
+    this.store.startLoading();
     this.databaseService
       .getBlastsByProject(this.store.projectId(), this.pagedList())
-      .subscribe((response) => {
-        const paginationResponse = response.headers.get('x-pagination');
-        if (response.body && paginationResponse) {
-          this.campaigns.set(response.body);
-          const metadata: PagedMetadata = JSON.parse(paginationResponse);
-          this.pagedList.update(() => metadata);
-        }
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          const paginationResponse = response.headers.get('x-pagination');
+          if (response.body && paginationResponse) {
+            this.campaigns.set(response.body);
+            const metadata: PagedMetadata = JSON.parse(paginationResponse);
+            this.pagedList.update(() => metadata);
+          }
+        },
+        error: (err) => this.store.stopLoading(),
+        complete: () => this.store.stopLoading(),
       });
   }
 
@@ -133,7 +141,7 @@ export class BlastList implements OnInit {
     this.sync();
   }
 
-  archive(element: BlastReadViewModel) {
+  archive(element: BlastsResponse) {
     this.databaseService
       .getArchive(element.id)
       .pipe(

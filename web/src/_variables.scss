@@ -272,6 +272,11 @@
   --color-black: #000;
   --color-white: #fff;
 
+  --color-surface-container-high: light-dark(
+    oklch(0.9308 0.0083 121.64),
+    oklch(0.2846 0.0083 137.81)
+  );
+
   --spacing: 0.25rem;
 
   --breakpoint-sm: 40rem;

@@ -35,7 +35,7 @@ export class DatabaseService {
   getBlastsByProject(id: number, metadata: PagedMetadata) {
     return this.httpClient
       .get<BlastsResponse[]>(
-        `${this.baseUrl}getBlastsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}`,
+        `${this.baseUrl}getBlastsByProject/${id}?pageNumber=${metadata.currentPage}&pageSize=${metadata.pageSize}&sortBy=sendAt`,
         {
           responseType: 'json',
           headers: {

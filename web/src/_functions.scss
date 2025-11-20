@@ -6,11 +6,6 @@
 @use "breakpoints" as bp;
 @use "variables" as v;
 
-// ----------------------------------------------------------------
-// CONFIGURATION
-// ----------------------------------------------------------------
-// Define the names of the colors for which utilities will be generated.
-// These correspond to the CSS variables defined in _variables.scss
 $color-names: (
   red-50,
   red-100,
@@ -28,11 +23,66 @@ $color-names: (
   yellow-500
 );
 
+// Map of spacing utility names (p, m) to their CSS properties
+$spacing-properties: (
+  "p": (
+    padding,
+  ),
+  "pt": (
+    padding-top,
+  ),
+  "pr": (
+    padding-right,
+  ),
+  "pb": (
+    padding-bottom,
+  ),
+  "pl": (
+    padding-left,
+  ),
+  "px": (
+    padding-left,
+    padding-right,
+  ),
+  "py": (
+    padding-top,
+    padding-bottom,
+  ),
+  "m": (
+    margin,
+  ),
+  "mt": (
+    margin-top,
+  ),
+  "mr": (
+    margin-right,
+  ),
+  "mb": (
+    margin-bottom,
+  ),
+  "ml": (
+    margin-left,
+  ),
+  "mx": (
+    margin-left,
+    margin-right,
+  ),
+  "my": (
+    margin-top,
+    margin-bottom,
+  ),
+);
+
+// Map of spacing value keys to use from _variables.scss
+// These correspond to --spacing-0, --spacing-1, --spacing-1-5, etc.
+// Extracted based on the variables provided in _variables.scss
+$spacing-keys: (0, 0-5, 1, 1-5, 2, 2-5, 3, 3-5, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+
 // ----------------------------------------------------------------
 // MIXINS: INFRASTRUCTURE & UTILITIES
 // ----------------------------------------------------------------
 
-// Generates all color utility classes for a given prefix (or none for base)
+// Generates all color utility classes
 @mixin generate-color-utilities($prefix: "") {
   // Escapes the colon for CSS output (e.g., md\:bg-blue-500)
   $prefix-separator: if($prefix == "", "", "#{$prefix}\\:");
@@ -41,7 +91,6 @@ $color-names: (
     $var-name: var(--color-#{$name});
 
     // 1. BASE UTILITY (Sets background-color using the base color variable)
-    // Example: .bg-red-500 { background-color: var(--color-red-500); }
     .#{string.unquote($prefix-separator)}bg-#{$name} {
       background-color: #{$var-name};
     }
@@ -81,9 +130,33 @@ $color-names: (
   // 3. GENERAL OPACITY UTILITIES (Sets the standard opacity property)
   @for $i from 0 through 10 {
     $opacity-value: $i * 10;
-    // opacity-70 or md:opacity-70
     .#{string.unquote($prefix-separator)}opacity-#{$opacity-value} {
       opacity: #{math.div($opacity-value, 100)};
+    }
+  }
+}
+
+// Generates all spacing utility classes (p-*, m-*)
+@mixin generate-spacing-utilities($prefix: "") {
+  $prefix-separator: if($prefix == "", "", "#{$prefix}\\:");
+
+  @each $key in $spacing-keys {
+    $var-value: calc(var(--spacing) *#{$key});
+
+    @each $utility-name, $properties in $spacing-properties {
+      // Class name format: p-1, m-4, md:py-2
+      .#{string.unquote($prefix-separator)}#{$utility-name}-#{$key} {
+        @each $property in $properties {
+          // Check for negative spacing (optional, but good practice for 'm' utilities)
+          @if string.slice(#{$key}, 1, 1) == "-" {
+            // Negative value: uses the calculated positive value and applies a minus sign
+            #{$property}: calc(0px - #{$var-value});
+          } @else {
+            // Positive value
+            #{$property}: #{$var-value};
+          }
+        }
+      }
     }
   }
 }
@@ -92,12 +165,14 @@ $color-names: (
 @mixin generate-all-utilities() {
   // 1. Generate base utilities (no prefix)
   @include generate-color-utilities("");
+  @include generate-spacing-utilities("");
 
   // 2. Generate responsive utilities using the imported $breakpoints map
   @each $breakpoint-name, $size in bp.$breakpoints {
     @include bp.breakpoint($breakpoint-name) {
       // Pass the breakpoint name as the prefix (e.g., "md")
       @include generate-color-utilities($breakpoint-name);
+      @include generate-spacing-utilities($breakpoint-name);
     }
   }
 }

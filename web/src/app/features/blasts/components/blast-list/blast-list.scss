@@ -1,40 +1,25 @@
 @use "@angular/material" as mat;
+@use "../../../../../breakpoints" as bp;
+@use "../../../../../tables" as t;
 
-// Customize the entire app. Change :root to your selector if you want to scope the styles.
+.content-options {
+  text-align: center;
 
-.content {
-  .table {
-    &__wrapper {
-      padding: 1.5rem;
-    }
+  @include bp.sm {
+    text-align: right;
   }
 }
 
-.table {
-  background-color: light-dark(var(--color-light), var(--color-dark));
-  //color: var(--mat-sys-on-surface-variant);
-  width: 100%;
-  //@include mat.elevation(8, light-dark(rgba(0 0 0 / 0.6), rgba(243 70 70 / 0.6)));
-  box-shadow: var(--mat-sys-level5);
+@include t.table-base-styles();
 
-  th {
-    border-bottom: 0.2rem solid
-      light-dark(var(--color-dark), var(--color-light));
-    font-weight: 700;
-  }
+.header {
+  align-items: center;
+  gap: calc(var(--spacing) * 4);
+  justify-content: space-between;
 
-  tr:nth-child(even) {
-    background-color: light-dark(
-      rgba(0, 0, 0, 0.05),
-      rgba(255, 255, 255, 0.05)
-    );
-  }
-
-  tr:not(:first-child):hover {
-    background-color: light-dark(
-      rgba(0, 0, 0, 0.075),
-      rgba(255, 255, 255, 0.075)
-    );
+  &__search {
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
   }
 }
 
@@ -122,11 +107,6 @@
   transform: rotate(180deg);
 }
 
-.container-options {
-  text-align: right;
-  padding: 1rem;
-}
-
 .flex-container {
   display: grid;
   gap: 1rem;
@@ -141,8 +121,4 @@
   border-radius: 0.5rem;
   background-color: var(--mat-sys-secondary);
   color: var(--mat-sys-on-secondary);
-}
-
-.no-data-cell {
-  padding: 1rem;
 }

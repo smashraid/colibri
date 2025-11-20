@@ -1,29 +1,54 @@
-<div class="content">
-  <div class="container-options">
-    <a mat-fab extended routerLink="/add-campaign" class="mr-16">
+<div class="content-options">
+  <div class="mb-5">
+    <a mat-fab extended routerLink="/add-blast" class="mr-16">
       <mat-icon>add_circle</mat-icon>
-      Add Campaign
+      Add Blast
     </a>
     <a mat-fab extended (click)="sync()">
       <mat-icon>sync</mat-icon>
       Sync Data
     </a>
   </div>
-  <div class="table__wrapper">
+</div>
+<div class="row header px-2">
+  <h1 class="text-4xl font-black tracking-tighter text-on-background">
+    Blasts
+  </h1>
+  <div class="header__search flex items-center gap-2">
+    <mat-form-field
+      class="w-full max-w-xs mat-no-label-space"
+      appearance="outline"
+      floatLabel="auto"
+    >
+      <mat-label>Input</mat-label>
+      <input matInput placeholder="Search" />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+  </div>
+</div>
+
+<div class="table">
+  <div class="table__container">
     <table
       mat-table
       [dataSource]="campaigns()"
       multiTemplateDataRows
-      class="table"
+      class="table__data"
     >
       @for (column of columnsToDisplay; track column) {
       <ng-container matColumnDef="{{ column }}">
         <th mat-header-cell *matHeaderCellDef>{{ column | uppercase }}</th>
-        @if (column === 'createdDate') {
+        @switch (column) { @case ('batchType') {
+        <td mat-cell *matCellDef="let element">
+          @switch (element[column]) { @case (0) {
+          <span>Fixed Batch Size</span> } @case (1) {
+          <span>Percentage Growth</span> } @default { } }
+        </td>
+        } @case ('sendAt') {
         <td mat-cell *matCellDef="let element">
           {{ element[column] | date : "short" }}
         </td>
-        }@else if (column === 'status') {
+        } @case ('status') {
         <td mat-cell *matCellDef="let element">
           @switch (element[column]) { @case (0) { <span>CREATING</span> } @case
           (1) { <span>GENERATING LIST</span> } @case (2) {
@@ -31,7 +56,7 @@
           <span>ADDING SUBSCRIBERS</span> } @case (4) { <span>COMPLETE</span> }
           @case (5) { <span>ERROR</span> } @default { } }
         </td>
-        }@else if (column === 'tags') {
+        } @case ('tags') {
         <td mat-cell *matCellDef="let element">
           <mat-chip-set aria-label="campaigns tags">
             @for (item of element[column]; track $index) {
@@ -39,9 +64,9 @@
             }
           </mat-chip-set>
         </td>
-        } @else {
+        } @default {
         <td mat-cell *matCellDef="let element">{{ element[column] }}</td>
-        }
+        } }
       </ng-container>
       }
       <ng-container matColumnDef="options">
@@ -141,14 +166,15 @@
       </tr>
     </table>
   </div>
-  <div>
-    <mat-paginator
-      [length]="pagedList().totalCount"
-      [pageSize]="pagedList().pageSize"
-      [pageSizeOptions]="pagedList().pageSizeOptions"
-      aria-label="Select page"
-      (page)="onPageChange($event)"
-    >
-    </mat-paginator>
-  </div>
+</div>
+<div class="mt-5">
+  <mat-paginator
+    [length]="pagedList().totalCount"
+    [pageSize]="pagedList().pageSize"
+    [pageSizeOptions]="pagedList().pageSizeOptions"
+    aria-label="Select page"
+    (page)="onPageChange($event)"
+    class="table__paginator"
+  >
+  </mat-paginator>
 </div>
