@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +8,8 @@ import { MatTabsModule, MatTabChangeEvent } from '@angular/material/tabs';
 import {
   MatBottomSheet,
   MatBottomSheetConfig,
+  MatBottomSheetModule,
+  MatBottomSheetRef,
 } from '@angular/material/bottom-sheet';
 import { MatSidenavModule } from '@angular/material/sidenav';
 
@@ -15,9 +18,9 @@ import { CalendarEvent } from '../../models/calendar-event';
 import { CalendarService } from '../../../../core/services/calendar.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/internal/operators/map';
-import { CommonModule } from '@angular/common';
 import { EventPanel } from '../event-panel/event-panel';
 import { AppStore } from '../../../../app.store';
+import { MobileEventSheet } from '../mobile-event-sheet/mobile-event-sheet';
 
 @Component({
   selector: 'app-calendar',
@@ -27,6 +30,7 @@ import { AppStore } from '../../../../app.store';
     MatIconModule,
     MatTabsModule,
     MatSidenavModule,
+    MatBottomSheetModule,
     EventPanel,
   ],
   templateUrl: './calendar.html',
@@ -162,17 +166,17 @@ export class Calendar implements OnInit {
     this.isPanelOpen.set(false);
   }
 
-  private openBottomSheet(): void {
+  openBottomSheet(): void {
     const config: MatBottomSheetConfig = {
       data: {
         events: this.selectedDayEvents(),
         date: this.selectedDate(),
       },
-      panelClass: 'mobile-event-sheet', // <--- ADD THIS CLASS
+      panelClass: 'mobile-event-sheet',
       hasBackdrop: true,
     };
 
-    this.bottomSheet.open(EventPanel, config);
+    this.bottomSheet.open(MobileEventSheet, config);
   }
 
   getEventsForDayAndHour(day: Date, hour: number): CalendarEvent[] {

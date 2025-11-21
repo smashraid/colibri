@@ -2,13 +2,13 @@ import {
   Component,
   computed,
   EventEmitter,
-  inject,
   Input,
   Output,
   signal,
+  OnChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,6 +22,7 @@ import { CalendarEvent, EventStatus } from '../../models/calendar-event';
   standalone: true,
   imports: [
     CommonModule,
+    DatePipe, // Added DatePipe for date formatting in HTML
     MatButtonModule,
     MatIconModule,
     MatSelectModule,
@@ -32,17 +33,21 @@ import { CalendarEvent, EventStatus } from '../../models/calendar-event';
   styleUrl: './event-panel.scss',
 })
 /**
- * EventPanel is a purely presentational component, used as the content
- * for both the desktop sidebar and the mobile bottom sheet (via MobileEventSheet).
+ * EventPanel is a purely presentational component.
+ * It displays events for a specific date and provides filtering.
+ * It is used by both the desktop sidebar (Calendar component) and the mobile bottom sheet (MobileEventSheet component).
+ * It emits the 'close' event to notify its parent container to dismiss it.
  */
-export class EventPanel {
-  // Inputs from the parent component (Calendar or MobileEventSheet)
+export class EventPanel implements OnChanges {
+  // --- Inputs & Outputs ---
+  // @Input is the data source now, replacing MatBottomSheet injection.
   @Input({ required: true }) events: CalendarEvent[] = [];
   @Input({ required: true }) date: Date = new Date();
 
-  // Output event to notify the parent to close the panel/sheet
+  // @Output emits when the panel needs to be closed (e.g., close button clicked).
   @Output() close = new EventEmitter<void>();
 
+  // --- State and Computed Signals ---
   selectedStatus = signal<EventStatus | 'all'>('all');
 
   // Computed signal to efficiently count events by status whenever the input events change
@@ -69,8 +74,8 @@ export class EventPanel {
       { label: 'Scheduled', value: 'scheduled', count: counts.scheduled },
       { label: 'Started', value: 'started', count: counts.started },
       { label: 'In Progress', value: 'inProgress', count: counts.inProgress },
-      { label: 'Completed', value: 'Completed', count: counts.completed },
-      { label: 'Canceled', value: 'Canceled', count: counts.canceled },
+      { label: 'Completed', value: 'completed', count: counts.completed },
+      { label: 'Canceled', value: 'canceled', count: counts.canceled },
     ];
   });
 
@@ -83,8 +88,11 @@ export class EventPanel {
     return this.events.filter((event) => event.status === status);
   });
 
-  // Effect to set a default status when the input events array changes
-  // This uses a timeout to ensure all inputs and signals are stable
+  // --- Lifecycle and Methods ---
+
+  /**
+   * Called when any input property changes. We use this to reset the default filter status.
+   */
   ngOnChanges(): void {
     // Re-evaluate default status when events input changes
     this.setDefaultStatus();
@@ -115,6 +123,7 @@ export class EventPanel {
 
   /**
    * Emits the close event to the parent container (Calendar or MobileEventSheet).
+   * The parent is responsible for handling the actual closing logic (sidenav.close() or bottomSheet.dismiss()).
    */
   onClose(): void {
     this.close.emit();

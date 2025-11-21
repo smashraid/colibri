@@ -1,83 +1,10 @@
-<div class="mobile-sheet-container flex flex-col h-full max-h-[85vh]">
-  <!-- Header / Drag Handle Area -->
-  <div
-    class="sheet-header bg-surface-container pt-2 pb-4 px-4 rounded-t-xl border-b border-outline-variant sticky top-0 z-10"
-  >
-    <!-- Visual Drag Handle -->
-    <div class="w-12 h-1.5 bg-outline-variant rounded-full mx-auto mb-4"></div>
+<div class="mobile-sheet-wrapper">
+  <!-- <app-event-panel
+    [events]="events"
+    [date]="date"
+    (close)="onClose()"
+  ></app-event-panel> -->
 
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-bold m-0 text-on-surface">
-          {{ date | date:'EEEE' }}
-        </h2>
-        <p class="text-sm text-on-surface-variant m-0">
-          {{ date | date:'longDate' }}
-        </p>
-      </div>
-      <button mat-icon-button (click)="close()" class="text-on-surface-variant">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
-  </div>
-
-  <!-- Filter (Sticky below header) -->
-  <div
-    class="filter-area px-4 py-3 bg-surface-container-low sticky top-[88px] z-10"
-  >
-    <mat-form-field appearance="outline" class="w-full dense-form-field">
-      <mat-select
-        [value]="selectedStatus()"
-        (valueChange)="onStatusChange($event)"
-      >
-        <mat-option value="all">All Events ({{events.length}})</mat-option>
-        @for (opt of statusOptions(); track opt.value) {
-        <mat-option
-          [value]="opt.value"
-          [disabled]="isOptionDisabled(opt.count)"
-        >
-          {{ opt.label }} ({{ opt.count }})
-        </mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
-  <!-- Scrollable Content -->
-  <div
-    class="sheet-content flex-1 overflow-y-auto px-4 pb-8 bg-surface-container-lowest"
-  >
-    @for (event of filteredEvents(); track event.id) {
-    <div
-      class="event-card mb-3 p-4 rounded-xl bg-surface-1 shadow-sm border-l-4"
-      [style.border-left-color]="getStatusColor(event.status)"
-    >
-      <div class="flex justify-between items-start mb-1">
-        <span class="font-mono text-sm font-medium text-primary">
-          {{ event.sendAt | date:'shortTime' }}
-        </span>
-        <span
-          class="text-xs px-2 py-0.5 rounded-full bg-surface-variant text-on-surface-variant"
-        >
-          {{ event.status }}
-        </span>
-      </div>
-      <h3 class="text-lg font-semibold text-on-surface m-0 mb-1">
-        {{ event.name }}
-      </h3>
-      @if (event.description) {
-      <p class="text-sm text-on-surface-variant m-0 line-clamp-2">
-        {{ event.description }}
-      </p>
-      }
-    </div>
-    } @empty {
-    <div
-      class="flex flex-col items-center justify-center h-48 text-on-surface-variant opacity-60"
-    >
-      <mat-icon class="text-5xl w-12 h-12 mb-2">event_busy</mat-icon>
-      <p>No events found</p>
-    </div>
-    }
-  </div>
+  <h1>Hello World</h1>
+  <button (click)="onClose($event)">Close</button>
 </div>

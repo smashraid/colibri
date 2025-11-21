@@ -9,7 +9,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
-import { CalendarEvent, EventStatus } from '../../models/calendar-event';
+import { CalendarEvent } from '../../models/calendar-event';
+import { EventPanel } from '../event-panel/event-panel';
+
+interface MobileSheetData {
+  events: CalendarEvent[];
+  date: Date;
+}
 
 @Component({
   selector: 'app-mobile-event-sheet',
@@ -22,94 +28,28 @@ import { CalendarEvent, EventStatus } from '../../models/calendar-event';
     MatFormFieldModule,
     FormsModule,
     DatePipe,
+    EventPanel,
   ],
   templateUrl: './mobile-event-sheet.html',
   styleUrl: './mobile-event-sheet.scss',
 })
 export class MobileEventSheet {
-  private _bottomSheetRef = inject(MatBottomSheetRef<MobileEventSheet>);
-  public data = inject(MAT_BOTTOM_SHEET_DATA);
+  private _bottomSheetRef =
+    inject<MatBottomSheetRef<MobileEventSheet>>(MatBottomSheetRef);
 
-  events: CalendarEvent[] = this.data.events || [];
-  date: Date = this.data.date || new Date();
+  // Inject the data passed when the bottom sheet was opened
+  //private data: MobileSheetData = inject(MAT_BOTTOM_SHEET_DATA);
 
-  selectedStatus = signal<EventStatus | 'all'>('started');
+  // Expose data to the template
+  // events = this.data.events;
+  // date = this.data.date;
 
-  filteredEvents = computed(() => {
-    const status = this.selectedStatus();
-    return status === 'all'
-      ? this.events
-      : this.events.filter((e) => e.status === status);
-  });
-
-  statusCounts = computed(() => {
-    // Recalculate counts based on current events
-    const counts: any = { all: this.events.length };
-    const statuses: EventStatus[] = [
-      'scheduled',
-      'started',
-      'inProgress',
-      'canceled',
-      'completed',
-    ];
-    statuses.forEach(
-      (s) => (counts[s] = this.events.filter((e) => e.status === s).length)
-    );
-    return counts;
-  });
-
-  statusOptions = computed(() => {
-    const statuses: EventStatus[] = [
-      'started',
-      'scheduled',
-      'inProgress',
-      'completed',
-      'canceled',
-    ];
-    return statuses.map((status) => ({
-      value: status,
-      label:
-        status.charAt(0).toUpperCase() +
-        status
-          .slice(1)
-          .replace(/([A-Z])/g, ' $1')
-          .trim(),
-      count: this.statusCounts()[status] || 0,
-    }));
-  });
-
-  constructor() {
-    this.setDefaultStatus();
-  }
-
-  private setDefaultStatus(): void {
-    const counts = this.statusCounts();
-    if (counts.started > 0) this.selectedStatus.set('started');
-    else if (counts.scheduled > 0) this.selectedStatus.set('scheduled');
-    else if (counts.inProgress > 0) this.selectedStatus.set('inProgress');
-    else this.selectedStatus.set('all');
-  }
-
-  onStatusChange(status: EventStatus): void {
-    this.selectedStatus.set(status);
-  }
-
-  close(): void {
+  /**
+   * Dismisses the bottom sheet when the close button in EventPanel emits (close).
+   */
+  onClose(event: MouseEvent): void {
+    console.log('MobileEventSheet: Dismissing bottom sheet');
     this._bottomSheetRef.dismiss();
-  }
-
-  getStatusColor(status: string): string {
-    const colors: any = {
-      scheduled: '#3f51b5',
-      started: '#2196f3',
-      inProgress: '#ff9800',
-      completed: '#4caf50',
-      canceled: '#f44336',
-    };
-    return colors[status] || '#grey';
-  }
-
-  isOptionDisabled(count: number): boolean {
-    return count === 0;
+    event.preventDefault();
   }
 }

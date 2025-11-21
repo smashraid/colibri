@@ -1,16 +1,12 @@
+<div>
+  <button (click)="openBottomSheet()">Open Sheet</button>
+</div>
+
 <div class="calendar__container mb-5 max-w-2xl h-full">
-  <!-- 
-    FIX: The mat-drawer-container must WRAP the main content.
-    We use 'autosize' to allow the container to adapt to the content height if needed.
-  -->
   <mat-drawer-container
     class="example-container bg-transparent h-full"
     autosize
   >
-    <!-- 
-      Drawer (Desktop Only) 
-      This sits inside the container but outside the content.
-    -->
     @if (!store.isMobile()) {
     <mat-drawer
       mode="over"
@@ -30,10 +26,6 @@
     </mat-drawer>
     }
 
-    <!-- 
-      Main Content 
-      Everything that was previously outside now goes here.
-    -->
     <mat-drawer-content class="p-1">
       <!-- Calendar Controls -->
       <div class="calendar__header">
@@ -52,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Calendar Views with Mat Tabs -->
       <mat-tab-group
         (selectedTabChange)="onTabChange($event)"
         [selectedIndex]="currentView() === 'month' ? 0 : currentView() === 'week' ? 1 : 2"
