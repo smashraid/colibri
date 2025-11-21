@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,10 +29,8 @@ import { AppStore } from '../../../../app.store';
   templateUrl: './calendar.html',
   styleUrl: './calendar.scss',
 })
-export class Calendar {
-  private breakpointObserver = inject(BreakpointObserver);
+export class Calendar implements OnInit {
   private bottomSheet = inject(MatBottomSheet);
-  private dialog = inject(MatDialog);
   private calendarService = inject(CalendarService);
   readonly store = inject(AppStore);
 
@@ -45,14 +43,6 @@ export class Calendar {
 
   // Get events from service
   events = this.calendarService.getEvents();
-
-  // Breakpoint observer as signal
-  isMobile = toSignal(
-    this.breakpointObserver
-      .observe('(max-width: 768px)')
-      .pipe(map((state) => state.matches)),
-    { initialValue: false }
-  );
 
   // Computed values using DateUtils
   weekDays = computed(() => DateUtils.getWeekDays(this.selectedDate()));
@@ -158,7 +148,7 @@ export class Calendar {
   }
 
   openEventPanel(): void {
-    if (this.isMobile()) {
+    if (this.store.isMobile()) {
       this.openBottomSheet();
     } else {
       this.isPanelOpen.set(true);
@@ -213,4 +203,20 @@ export class Calendar {
   // Utility methods
   isSameDay = DateUtils.isSameDay;
   isToday = DateUtils.isToday;
+
+  ngOnInit(): void {
+    // Add debug logging to see what's happening
+    console.log('Calendar initialized - isPanelOpen:', this.isPanelOpen());
+    console.log('Selected date:', this.selectedDate());
+    console.log(
+      'Events for selected date:',
+      this.getEventsForDate(this.selectedDate())
+    );
+    console.log('=== STORE DEBUG INFO ===');
+    console.log('isMobile:', this.store.isMobile());
+    console.log('isPanelOpen:', this.isPanelOpen());
+    console.log('selectedDate:', this.selectedDate());
+    console.log('selectedDayEvents length:', this.selectedDayEvents().length);
+    console.log('========================');
+  }
 }

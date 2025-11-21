@@ -1,193 +1,209 @@
 @use "@angular/material" as mat;
 
-.calendar-container {
-  color: var(--mat-sys-on-background);
-  background: var(--mat-sys-surface-container-high);
-  border-radius: var(--radius-lg);
-  //height: 100vh;
-  display: flex;
-  flex-direction: column;
-  margin-left: auto;
-  margin-right: auto;
-  position: relative;
-
-  @include mat.tabs-overrides(
-    (
-      active-focus-indicator-color: orange,
-      active-focus-label-text-color: red,
-      active-indicator-color: var(--mat-sys-primary),
-      active-label-text-color: var(--mat-sys-primary),
-    )
-  );
-}
-
-.calendar-header {
-  background: var(--mat-sys-background);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-
-  .navigation-controls {
+.calendar {
+  &__container {
+    color: var(--mat-sys-on-background);
+    //background: var(--mat-sys-surface-container-high);
+    border-radius: var(--radius-lg);
+    //height: 100vh;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
 
-    button {
-      border-radius: 8px;
+    @include mat.tabs-overrides(
+      (
+        active-focus-indicator-color: var(--mat-sys-primary),
+        active-focus-label-text-color: var(--mat-sys-primary),
+        active-indicator-color: var(--mat-sys-primary),
+        active-label-text-color: var(--mat-sys-primary),
+      )
+    );
+  }
 
-      &[mat-button] {
-        padding: 0 1rem;
-        font-weight: 500;
-      }
+  &__tabs {
+    flex: 1;
+
+    .mat-mdc-tab-body-wrapper {
+      height: 100%;
+    }
+
+    .mat-mdc-tab-header {
+      border-bottom: 1px solid #e0e0e0;
     }
   }
 
-  .current-period h2 {
-    margin: 0;
-    //color: #1a1a1a;
-    font-size: 1.5rem;
-    font-weight: 500;
+  &__tab {
   }
-}
 
-.calendar-tabs {
-  flex: 1;
+  &__header {
+    align-items: center;
+    background: var(--mat-sys-background);
+    display: flex;
+    flex-shrink: 0;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    //border-bottom: 1px solid #e0e0e0;
+    //box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
-  .mat-mdc-tab-body-wrapper {
+    .navigation-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      button {
+        border-radius: 8px;
+
+        &[mat-button] {
+          padding: 0 1rem;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .current-period h2 {
+      margin: 0;
+      //color: #1a1a1a;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+  }
+
+  &__month-view {
+    background: var(--mat-sys-surface-container-high);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    overflow: hidden;
+    //background: inherit;
   }
 
-  .mat-mdc-tab-header {
-    border-bottom: 1px solid #e0e0e0;
+  &__month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    //background: #f8f9fa;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    .day-header {
+      padding: 1rem 0.5rem;
+      text-align: center;
+      //font-weight: 600;
+      //color: #495057;
+      //font-size: 0.875rem;
+      //text-transform: uppercase;
+      //letter-spacing: 0.5px;
+    }
+  }
+
+  &__month-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+
+    // Target first item (top-left)
+    .month-day:first-child {
+      border-top-left-radius: var(--radius-lg);
+    }
+
+    // Target 7th item (top-right)
+    .month-day:nth-child(7) {
+      border-top-right-radius: var(--radius-lg);
+    }
+
+    // Target 36th item (bottom-left) - first item of last row
+    .month-day:nth-child(36) {
+      border-bottom-left-radius: var(--radius-lg);
+    }
+
+    // Target last item (bottom-right)
+    .month-day:last-child {
+      border-bottom-right-radius: var(--radius-lg);
+    }
   }
 }
 
-// Month View Styles
-.month-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  //background: inherit;
-}
+.month {
+  &__day {
+    border: 1px solid var(--mat-sys-outline-variant);
+    padding: 0.75rem 0.5rem;
+    cursor: pointer;
+    min-height: 120px;
+    position: relative;
 
-.month-header {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  //background: #f8f9fa;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+    // Remove borders between grid items and only keep outer border
+    margin: -0.5px; // This helps with the border overlap
 
-  .day-header {
-    padding: 1rem 0.5rem;
-    text-align: center;
-    font-weight: 600;
-    //color: #495057;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-}
-
-.month-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  //background: #fff;
-}
-
-.month-day {
-  border: 1px solid var(--mat-sys-outline-variant);
-  padding: 0.75rem 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 120px;
-  position: relative;
-  //background: #fff;
-
-  &:hover {
-    background: #f8f9fa;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    &:hover {
+      background: var(--mat-sys-surface-container-highest);
+      color: var(--mat-sys-on-surface);
+    }
   }
 
-  &.current-month {
+  &--current {
     //background: #fff;
   }
 
-  &:not(.current-month) {
-    background: var(--mat-sys-surface-container-low);
-    color: var(--mat-sys-on-surface-variant);
-
-    .day-number {
-      opacity: 0.5;
-    }
-  }
-
-  &.today {
+  &--today {
     background: var(--mat-sys-primary-container);
     border-color: var(--mat-sys-outline-variant);
-
-    .day-number {
-      color: var(--mat-sys-on-primary-container);
-      font-weight: 700;
-    }
   }
 
-  &.selected {
+  &--selected {
     background: var(--mat-sys-secondary-container);
     border-color: var(--mat-sys-outline-variant);
-
-    .day-number {
-      color: var(--mat-sys-on-secondary-container);
-      font-weight: 700;
-    }
   }
 
-  .day-number {
-    font-weight: 600;
+  &--today &__day-number {
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &--selected &__day-number {
+    color: var(--mat-sys-on-secondary-container);
+  }
+
+  &__day-number {
     margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    //color: #1a1a1a;
   }
 
-  .event-indicator {
+  &__event-indicator {
     position: absolute;
     bottom: 0.5rem;
     right: 0.5rem;
+  }
 
-    .event-count {
+  &__event-count {
+    align-items: center;
+    background-color: var(--mat-sys-primary);
+    border-radius: 50%;
+    color: var(--mat-sys-on-primary);
+    display: flex;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+
+    // Default state (not selected, not today)
+    &--default {
+      background-color: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+
+    // Selected state
+    &--selected {
+      background-color: var(--mat-sys-on-secondary-container);
+      color: var(--mat-sys-secondary-container);
+    }
+
+    // Today state (but not selected)
+    &--today {
       background-color: var(--mat-sys-on-primary-container);
       color: var(--mat-sys-primary-container);
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      font-weight: 600;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: transform 0.2s ease;
     }
   }
-
-  &:hover .event-count {
-    transform: scale(1.1);
-  }
-}
-
-.no-days {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  color: #6c757d;
-  font-style: italic;
 }
 
 // Week View Styles
@@ -305,10 +321,8 @@
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    transition: transform 0.2s ease;
 
     &:hover {
-      transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
@@ -393,7 +407,6 @@
       transition: all 0.2s ease;
 
       &:hover {
-        transform: translateX(4px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
       }
 
@@ -584,19 +597,6 @@
 
   .day-column .hour-slot {
     height: 45px;
-  }
-}
-
-// Accessibility
-@media (prefers-reduced-motion: reduce) {
-  .month-day,
-  .week-event,
-  .day-event {
-    transition: none;
-
-    &:hover {
-      transform: none;
-    }
   }
 }
 
