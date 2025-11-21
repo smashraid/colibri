@@ -1,172 +1,23 @@
-<div class="calendar__container mb-5 max-w-2xl">
-  <!-- Calendar Controls -->
-  <div class="calendar__header">
-    <div class="navigation-controls">
-      <button mat-icon-button (click)="previous()" aria-label="Previous">
-        <mat-icon>chevron_left</mat-icon>
-      </button>
-      <button mat-icon-button (click)="next()" aria-label="Next">
-        <mat-icon>chevron_right</mat-icon>
-      </button>
-      <button mat-button (click)="goToToday()">Today</button>
-    </div>
-
-    <div class="current-period">
-      <h2>{{ currentPeriodLabel() }}</h2>
-    </div>
-  </div>
-
-  <!-- Calendar Views with Mat Tabs -->
-  <mat-tab-group
-    (selectedTabChange)="onTabChange($event)"
-    [selectedIndex]="currentView() === 'month' ? 0 : currentView() === 'week' ? 1 : 2"
-    class="calendar__tabs"
+<div class="calendar__container mb-5 max-w-2xl h-full">
+  <!-- 
+    FIX: The mat-drawer-container must WRAP the main content.
+    We use 'autosize' to allow the container to adapt to the content height if needed.
+  -->
+  <mat-drawer-container
+    class="example-container bg-transparent h-full"
+    autosize
   >
-    <!-- Month View Tab -->
-    <mat-tab label="Month">
-      <div class="calendar__tab mt-5">
-        <div class="calendar__month-view">
-          <div class="calendar__month-header">
-            @for (day of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            track day) {
-            <div class="day-header">{{ day }}</div>
-            }
-          </div>
-
-          <div class="calendar__month-grid">
-            @for (day of monthDays(); track day.date.getTime()) {
-            <div
-              class="month__day"
-              [class.month--current]="day.isCurrentMonth"
-              [class.month--selected]="isSameDay(day.date, selectedDate())"
-              [class.month--today]="isToday(day.date)"
-              (click)="onDateSelect(day.date)"
-              [attr.aria-label]="getDayAriaLabel(day)"
-            >
-              <div class="month__day-number">{{ day.date | date:'d' }}</div>
-              @if (getEventCountForDate(day.date) > 0) {
-              <div class="month__event-indicator">
-                <div
-                  class="month__event-count"
-                  [class.month__event-count--default]="!isSameDay(day.date, selectedDate()) && !isToday(day.date)"
-                  [class.month__event-count--selected]="isSameDay(day.date, selectedDate())"
-                  [class.month__event-count--today]="isToday(day.date) && !isSameDay(day.date, selectedDate())"
-                >
-                  {{ getEventCountForDate(day.date) }}
-                </div>
-              </div>
-              }
-            </div>
-            } @empty {
-            <div class="month__no-days">
-              <p>No days to display</p>
-            </div>
-            }
-          </div>
-        </div>
-      </div>
-    </mat-tab>
-
-    <!-- Week View Tab -->
-    <mat-tab label="Week">
-      <div class="calendar__tab mt-5">
-        <div class="week-view">
-          <div class="week-header">
-            <div class="time-column"></div>
-            @for (day of weekDays(); track day.date.getTime()) {
-            <div class="day-header">
-              <div class="day-name">{{ day.name }}</div>
-              <div
-                class="day-date"
-                [class.selected]="isSameDay(day.date, selectedDate())"
-                [class.today]="isToday(day.date)"
-              >
-                {{ day.date | date:'d' }}
-              </div>
-            </div>
-            }
-          </div>
-
-          <div class="week-grid">
-            <div class="time-slots">
-              @for (hour of hours(); track hour) {
-              <div class="time-slot">
-                @if (hour % 2 === 0) { {{ hour }}:00 }
-              </div>
-              }
-            </div>
-
-            @for (day of weekDays(); track day.date.getTime()) {
-            <div class="day-column">
-              @for (hour of hours(); track hour) {
-              <div class="hour-slot">
-                @for (event of getEventsForDayAndHour(day.date, hour); track
-                event.id) {
-                <div
-                  class="week-event"
-                  [style.background-color]="event.color"
-                  [style.top]="getEventPosition(event)"
-                >
-                  <div class="event-title">{{ event.name }}</div>
-                  <div class="event-time">
-                    {{ event.sendAt | date:'shortTime' }}
-                  </div>
-                </div>
-                }
-              </div>
-              }
-            </div>
-            }
-          </div>
-        </div>
-      </div>
-    </mat-tab>
-
-    <!-- Day View Tab -->
-    <mat-tab label="Day">
-      <div class="calendar__tab mt-5">
-        <div class="day-view">
-          <div class="day-header">
-            <h3>{{ selectedDate() | date:'fullDate' }}</h3>
-          </div>
-
-          <div class="day-timeline">
-            @for (hour of hours(); track hour) {
-            <div class="hour-row">
-              <div class="hour-label">{{ hour }}:00</div>
-              <div class="hour-content">
-                @for (event of getEventsForDayAndHour(selectedDate(), hour);
-                track event.id) {
-                <div class="day-event" [style.background-color]="event.color">
-                  <div class="event-title">{{ event.name }}</div>
-                  <div class="event-time">
-                    {{ event.sendAt | date:'shortTime' }}
-                  </div>
-                  <div class="event-status">{{ event.status }}</div>
-                  @if (event.description) {
-                  <div class="event-description">{{ event.description }}</div>
-                  }
-                </div>
-                } @empty {
-                <div class="no-events-hour">No events scheduled</div>
-                }
-              </div>
-            </div>
-            }
-          </div>
-        </div>
-      </div>
-    </mat-tab>
-  </mat-tab-group>
-
-  <!-- Side Panel for Desktop/Tablet -->
-  @if (!store.isMobile()) {
-  <mat-drawer-container class="side-panel-container">
+    <!-- 
+      Drawer (Desktop Only) 
+      This sits inside the container but outside the content.
+    -->
+    @if (!store.isMobile()) {
     <mat-drawer
       mode="over"
       position="end"
       [opened]="isPanelOpen()"
       (closed)="closeEventPanel()"
+      class="calendar-drawer"
     >
       @if (isPanelOpen()) {
       <app-event-panel
@@ -177,6 +28,177 @@
       </app-event-panel>
       }
     </mat-drawer>
+    }
+
+    <!-- 
+      Main Content 
+      Everything that was previously outside now goes here.
+    -->
+    <mat-drawer-content class="p-1">
+      <!-- Calendar Controls -->
+      <div class="calendar__header">
+        <div class="navigation-controls">
+          <button mat-icon-button (click)="previous()" aria-label="Previous">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <button mat-icon-button (click)="next()" aria-label="Next">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button mat-button (click)="goToToday()">Today</button>
+        </div>
+
+        <div class="current-period">
+          <h2>{{ currentPeriodLabel() }}</h2>
+        </div>
+      </div>
+
+      <!-- Calendar Views with Mat Tabs -->
+      <mat-tab-group
+        (selectedTabChange)="onTabChange($event)"
+        [selectedIndex]="currentView() === 'month' ? 0 : currentView() === 'week' ? 1 : 2"
+        class="calendar__tabs"
+      >
+        <!-- Month View Tab -->
+        <mat-tab label="Month">
+          <div class="calendar__tab mt-5">
+            <div class="calendar__month-view">
+              <div class="calendar__month-header">
+                @for (day of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                track day) {
+                <div class="day-header">{{ day }}</div>
+                }
+              </div>
+
+              <div class="calendar__month-grid">
+                @for (day of monthDays(); track day.date.getTime()) {
+                <div
+                  class="month__day"
+                  [class.month--current]="day.isCurrentMonth"
+                  [class.month--selected]="isSameDay(day.date, selectedDate())"
+                  [class.month--today]="isToday(day.date)"
+                  (click)="onDateSelect(day.date)"
+                  [attr.aria-label]="getDayAriaLabel(day)"
+                >
+                  <div class="month__day-number">{{ day.date | date:'d' }}</div>
+                  @if (getEventCountForDate(day.date) > 0) {
+                  <div class="month__event-indicator">
+                    <div
+                      class="month__event-count"
+                      [class.month__event-count--default]="!isSameDay(day.date, selectedDate()) && !isToday(day.date)"
+                      [class.month__event-count--selected]="isSameDay(day.date, selectedDate())"
+                      [class.month__event-count--today]="isToday(day.date) && !isSameDay(day.date, selectedDate())"
+                    >
+                      {{ getEventCountForDate(day.date) }}
+                    </div>
+                  </div>
+                  }
+                </div>
+                } @empty {
+                <div class="month__no-days">
+                  <p>No days to display</p>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Week View Tab -->
+        <mat-tab label="Week">
+          <div class="calendar__tab mt-5">
+            <div class="week-view">
+              <div class="week-header">
+                <div class="time-column"></div>
+                @for (day of weekDays(); track day.date.getTime()) {
+                <div class="day-header">
+                  <div class="day-name">{{ day.name }}</div>
+                  <div
+                    class="day-date"
+                    [class.selected]="isSameDay(day.date, selectedDate())"
+                    [class.today]="isToday(day.date)"
+                  >
+                    {{ day.date | date:'d' }}
+                  </div>
+                </div>
+                }
+              </div>
+
+              <div class="week-grid">
+                <div class="time-slots">
+                  @for (hour of hours(); track hour) {
+                  <div class="time-slot">
+                    @if (hour % 2 === 0) { {{ hour }}:00 }
+                  </div>
+                  }
+                </div>
+
+                @for (day of weekDays(); track day.date.getTime()) {
+                <div class="day-column">
+                  @for (hour of hours(); track hour) {
+                  <div class="hour-slot">
+                    @for (event of getEventsForDayAndHour(day.date, hour); track
+                    event.id) {
+                    <div
+                      class="week-event"
+                      [style.background-color]="event.color"
+                      [style.top]="getEventPosition(event)"
+                    >
+                      <div class="event-title">{{ event.name }}</div>
+                      <div class="event-time">
+                        {{ event.sendAt | date:'shortTime' }}
+                      </div>
+                    </div>
+                    }
+                  </div>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Day View Tab -->
+        <mat-tab label="Day">
+          <div class="calendar__tab mt-5">
+            <div class="day-view">
+              <div class="day-header">
+                <h3>{{ selectedDate() | date:'fullDate' }}</h3>
+              </div>
+
+              <div class="day-timeline">
+                @for (hour of hours(); track hour) {
+                <div class="hour-row">
+                  <div class="hour-label">{{ hour }}:00</div>
+                  <div class="hour-content">
+                    @for (event of getEventsForDayAndHour(selectedDate(), hour);
+                    track event.id) {
+                    <div
+                      class="day-event"
+                      [style.background-color]="event.color"
+                    >
+                      <div class="event-title">{{ event.name }}</div>
+                      <div class="event-time">
+                        {{ event.sendAt | date:'shortTime' }}
+                      </div>
+                      <div class="event-status">{{ event.status }}</div>
+                      @if (event.description) {
+                      <div class="event-description">
+                        {{ event.description }}
+                      </div>
+                      }
+                    </div>
+                    } @empty {
+                    <div class="no-events-hour">No events scheduled</div>
+                    }
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-drawer-content>
   </mat-drawer-container>
-  }
 </div>

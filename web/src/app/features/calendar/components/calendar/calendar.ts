@@ -4,7 +4,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule, MatTabChangeEvent } from '@angular/material/tabs';
-import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import {
+  MatBottomSheet,
+  MatBottomSheetConfig,
+} from '@angular/material/bottom-sheet';
 import { MatSidenavModule } from '@angular/material/sidenav';
 
 import { DateUtils } from '../../utils/calendar-date';
@@ -160,12 +163,16 @@ export class Calendar implements OnInit {
   }
 
   private openBottomSheet(): void {
-    this.bottomSheet.open(EventPanel, {
+    const config: MatBottomSheetConfig = {
       data: {
         events: this.selectedDayEvents(),
         date: this.selectedDate(),
       },
-    });
+      panelClass: 'mobile-event-sheet', // <--- ADD THIS CLASS
+      hasBackdrop: true,
+    };
+
+    this.bottomSheet.open(EventPanel, config);
   }
 
   getEventsForDayAndHour(day: Date, hour: number): CalendarEvent[] {
@@ -204,19 +211,5 @@ export class Calendar implements OnInit {
   isSameDay = DateUtils.isSameDay;
   isToday = DateUtils.isToday;
 
-  ngOnInit(): void {
-    // Add debug logging to see what's happening
-    console.log('Calendar initialized - isPanelOpen:', this.isPanelOpen());
-    console.log('Selected date:', this.selectedDate());
-    console.log(
-      'Events for selected date:',
-      this.getEventsForDate(this.selectedDate())
-    );
-    console.log('=== STORE DEBUG INFO ===');
-    console.log('isMobile:', this.store.isMobile());
-    console.log('isPanelOpen:', this.isPanelOpen());
-    console.log('selectedDate:', this.selectedDate());
-    console.log('selectedDayEvents length:', this.selectedDayEvents().length);
-    console.log('========================');
-  }
+  ngOnInit(): void {}
 }

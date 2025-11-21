@@ -17,7 +17,7 @@ import {
   withInterceptors,
 } from '@angular/common/http';
 import { provideMomentDateAdapter } from '@angular/material-moment-adapter';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import {
   IPublicClientApplication,
   PublicClientApplication,

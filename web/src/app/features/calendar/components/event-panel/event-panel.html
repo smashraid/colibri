@@ -1,9 +1,13 @@
-<div class="event-panel">
+<div class="event-panel flex flex-col h-full max-h-[80vh]">
   <!-- Header -->
-  <div class="panel-header">
-    <h2 class="panel-title">
+  <div
+    class="panel-header flex items-center justify-between p-4 border-b border-gray-700 bg-surface-container"
+  >
+    <h2 class="panel-title text-lg font-medium m-0">
       {{ date | date:'fullDate' }}
-      <span class="events-count">({{ events.length }} events)</span>
+      <span class="events-count text-sm text-gray-400 ml-2"
+        >({{ events.length }} events)</span
+      >
     </h2>
     <button
       mat-icon-button
@@ -16,8 +20,8 @@
   </div>
 
   <!-- Filter Dropdown -->
-  <div class="filter-section">
-    <mat-form-field appearance="outline" class="status-filter">
+  <div class="filter-section p-4 bg-surface-container-low">
+    <mat-form-field appearance="outline" class="status-filter w-full">
       <mat-label>Filter by Status</mat-label>
       <mat-select
         [value]="selectedStatus()"
@@ -29,10 +33,10 @@
           [value]="option.value"
           [disabled]="isOptionDisabled(option.count)"
         >
-          <div class="option-content">
+          <div class="option-content flex justify-between w-full">
             <span class="option-label">{{ option.label }}</span>
             <span
-              class="option-count"
+              class="option-count ml-2"
               [class.disabled]="isOptionDisabled(option.count)"
             >
               ({{ option.count }})
@@ -44,35 +48,41 @@
     </mat-form-field>
   </div>
 
-  <!-- Events List -->
-  <div class="events-list">
+  <!-- Events List (Scrollable Area) -->
+  <div class="events-list flex-1 overflow-y-auto p-4">
     @for (event of filteredEvents(); track event.id) {
     <div
-      class="event-item"
+      class="event-item mb-3 p-3 rounded-lg border-l-4 bg-surface-1 shadow-sm"
       [style.border-left-color]="getStatusColor(event.status)"
       role="listitem"
     >
-      <div class="event-time">{{ event.sendAt | date:'shortTime' }}</div>
+      <div class="event-time text-sm font-bold mb-1 text-gray-400">
+        {{ event.sendAt | date:'shortTime' }}
+      </div>
       <div class="event-content">
-        <h3 class="event-name">{{ event.name }}</h3>
-        <div class="event-meta">
+        <h3 class="event-name text-base font-bold m-0">{{ event.name }}</h3>
+        <div class="event-meta mt-2">
           <span
-            class="event-status-badge"
+            class="event-status-badge px-2 py-1 rounded text-xs text-white inline-block"
             [style.background-color]="getStatusColor(event.status)"
           >
             {{ event.status }}
           </span>
         </div>
         @if (event.description) {
-        <p class="event-description">{{ event.description }}</p>
+        <p class="event-description mt-2 text-sm text-gray-300">
+          {{ event.description }}
+        </p>
         }
       </div>
     </div>
     } @empty {
-    <div class="no-events">
-      <mat-icon class="no-events-icon">event_busy</mat-icon>
-      <p>No events found for selected status</p>
-      <p class="no-events-hint">Try selecting a different status filter</p>
+    <div
+      class="no-events flex flex-col items-center justify-center py-8 text-gray-500"
+    >
+      <mat-icon class="no-events-icon text-4xl mb-2">event_busy</mat-icon>
+      <p class="m-0 font-medium">No events found</p>
+      <p class="no-events-hint text-sm">Try selecting a different filter</p>
     </div>
     }
   </div>

@@ -9,18 +9,17 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import {
-  MatBottomSheetRef,
-  MAT_BOTTOM_SHEET_DATA,
-} from '@angular/material/bottom-sheet';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+
 import { CalendarEvent, EventStatus } from '../../models/calendar-event';
 
 @Component({
   selector: 'app-event-panel',
+  standalone: true,
   imports: [
     CommonModule,
     MatButtonModule,
@@ -32,18 +31,50 @@ import { CalendarEvent, EventStatus } from '../../models/calendar-event';
   templateUrl: './event-panel.html',
   styleUrl: './event-panel.scss',
 })
+/**
+ * EventPanel is a purely presentational component, used as the content
+ * for both the desktop sidebar and the mobile bottom sheet (via MobileEventSheet).
+ */
 export class EventPanel {
-  private bottomSheetRef = inject(MatBottomSheetRef<EventPanel>, {
-    optional: true,
-  });
-  private panelData = inject(MAT_BOTTOM_SHEET_DATA, { optional: true });
+  // Inputs from the parent component (Calendar or MobileEventSheet)
+  @Input({ required: true }) events: CalendarEvent[] = [];
+  @Input({ required: true }) date: Date = new Date();
 
-  @Input() events: CalendarEvent[] = [];
-  @Input() date: Date = new Date();
+  // Output event to notify the parent to close the panel/sheet
   @Output() close = new EventEmitter<void>();
 
-  // Signals
-  selectedStatus = signal<EventStatus | 'all'>('started');
+  selectedStatus = signal<EventStatus | 'all'>('all');
+
+  // Computed signal to efficiently count events by status whenever the input events change
+  statusCounts = computed(() => {
+    const counts = {
+      all: this.events.length,
+      scheduled: 0,
+      started: 0,
+      inProgress: 0,
+      completed: 0,
+      canceled: 0,
+    };
+    this.events.forEach((event) => {
+      counts[event.status as EventStatus]++;
+    });
+    return counts;
+  });
+
+  // Computed signal to generate options for the status filter
+  statusOptions = computed(() => {
+    const counts = this.statusCounts();
+    return [
+      { label: 'All', value: 'all', count: counts.all },
+      { label: 'Scheduled', value: 'scheduled', count: counts.scheduled },
+      { label: 'Started', value: 'started', count: counts.started },
+      { label: 'In Progress', value: 'inProgress', count: counts.inProgress },
+      { label: 'Completed', value: 'Completed', count: counts.completed },
+      { label: 'Canceled', value: 'Canceled', count: counts.canceled },
+    ];
+  });
+
+  // Computed signal to filter the events based on the selected status
   filteredEvents = computed(() => {
     const status = this.selectedStatus();
     if (status === 'all') {
@@ -52,44 +83,10 @@ export class EventPanel {
     return this.events.filter((event) => event.status === status);
   });
 
-  // Status counts
-  statusCounts = computed(() => {
-    const counts: Record<EventStatus | 'all', number> = {
-      all: this.events.length,
-      scheduled: this.events.filter((e) => e.status === 'scheduled').length,
-      started: this.events.filter((e) => e.status === 'started').length,
-      inProgress: this.events.filter((e) => e.status === 'inProgress').length,
-      canceled: this.events.filter((e) => e.status === 'canceled').length,
-      completed: this.events.filter((e) => e.status === 'completed').length,
-    };
-    return counts;
-  });
-
-  // Status options for dropdown
-  statusOptions = computed(() => {
-    const statuses: EventStatus[] = [
-      'started',
-      'scheduled',
-      'inProgress',
-      'completed',
-      'canceled',
-    ];
-
-    return statuses.map((status) => ({
-      value: status,
-      label: this.formatStatusLabel(status),
-      count: this.statusCounts()[status],
-    }));
-  });
-
-  ngOnInit(): void {
-    // If opened via bottom sheet, use injected data
-    if (this.panelData && !this.events.length) {
-      this.events = this.panelData.events;
-      this.date = this.panelData.date;
-    }
-
-    // Set default selection based on available events
+  // Effect to set a default status when the input events array changes
+  // This uses a timeout to ensure all inputs and signals are stable
+  ngOnChanges(): void {
+    // Re-evaluate default status when events input changes
     this.setDefaultStatus();
   }
 
@@ -97,29 +94,34 @@ export class EventPanel {
     const counts = this.statusCounts();
 
     // Priority order for default selection
-    if (counts.started > 0) {
-      this.selectedStatus.set('started');
-    } else if (counts.scheduled > 0) {
+    if (counts.scheduled > 0) {
       this.selectedStatus.set('scheduled');
+    } else if (counts.started > 0) {
+      this.selectedStatus.set('started');
     } else if (counts.inProgress > 0) {
       this.selectedStatus.set('inProgress');
     } else if (counts.completed > 0) {
       this.selectedStatus.set('completed');
     } else if (counts.canceled > 0) {
       this.selectedStatus.set('canceled');
+    } else {
+      this.selectedStatus.set('all');
     }
   }
 
-  onStatusChange(status: EventStatus): void {
+  onStatusChange(status: EventStatus | 'all'): void {
     this.selectedStatus.set(status);
   }
 
+  /**
+   * Emits the close event to the parent container (Calendar or MobileEventSheet).
+   */
   onClose(): void {
-    if (this.bottomSheetRef) {
-      this.bottomSheetRef.dismiss();
-    } else {
-      this.close.emit();
-    }
+    this.close.emit();
+  }
+
+  isOptionDisabled(count: number): boolean {
+    return count === 0;
   }
 
   getStatusColor(status: EventStatus): string {
@@ -131,20 +133,5 @@ export class EventPanel {
       canceled: '#f44336',
     };
     return colors[status];
-  }
-
-  isOptionDisabled(count: number): boolean {
-    return count === 0;
-  }
-
-  private formatStatusLabel(status: EventStatus): string {
-    const labels: Record<EventStatus, string> = {
-      scheduled: 'Scheduled',
-      started: 'Started',
-      inProgress: 'In Progress',
-      completed: 'Completed',
-      canceled: 'Canceled',
-    };
-    return labels[status];
   }
 }
